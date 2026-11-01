@@ -21,16 +21,17 @@ const API = (window.LR && window.LR.apiUrl) || '';
 /* ---------- look + mode ---------- */
 const root = document.documentElement;
 function setLook(l){ root.dataset.look = l; $$('.looks button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.l === l))); store.set('lr-look', l); drawRings(true); }
-function setMode(m){ root.dataset.mode = m; const b = $('#modeBtn'); b.textContent = m === 'dark' ? 'Light' : 'Dark'; b.setAttribute('aria-label', 'Switch to ' + (m === 'dark' ? 'light' : 'dark') + ' mode'); store.set('lr-mode', m); drawRings(true); }
+function setMode(m, save){ root.dataset.mode = m; const b = $('#modeBtn'); b.textContent = m === 'dark' ? 'Light' : 'Dark'; b.setAttribute('aria-label', 'Switch to ' + (m === 'dark' ? 'light' : 'dark') + ' mode'); if (save) store.set('lr-theme', m); drawRings(true); }
 $$('.looks button').forEach(b => b.addEventListener('click', () => setLook(b.dataset.l)));
-$('#modeBtn').addEventListener('click', () => setMode(root.dataset.mode === 'dark' ? 'light' : 'dark'));
+$('#modeBtn').addEventListener('click', () => setMode(root.dataset.mode === 'dark' ? 'light' : 'dark', true));
 
 /* ---------- tree-ring canvas ---------- */
-const cv = $('#rings'), ctx = cv.getContext('2d');
+const cv = $('#rings'), ctx = cv && cv.getContext('2d');
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const t0 = performance.now();
 let currentView = 'home';
 function drawRings(once){
+  if (!ctx) return;
   const dpr = Math.min(devicePixelRatio || 1, 2), S = 720;
   if (cv.width !== S * dpr){ cv.width = S * dpr; cv.height = S * dpr; }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -393,7 +394,7 @@ function setBanner(text){
 
 /* ---------- boot ---------- */
 setLook(store.get('lr-look') || 'sequoia');
-setMode(store.get('lr-mode') || 'dark');
+setMode(store.get('lr-theme') || 'light');
 renderAttendees(); renderInfo(); renderMe(); renderFamily(); renderGates(); route(); setBanner();
 document.addEventListener('visibilitychange', () => { if (!document.hidden && currentView === 'home') drawRings(false); });
 addEventListener('lr-refresh', () => { loadFamily(true); if (S.token) loadMine(); });
