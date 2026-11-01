@@ -1,6 +1,6 @@
 /* Lewis–Antone family tree, folded into the reunion site's "Our Family" tab.
    Three views: Ledger (generations in rows), Rings (a full circle of growth rings), Columns (browse one family at a time).
-   Colors come from the site's global palette (accent dots and Light / Forest / Walnut theme), so every view works with every color.
+   Colors come from the site's global palette (accent dots and Light / Forest / Espresso theme), so every view works with every color.
    People arrive from the backend only after the family code is accepted. */
 (() => {
   'use strict';

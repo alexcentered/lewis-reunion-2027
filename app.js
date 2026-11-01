@@ -22,12 +22,13 @@ const API = (window.LR && window.LR.apiUrl) || '';
 const root = document.documentElement;
 function setLook(l){ root.dataset.look = l; $$('.looks button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.l === l))); store.set('lr-look', l); drawRings(true); dispatchEvent(new CustomEvent('lr-look', { detail: l })); }
 window.LRSetLook = setLook;
-const LOOKS = ['sequoia', 'harvest', 'oxblood'], MODES = ['light', 'forest', 'walnut'];
+const LOOKS = ['sequoia', 'harvest', 'lake'], MODES = ['light', 'forest', 'espresso'];
 function setMode(m, save){
   if (m === 'dark') m = 'forest';
+  if (m === 'walnut') m = 'espresso';
   if (!MODES.includes(m)) m = 'light';
   root.dataset.mode = m === 'light' ? 'light' : 'dark';
-  root.dataset.ground = m === 'walnut' ? 'walnut' : 'forest';
+  root.dataset.ground = m === 'espresso' ? 'espresso' : 'forest';
   $$('.modes button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === m)));
   if (save) store.set('lr-theme', m);
   drawRings(true);

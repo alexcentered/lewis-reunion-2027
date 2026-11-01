@@ -12,8 +12,8 @@
 <style>
 /* Layout: slim top bar, one view at a time (hash routes), generous whitespace; tree-ring canvas behind the hero. */
 :root{
-  --bg:#0e1a13;--surface:rgba(236,226,206,.04);--surface-2:rgba(236,226,206,.075);--line:rgba(236,226,206,.1);--line-2:rgba(236,226,206,.18);
-  --text:#efe8d9;--paper:#1b2c22;--paper-edge:#0e1a13;--muted:#b3ab98;--faint:#7f7a6c;--accent:#8fbf9c;--on-accent:#0e1a13;--accent-2:#c9a074;
+  --bg:#07110b;--surface:rgba(236,226,206,.04);--surface-2:rgba(236,226,206,.075);--line:rgba(236,226,206,.1);--line-2:rgba(236,226,206,.18);
+  --text:#efe8d9;--paper:#122019;--paper-edge:#07110b;--muted:#b3ab98;--faint:#7f7a6c;--accent:#8fbf9c;--on-accent:#07110b;--accent-2:#c9a074;
   --ok:#5fc48a;--warn:#e2b25a;--bad:#ef7a6e;
   --display:'Playfair Display',Georgia,'Times New Roman',serif;
   --body:'Geist',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
@@ -21,15 +21,15 @@
   --r:14px;color-scheme:dark;
 }
 [data-mode="dark"][data-look="harvest"]{--accent:#e5b766}
-[data-mode="dark"][data-look="oxblood"]{--accent:#cf6a55}
-[data-mode="dark"][data-ground="walnut"]{--bg:#1a120c;--paper:#2b1e14;--paper-edge:#1a120c;--on-accent:#1a120c}
+[data-mode="dark"][data-look="lake"]{--accent:#8cb6e6}
+[data-mode="dark"][data-ground="espresso"]{--bg:#100906;--paper:#21150d;--paper-edge:#100906;--on-accent:#100906}
 [data-mode="light"]{
   --bg:#f3eee3;--surface:#fbf8f1;--surface-2:#e9e2d3;--line:rgba(58,40,24,.12);--line-2:rgba(58,40,24,.22);
   --text:#211a13;--paper:#f1e7d0;--paper-edge:#d8c4a0;--muted:#5c5145;--faint:#8a7f70;--accent:#1d4a32;--on-accent:#f7f2e7;--accent-2:#6b4423;
   --ok:#1f7a48;--warn:#94600b;--bad:#b3352a;color-scheme:light;
 }
 [data-mode="light"][data-look="harvest"]{--accent:#93600f}
-[data-mode="light"][data-look="oxblood"]{--accent:#7a2a24}
+[data-mode="light"][data-look="lake"]{--accent:#1f4c82}
 
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -63,7 +63,7 @@ em{font-family:var(--display);font-style:italic;font-size:1.08em}
 .looks{display:flex;gap:6px}
 .looks button{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;outline-offset:2px}
 .looks button[aria-pressed="true"]{border-color:var(--text)}
-.looks [data-l="sequoia"]{background:#1d4a32}.looks [data-l="harvest"]{background:#c99a45}.looks [data-l="oxblood"]{background:#7a2a24}
+.looks [data-l="sequoia"]{background:#1d4a32}.looks [data-l="harvest"]{background:#c99a45}.looks [data-l="lake"]{background:#2b5f9e}
 .modes{display:inline-flex;border:1px solid var(--line-2);border-radius:99px;overflow:hidden}
 .modes button{font:inherit;font-size:.78rem;padding:0 11px;min-height:34px;border:0;background:transparent;color:var(--muted);cursor:pointer}
 .modes button[aria-pressed="true"]{background:var(--surface-2);color:var(--text);font-weight:500}
@@ -396,9 +396,9 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
       <div class="looks" role="group" aria-label="Look">
         <button type="button" data-l="sequoia" aria-label="Sequoia green accent" title="Sequoia" aria-pressed="true"></button>
         <button type="button" data-l="harvest" aria-label="Harvest gold accent" title="Harvest" aria-pressed="false"></button>
-        <button type="button" data-l="oxblood" aria-label="Oxblood red accent" title="Oxblood" aria-pressed="false"></button>
+        <button type="button" data-l="lake" aria-label="Lake blue accent" title="Lake" aria-pressed="false"></button>
       </div>
-      <div class="modes" role="group" aria-label="Theme"><button type="button" data-m="light" aria-pressed="true">Light</button><button type="button" data-m="forest" aria-pressed="false" title="Dark, forest green">Forest</button><button type="button" data-m="walnut" aria-pressed="false" title="Dark, walnut brown">Walnut</button></div>
+      <div class="modes" role="group" aria-label="Theme"><button type="button" data-m="light" aria-pressed="true">Light</button><button type="button" data-m="forest" aria-pressed="false" title="Dark, forest green">Forest</button><button type="button" data-m="espresso" aria-pressed="false" title="Dark, deep brown">Espresso</button></div>
     </div>
   </div>
 </header>
