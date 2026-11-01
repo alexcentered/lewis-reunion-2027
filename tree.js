@@ -1,17 +1,17 @@
 /* Lewis–Antone family tree, folded into the reunion site's "Our Family" tab.
-   Three views, tied to the site's look switcher (the three color dots):
-     Sequoia → Ledger (generations in rows), Harvest → Rings (a full circle of growth rings), Slate → Columns (browse one family at a time).
+   Three views: Ledger (generations in rows), Rings (a full circle of growth rings), Columns (browse one family at a time).
+   Colors come from the site's global palette (accent dots and Light / Forest / Walnut theme), so every view works with every color.
    People arrive from the backend only after the family code is accepted. */
 (() => {
   'use strict';
   const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
   if (!window.FamilyTree || !$('#ftStage')) return;
   const el = FamilyTree.el;
-  const VIEW_OF_LOOK = { sequoia: 'ledger', harvest: 'rings', slate: 'columns' };
-  const LOOK_OF_VIEW = { ledger: 'sequoia', rings: 'harvest', columns: 'slate' };
+  const VIEWS = ['ledger', 'rings', 'columns'];
+  const saved = (() => { try { return localStorage.getItem('lr-treeview'); } catch (e) { return null; } })();
 
   let people = new Map(), T = null, R = null, lines = [], activeLine = null, notes = [];
-  let view = VIEW_OF_LOOK[document.documentElement.dataset.look] || 'ledger';
+  let view = VIEWS.includes(saved) ? saved : 'ledger';
   let colPath = [];   // columns view: [lineIndex, childId, grandchildId, ...]
 
   function ensure() {
@@ -55,7 +55,6 @@
     renderDrawer(); syncFocus();
     if (!quiet) { const s = T.selected; if (s && v !== 'columns') requestAnimationFrame(() => T.centerOn(s)); }
   }
-  function onLook(look) { const v = VIEW_OF_LOOK[look]; if (v && v !== view) applyView(v); }
 
   function refit() {
     if (!T || !people.size || view === 'columns') return;
@@ -210,12 +209,10 @@
       $$('[data-ft-orient]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
       T.setOrient(b.dataset.ftOrient);
     });
-    // the view buttons switch the whole site's look, which switches the view
     $$('[data-ft-view]').forEach(b => b.onclick = () => {
-      const look = LOOK_OF_VIEW[b.dataset.ftView];
-      if (window.LRSetLook) window.LRSetLook(look); else applyView(b.dataset.ftView);
+      applyView(b.dataset.ftView);
+      try { localStorage.setItem('lr-treeview', b.dataset.ftView); } catch (e) {}
     });
-    addEventListener('lr-look', e => onLook(e.detail));
     $('#ftZin').onclick = () => T.zoom(1.25); $('#ftZout').onclick = () => T.zoom(.8); $('#ftFit').onclick = () => T.fit();
     const q = $('#ftQ'); let hits = [], ix = -1;
     q.addEventListener('input', () => {

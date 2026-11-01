@@ -21,14 +21,15 @@
   --r:14px;color-scheme:dark;
 }
 [data-mode="dark"][data-look="harvest"]{--accent:#e5b766}
-[data-mode="dark"][data-look="slate"]{--accent:#aec1d4}
+[data-mode="dark"][data-look="oxblood"]{--accent:#cf6a55}
+[data-mode="dark"][data-ground="walnut"]{--bg:#1a120c;--paper:#2b1e14;--paper-edge:#1a120c;--on-accent:#1a120c}
 [data-mode="light"]{
   --bg:#f3eee3;--surface:#fbf8f1;--surface-2:#e9e2d3;--line:rgba(58,40,24,.12);--line-2:rgba(58,40,24,.22);
   --text:#211a13;--paper:#f1e7d0;--paper-edge:#d8c4a0;--muted:#5c5145;--faint:#8a7f70;--accent:#1d4a32;--on-accent:#f7f2e7;--accent-2:#6b4423;
   --ok:#1f7a48;--warn:#94600b;--bad:#b3352a;color-scheme:light;
 }
 [data-mode="light"][data-look="harvest"]{--accent:#93600f}
-[data-mode="light"][data-look="slate"]{--accent:#3b5a75}
+[data-mode="light"][data-look="oxblood"]{--accent:#7a2a24}
 
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -62,8 +63,10 @@ em{font-family:var(--display);font-style:italic;font-size:1.08em}
 .looks{display:flex;gap:6px}
 .looks button{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;outline-offset:2px}
 .looks button[aria-pressed="true"]{border-color:var(--text)}
-.looks [data-l="sequoia"]{background:#1d4a32}.looks [data-l="harvest"]{background:#c99a45}.looks [data-l="slate"]{background:#7f97ad}
-.mode{font:inherit;font-size:.82rem;border:1px solid var(--line-2);background:transparent;color:var(--text);border-radius:99px;padding:6px 12px;cursor:pointer;min-height:34px}
+.looks [data-l="sequoia"]{background:#1d4a32}.looks [data-l="harvest"]{background:#c99a45}.looks [data-l="oxblood"]{background:#7a2a24}
+.modes{display:inline-flex;border:1px solid var(--line-2);border-radius:99px;overflow:hidden}
+.modes button{font:inherit;font-size:.78rem;padding:0 11px;min-height:34px;border:0;background:transparent;color:var(--muted);cursor:pointer}
+.modes button[aria-pressed="true"]{background:var(--surface-2);color:var(--text);font-weight:500}
 
 /* buttons, fields */
 .btn{font:500 .95rem var(--body);display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 20px;border-radius:99px;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);cursor:pointer;text-decoration:none;transition:filter .15s}
@@ -333,7 +336,6 @@ td.r,th.r{text-align:right}
 .ft-notes ol{margin:12px 0 0;padding-left:20px;color:var(--ink-soft);font-size:.86rem}
 .ft-notes li{padding:8px 0;border-top:1px solid var(--line)}
 .ft-notes li b{color:var(--ink);font-weight:600}
-.ft-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:0}
 .ft-seg button{display:inline-flex;align-items:center}
 /* Ledger: printed register, square cards, serif names, no dot grid */
 .ft[data-ftview="ledger"] .ft-stage{background-image:none}
@@ -392,11 +394,11 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
     </nav>
     <div class="prefs">
       <div class="looks" role="group" aria-label="Look">
-        <button type="button" data-l="sequoia" aria-label="Sequoia look, ledger family tree" title="Sequoia · Ledger tree" aria-pressed="true"></button>
-        <button type="button" data-l="harvest" aria-label="Harvest look, rings family tree" title="Harvest · Rings tree" aria-pressed="false"></button>
-        <button type="button" data-l="slate" aria-label="Slate look, columns family tree" title="Slate · Columns tree" aria-pressed="false"></button>
+        <button type="button" data-l="sequoia" aria-label="Sequoia green accent" title="Sequoia" aria-pressed="true"></button>
+        <button type="button" data-l="harvest" aria-label="Harvest gold accent" title="Harvest" aria-pressed="false"></button>
+        <button type="button" data-l="oxblood" aria-label="Oxblood red accent" title="Oxblood" aria-pressed="false"></button>
       </div>
-      <button type="button" class="mode" id="modeBtn">Light</button>
+      <div class="modes" role="group" aria-label="Theme"><button type="button" data-m="light" aria-pressed="true">Light</button><button type="button" data-m="forest" aria-pressed="false" title="Dark, forest green">Forest</button><button type="button" data-m="walnut" aria-pressed="false" title="Dark, walnut brown">Walnut</button></div>
     </div>
   </div>
 </header>
@@ -617,9 +619,9 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
             <label class="ft-search" for="ftQ"><span aria-hidden="true">⌕</span><input id="ftQ" type="search" placeholder="Find a name, nickname, place or year" autocomplete="off"><span class="ft-count" id="ftCount"></span><kbd>/</kbd></label>
             <button class="ft-btn" type="button" id="ftFocusBtn" aria-pressed="false" title="Show only the selected person's line">Focus line</button>
             <div class="ft-seg" role="group" aria-label="Tree style">
-              <button type="button" data-ft-view="ledger" aria-pressed="true"><i class="ft-dot" style="background:#1d4a32"></i>Ledger</button>
-              <button type="button" data-ft-view="rings" aria-pressed="false"><i class="ft-dot" style="background:#c99a45"></i>Rings</button>
-              <button type="button" data-ft-view="columns" aria-pressed="false"><i class="ft-dot" style="background:#7f97ad"></i>Columns</button>
+              <button type="button" data-ft-view="ledger" aria-pressed="true">Ledger</button>
+              <button type="button" data-ft-view="rings" aria-pressed="false">Rings</button>
+              <button type="button" data-ft-view="columns" aria-pressed="false">Columns</button>
             </div>
             <div class="ft-seg" role="group" aria-label="Tree direction" id="ftOrient" hidden>
               <button type="button" data-ft-orient="down" aria-pressed="true">Elders on top</button>

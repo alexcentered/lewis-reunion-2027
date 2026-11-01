@@ -22,9 +22,18 @@ const API = (window.LR && window.LR.apiUrl) || '';
 const root = document.documentElement;
 function setLook(l){ root.dataset.look = l; $$('.looks button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.l === l))); store.set('lr-look', l); drawRings(true); dispatchEvent(new CustomEvent('lr-look', { detail: l })); }
 window.LRSetLook = setLook;
-function setMode(m, save){ root.dataset.mode = m; const b = $('#modeBtn'); b.textContent = m === 'dark' ? 'Light' : 'Dark'; b.setAttribute('aria-label', 'Switch to ' + (m === 'dark' ? 'light' : 'dark') + ' mode'); if (save) store.set('lr-theme', m); drawRings(true); }
+const LOOKS = ['sequoia', 'harvest', 'oxblood'], MODES = ['light', 'forest', 'walnut'];
+function setMode(m, save){
+  if (m === 'dark') m = 'forest';
+  if (!MODES.includes(m)) m = 'light';
+  root.dataset.mode = m === 'light' ? 'light' : 'dark';
+  root.dataset.ground = m === 'walnut' ? 'walnut' : 'forest';
+  $$('.modes button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === m)));
+  if (save) store.set('lr-theme', m);
+  drawRings(true);
+}
 $$('.looks button').forEach(b => b.addEventListener('click', () => setLook(b.dataset.l)));
-$('#modeBtn').addEventListener('click', () => setMode(root.dataset.mode === 'dark' ? 'light' : 'dark', true));
+$$('.modes button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.m, true)));
 
 /* ---------- tree-ring canvas ---------- */
 const cv = $('#rings'), ctx = cv && cv.getContext('2d');
@@ -397,7 +406,7 @@ function setBanner(text){
 }
 
 /* ---------- boot ---------- */
-setLook(store.get('lr-look') || 'sequoia');
+setLook(LOOKS.includes(store.get('lr-look')) ? store.get('lr-look') : 'sequoia');
 setMode(store.get('lr-theme') || 'light');
 renderAttendees(); renderInfo(); renderMe(); renderFamily(); renderGates(); route(); setBanner();
 document.addEventListener('visibilitychange', () => { if (!document.hidden && currentView === 'home') drawRings(false); });
