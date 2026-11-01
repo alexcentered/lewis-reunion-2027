@@ -1,5 +1,5 @@
 /* Lewis–Antone family tree, folded into the reunion site's "Our Family" tab.
-   Three views: Ledger (generations in rows), Rings (a full circle of growth rings), Columns (browse one family at a time).
+   Three views: Rings (a full circle of growth rings), Columns (browse one family at a time), Ledger (an indented family register that scrolls down the page).
    Colors come from the site's global palette (accent dots and Light / Forest / Espresso theme), so every view works with every color.
    People arrive from the backend only after the family code is accepted. */
 (() => {
@@ -7,18 +7,27 @@
   const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
   if (!window.FamilyTree || !$('#ftStage')) return;
   const el = FamilyTree.el;
-  const VIEWS = ['ledger', 'rings', 'columns'];
-  const saved = (() => { try { return localStorage.getItem('lr-treeview'); } catch (e) { return null; } })();
+  const VIEWS = ['rings', 'columns', 'ledger'];
+  const saved = (() => { try { return localStorage.getItem('lr-treeview2'); } catch (e) { return null; } })();
 
   let people = new Map(), T = null, R = null, lines = [], activeLine = null, notes = [];
-  let view = VIEWS.includes(saved) ? saved : 'ledger';
+  let view = VIEWS.includes(saved) ? saved : 'rings';
   let colPath = [];   // columns view: [lineIndex, childId, grandchildId, ...]
+  let open = new Set(); // ledger view: which founding lines ('L0'…) and people are expanded
+  let hitSet = new Set();
+  const centerable = () => view === 'rings';
 
   function ensure() {
     if (T) return;
     T = FamilyTree.create({
-      stage: $('#ftStage'), svg: $('#ftSvg'), mode: view === 'rings' ? 'tree' : 'chart',
-      onSelect: id => { if (view === 'columns' && id) pathTo(id); renderDrawer(); syncFocus(); if (view === 'columns') renderColumns(); },
+      stage: $('#ftStage'), svg: $('#ftSvg'), mode: 'tree',
+      onSelect: id => {
+        if (view === 'columns' && id) pathTo(id);
+        if (view === 'ledger' && id) openTo(id);
+        renderDrawer(); syncFocus();
+        if (view === 'columns') renderColumns();
+        if (view === 'ledger') renderLedger(true);
+      },
       onZoom: k => { $('#ftZoom').textContent = Math.round(k * 100) + '%'; }
     });
     T.setCrown({ span: 360, trunk: false });
@@ -35,8 +44,10 @@
     T.setPeople(people);
     R = T.rel;
     $('#ftEmpty').hidden = people.size > 0;
+    descCache.clear();
     buildLines(); renderStats(); renderNotes();
     colPath = lines.length ? [0] : [];
+    open = new Set(lines.map((_, i) => 'L' + i));
     applyView(view, true);
   }
 
@@ -45,19 +56,21 @@
     view = v;
     const ft = $('#ft'); ft.dataset.ftview = v;
     $$('[data-ft-view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ftView === v)));
-    $('#ftOrient').hidden = v !== 'ledger';
-    $('#ftFocusBtn').hidden = v === 'columns';
-    $('#ftStage').hidden = v === 'columns';
+    $('#ftFocusBtn').hidden = v !== 'rings';
+    $('#ftStage').hidden = v !== 'rings';
     $('#ftCols').hidden = v !== 'columns';
+    $('#ftLedger').hidden = v !== 'ledger';
     if (!T) return;
-    if (v === 'columns') { if (T.focus) T.setFocus(false); if (T.selected) pathTo(T.selected); renderColumns(); }
-    else if (people.size) { T.setMode(v === 'rings' ? 'tree' : 'chart'); refit(); }
+    if (v !== 'rings' && T.focus) T.setFocus(false);
+    if (v === 'columns') { if (T.selected) pathTo(T.selected); renderColumns(); }
+    else if (v === 'ledger') { if (T.selected) openTo(T.selected); renderLedger(true); }
+    else if (people.size) refit();
     renderDrawer(); syncFocus();
-    if (!quiet) { const s = T.selected; if (s && v !== 'columns') requestAnimationFrame(() => T.centerOn(s)); }
+    if (!quiet) { const s = T.selected; if (s && v === 'rings') requestAnimationFrame(() => T.centerOn(s)); }
   }
 
   function refit() {
-    if (!T || !people.size || view === 'columns') return;
+    if (!T || !people.size || view !== 'rings') return;
     requestAnimationFrame(() => { if ($('#ftStage').getBoundingClientRect().width) T.fit(); });
   }
 
@@ -92,6 +105,10 @@
     activeLine = i;
     lines.forEach((ln, j) => ln.chip.setAttribute('aria-pressed', String(j === i)));
     if (view === 'columns') { if (i != null) { colPath = [i]; T.select(null); renderColumns(); } return; }
+    if (view === 'ledger') {
+      if (i != null) { open.add('L' + i); renderLedger(); const h = $(`#ftLedger [data-line="${i}"]`); if (h) h.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
+      return;
+    }
     if (i == null) { T.setDim(null); return; }
     const ln = lines[i], keep = new Set([...ln.ids, ...ln.desc]);
     for (const id of [...keep]) R.partnersOf(id).forEach(q => keep.add(q));
@@ -102,7 +119,12 @@
   /* ---------- columns view ---------- */
   const kidsOf = ids => [...new Set(ids.flatMap(id => R.childrenOf(id)))].sort(R.order);
   function pathTo(id) {
-    // walk up through blood parents to a founder, then rebuild the column path
+    const c = chainOf(id);
+    if (!c) { colPath = lines.length ? [0] : []; return; }
+    colPath = [c.li, ...(c.isFounder ? c.chain.slice(1) : c.chain)];
+  }
+  function chainOf(id) {
+    // walk up through blood parents to a founder of one of the founding lines
     let start = id;
     if (!R.parentsOf(start).length) { const blood = R.partnersOf(start).find(q => R.parentsOf(q).length); if (blood) start = blood; }
     const chain = [start]; const seen = new Set([start]);
@@ -112,10 +134,66 @@
       if (seen.has(nxt)) break; seen.add(nxt); chain.unshift(nxt); cur = nxt;
     }
     const li = lines.findIndex(ln => ln.ids.includes(chain[0]) || ln.ids.some(f => R.partnersOf(f).includes(chain[0])));
-    if (li < 0) { colPath = lines.length ? [0] : []; return; }
-    const isFounder = lines[li].ids.includes(chain[0]);
-    colPath = [li, ...(isFounder ? chain.slice(1) : chain)];
-    if (isFounder && chain.length === 1) colPath = [li];
+    if (li < 0) return null;
+    return { li, chain, isFounder: lines[li].ids.includes(chain[0]) };
+  }
+
+  /* ---------- ledger view: an indented family register, read top to bottom ---------- */
+  const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV'];
+  const descCache = new Map();
+  function descCount(id) {
+    if (descCache.has(id)) return descCache.get(id);
+    const seen = new Set(); const w = x => R.childrenOf(x).forEach(c => { if (!seen.has(c)) { seen.add(c); w(c); } }); w(id);
+    descCache.set(id, seen.size); return seen.size;
+  }
+  function openTo(id) {
+    const c = chainOf(id); if (!c) return;
+    open.add('L' + c.li);
+    // open every ancestor so the person is visible (not the person themself)
+    const anc = c.isFounder ? c.chain.slice(1) : c.chain;
+    anc.slice(0, -1).forEach(a => open.add(a));
+    if (!R.parentsOf(id).length && anc.length) open.add(anc[anc.length - 1]);
+  }
+  function renderLedger(scrollToSel) {
+    const box = $('#ftLedger'); if (!box || view !== 'ledger') return;
+    const keep = box.scrollTop;
+    box.replaceChildren();
+    if (!lines.length) return;
+    const sel = T.selected, seen = new Set();
+    box.append(el('div', { class: 'lg-bar' },
+      el('span', { class: 'ft-label', text: 'Family register · read top to bottom' }),
+      el('span', { class: 'lg-bar-btns' },
+        el('button', { class: 'ft-btn', type: 'button', text: 'Expand all', onclick: () => { lines.forEach((_, i) => open.add('L' + i)); for (const id of people.keys()) if (R.childrenOf(id).length) open.add(id); renderLedger(); } }),
+        el('button', { class: 'ft-btn', type: 'button', text: 'Collapse all', onclick: () => { open = new Set(); renderLedger(); box.scrollTop = 0; } }))));
+    const toggle = key => { open.has(key) ? open.delete(key) : open.add(key); renderLedger(); };
+    const person = (id, depth) => {
+      const p = people.get(id), kids = R.childrenOf(id), isOpen = open.has(id), again = seen.has(id);
+      seen.add(id);
+      const partners = R.partnersOf(id).map(q => people.get(q).name);
+      const n = again ? 0 : descCount(id);
+      const row = el('div', { class: 'lg-row' + (id === sel ? ' sel' : '') + (hitSet.has(id) ? ' hit' : ''), 'data-id': id, style: { '--d': String(depth) } },
+        kids.length && !again
+          ? el('button', { class: 'lg-tog', type: 'button', 'aria-expanded': String(isOpen), 'aria-label': (isOpen ? 'Hide' : 'Show') + ' children of ' + p.name, onclick: () => toggle(id) })
+          : el('span', { class: 'lg-tog lg-leaf', 'aria-hidden': 'true' }),
+        el('button', { class: 'lg-name', type: 'button', onclick: () => T.select(id) },
+          el('b', { text: p.name }), p.nickname ? el('i', { text: ` “${p.nickname}”` }) : null),
+        partners.length ? el('span', { class: 'lg-partner', text: '& ' + partners.join(', ') }) : null,
+        el('span', { class: 'lg-meta' }, again ? 'listed above' : [p.born, n ? `${n} desc.` : ''].filter(Boolean).join(' · ')),
+        el('span', { class: 'lg-gen', text: ROMAN[T.genOf(id)] || String(T.genOf(id) + 1) }));
+      box.append(row);
+      if (isOpen && !again) kids.forEach(k => person(k, depth + 1));
+    };
+    lines.forEach((ln, i) => {
+      const isOpen = open.has('L' + i);
+      box.append(el('div', { class: 'lg-line', 'data-line': String(i) },
+        el('button', { class: 'lg-tog', type: 'button', 'aria-expanded': String(isOpen), 'aria-label': (isOpen ? 'Hide' : 'Show') + ' the ' + ln.label + ' line', onclick: () => toggle('L' + i) }),
+        el('button', { class: 'lg-name', type: 'button', onclick: () => T.select(ln.ids[0]) }, el('span', { class: 'lg-num', text: String(i + 1).padStart(2, '0') }), el('b', { text: ln.label })),
+        el('span', { class: 'lg-meta', text: `${ln.desc.size} descendants` })));
+      ln.ids.forEach(f => seen.add(f));
+      if (isOpen) kidsOf(ln.ids).forEach(k => person(k, 1));
+    });
+    box.scrollTop = keep;
+    if (scrollToSel && sel) requestAnimationFrame(() => { const r = box.querySelector(`.lg-row[data-id="${CSS.escape(sel)}"]`); if (r) r.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
   }
   function row(id, { selected, onPath, count, onclick }) {
     const p = people.get(id);
@@ -155,7 +233,7 @@
     list.replaceChildren(...notes.filter(n => n && (n.title || n.note)).map(n => el('li', {}, el('b', { text: n.title || '' }), ' ' + (n.note || ''))));
     box.hidden = !list.children.length;
   }
-  const link = id => el('button', { class: 'ft-link', type: 'button', onclick: () => T.select(id, { center: view !== 'columns' }), text: people.get(id).name });
+  const link = id => el('button', { class: 'ft-link', type: 'button', onclick: () => T.select(id, { center: centerable() }), text: people.get(id).name });
   const links = ids => { const o = []; ids.forEach((id, i) => { if (i) o.push(', '); o.push(link(id)); }); return o.length ? o : ['—']; };
 
   function renderDrawer() {
@@ -165,13 +243,14 @@
     if (!id || !people.has(id)) {
       const tips = view === 'columns'
         ? ['Pick a founding line, then a name, to open the next generation.', 'Press / to search. Press Enter to jump to a match.']
+        : view === 'ledger' ? ['Use the arrows to open or close a family.', 'Select a name to read their record.', 'Press / to search. Press Enter to jump to a match.']
         : ['Drag to move. Scroll, pinch or use the buttons to zoom.', 'Press / to search. Press Enter to step through matches.', 'Focus line shows one person’s ancestors, descendants and partners.'];
       add(el('div', { class: 'ft-label', text: 'How to explore' }), el('h3', { text: 'Select a person' }),
         el('div', { class: 'ft-hint' },
           el('p', { text: 'Every name is one relative from the family tree poster. Select one to read their record and trace their line.' }),
           el('ul', {}, tips.map(t => el('li', { text: t }))),
           lines.length ? el('div', { class: 'ft-label', style: { 'margin-top': '18px' }, text: 'Start with the founders' }) : null,
-          el('div', { class: 'ft-flist' }, lines.map((ln, i) => el('button', { type: 'button', onclick: () => { setLine(i); T.select(ln.ids[0], { center: view !== 'columns' }); } },
+          el('div', { class: 'ft-flist' }, lines.map((ln, i) => el('button', { type: 'button', onclick: () => { setLine(i); T.select(ln.ids[0], { center: centerable() }); } },
             el('span', { text: ln.label }), el('small', { text: ln.desc.size + ' desc.' }))))));
       return;
     }
@@ -190,14 +269,14 @@
         grand.length ? el('dt', { text: 'Grandkids' }) : null, grand.length ? el('dd', {}, links(grand)) : null),
       p.story ? el('div', { class: 'ft-note' }, el('h4', { text: 'From the poster' }), el('p', { text: p.story })) : null,
       el('div', { class: 'ft-actions' },
-        view !== 'columns' ? el('button', { class: 'ft-btn', type: 'button', 'aria-pressed': String(T.focus), onclick: () => { T.setFocus(!T.focus); renderDrawer(); syncFocus(); }, text: T.focus ? 'Show whole tree' : 'Focus this line' }) : null,
-        view !== 'columns' ? el('button', { class: 'ft-btn', type: 'button', onclick: () => T.centerOn(id), text: 'Center' }) : null,
+        view === 'rings' ? el('button', { class: 'ft-btn', type: 'button', 'aria-pressed': String(T.focus), onclick: () => { T.setFocus(!T.focus); renderDrawer(); syncFocus(); }, text: T.focus ? 'Show whole tree' : 'Focus this line' }) : null,
+        view === 'rings' ? el('button', { class: 'ft-btn', type: 'button', onclick: () => T.centerOn(id), text: 'Center' }) : null,
         el('a', { class: 'ft-btn', href: '#family', onclick: () => { const s = $('#st-about'); if (s) { s.value = p.name; const dd = s.closest('details'); if (dd) dd.open = true; setTimeout(() => s.closest('.section').scrollIntoView({ behavior: 'smooth' }), 30); } }, text: 'Share a story about them' })));
   }
   function syncFocus() {
     if (!T) return;
     $('#ftFocusBtn').setAttribute('aria-pressed', String(T.focus));
-    $('#ftFocusBar').hidden = !T.focus || view === 'columns';
+    $('#ftFocusBar').hidden = !T.focus || view !== 'rings';
     if (T.focus) $('#ftFocusText').textContent = T.selected && people.has(T.selected) ? `Showing the line of ${people.get(T.selected).name} · ${T.shown.size} people` : 'Select a person to focus on their line';
   }
 
@@ -205,22 +284,19 @@
   function wire() {
     $('#ftFocusBtn').onclick = () => { T.setFocus(!T.focus); renderDrawer(); syncFocus(); };
     $('#ftFocusExit').onclick = () => { T.setFocus(false); renderDrawer(); syncFocus(); };
-    $$('[data-ft-orient]').forEach(b => b.onclick = () => {
-      $$('[data-ft-orient]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-      T.setOrient(b.dataset.ftOrient);
-    });
     $$('[data-ft-view]').forEach(b => b.onclick = () => {
       applyView(b.dataset.ftView);
-      try { localStorage.setItem('lr-treeview', b.dataset.ftView); } catch (e) {}
+      try { localStorage.setItem('lr-treeview2', b.dataset.ftView); } catch (e) {}
     });
     $('#ftZin').onclick = () => T.zoom(1.25); $('#ftZout').onclick = () => T.zoom(.8); $('#ftFit').onclick = () => T.fit();
     const q = $('#ftQ'); let hits = [], ix = -1;
     q.addEventListener('input', () => {
       T.setQuery(q.value); hits = q.value.trim() ? T.matches() : []; ix = -1;
       $('#ftCount').textContent = q.value.trim() ? `${hits.length} found` : '';
+      hitSet = new Set(hits); if (view === 'ledger') renderLedger();
     });
     q.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); if (hits.length) { ix = (ix + 1) % hits.length; T.select(hits[ix], { center: view !== 'columns' }); $('#ftCount').textContent = `${ix + 1} of ${hits.length}`; } }
+      if (e.key === 'Enter') { e.preventDefault(); if (hits.length) { ix = (ix + 1) % hits.length; T.select(hits[ix], { center: centerable() }); $('#ftCount').textContent = `${ix + 1} of ${hits.length}`; } }
       if (e.key === 'Escape') { q.value = ''; q.dispatchEvent(new Event('input')); }
     });
     document.addEventListener('keydown', e => {
