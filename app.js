@@ -96,11 +96,13 @@ function route(){
   $$('.nav a').forEach(a => { if (a.getAttribute('href') === '#' + v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   window.scrollTo(0, 0);
   if (v === 'home') drawRings(false);
+  if (v === 'family' && window.LRTree) LRTree.refit();
 }
 addEventListener('hashchange', route);
 $$('.subnav button').forEach(b => b.addEventListener('click', () => {
   $$('.subnav button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
   $$('[data-subview]').forEach(d => d.hidden = d.dataset.subview !== b.dataset.sub);
+  if (b.dataset.sub === 'tree' && window.LRTree) LRTree.refit();
 }));
 
 /* ---------- family-code gate ---------- */
@@ -376,6 +378,7 @@ async function loadFamily(quiet){
     else if (d.error === 'code'){ S.family = null; store.set('lr-code', null); }
   } catch (e) { if (!quiet) setBanner('We could not reach the reunion server just now. Some sections will appear when the connection returns.'); }
   renderGates(); renderFamily();
+  if (S.family && window.LRTree){ const sig = (S.family.tree || []).length + ':' + JSON.stringify((S.family.tree || []).slice(-1)); if (sig !== S.treeSig){ S.treeSig = sig; LRTree.load(S.family.tree || [], S.family.treeNotes || []); } }
   if (S.family && S.token && !S.mine) loadMine();
 }
 async function loadMine(){

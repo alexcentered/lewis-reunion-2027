@@ -1,0 +1,159 @@
+/* Lewis–Antone family tree, folded into the reunion site's "Our Family" tab.
+   Uses tree-engine.js (FamilyTree). People arrive from the backend only after the family code is accepted. */
+(() => {
+  'use strict';
+  const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+  if (!window.FamilyTree || !$('#ftStage')) return;
+  const el = FamilyTree.el;
+
+  let people = new Map(), T = null, R = null, lines = [], activeLine = null, notes = [];
+
+  function ensure() {
+    if (T) return;
+    T = FamilyTree.create({
+      stage: $('#ftStage'), svg: $('#ftSvg'),
+      onSelect: () => { renderDrawer(); syncFocus(); },
+      onZoom: k => { $('#ftZoom').textContent = Math.round(k * 100) + '%'; }
+    });
+    wire();
+  }
+
+  function load(rows, noteRows) {
+    ensure();
+    people = new Map((rows || []).filter(p => p && p.id && p.name).map(p => [String(p.id), {
+      id: String(p.id), name: String(p.name), nickname: p.nickname || '', born: p.born || '', place: p.place || '', story: p.story || '',
+      parents: (p.parents || []).map(String), partners: (p.partners || []).map(String), createdAt: Number(p.createdAt) || 0
+    }]));
+    notes = noteRows || [];
+    T.setPeople(people);
+    R = T.rel;
+    $('#ftEmpty').hidden = people.size > 0;
+    buildLines(); renderStats(); renderNotes(); renderDrawer(); syncFocus();
+    refit();
+  }
+
+  function refit() {
+    if (!T || !people.size) return;
+    requestAnimationFrame(() => { if ($('#ftStage').getBoundingClientRect().width) T.fit(); });
+  }
+
+  function renderStats() {
+    const pairs = new Set();
+    for (const [id] of people) for (const q of R.partnersOf(id)) pairs.add([id, q].sort().join('|'));
+    $('#ftPeople').textContent = people.size;
+    $('#ftGens').textContent = people.size ? T.rows : 0;
+    $('#ftCouples').textContent = pairs.size;
+  }
+
+  function buildLines() {
+    const founders = [...people.keys()].filter(id => !R.parentsOf(id).length && R.childrenOf(id).length && !R.partnersOf(id).some(q => R.parentsOf(q).length)).sort(R.order);
+    lines = []; const used = new Set();
+    for (const f of founders) {
+      if (used.has(f)) continue;
+      const couple = [f, ...R.partnersOf(f).filter(q => founders.includes(q))];
+      couple.forEach(c => used.add(c));
+      const desc = new Set(); const walk = x => R.childrenOf(x).forEach(c => { if (!desc.has(c)) { desc.add(c); walk(c); } });
+      couple.forEach(walk);
+      lines.push({ ids: couple, desc, label: couple.map(id => people.get(id).name).join(' & ') });
+    }
+    const box = $('#ftLines'); box.replaceChildren(el('span', { class: 'ft-label', text: 'Founding lines' }));
+    lines.forEach((ln, i) => {
+      ln.chip = el('button', { class: 'ft-chip', type: 'button', 'aria-pressed': 'false', onclick: () => setLine(activeLine === i ? null : i) },
+        ln.label, el('span', { class: 'n', text: String(ln.desc.size) }));
+      box.append(ln.chip);
+    });
+    activeLine = null;
+  }
+  function setLine(i) {
+    activeLine = i;
+    lines.forEach((ln, j) => ln.chip.setAttribute('aria-pressed', String(j === i)));
+    if (i == null) { T.setDim(null); return; }
+    const ln = lines[i], keep = new Set([...ln.ids, ...ln.desc]);
+    for (const id of [...keep]) R.partnersOf(id).forEach(q => keep.add(q));
+    T.setDim(p => !keep.has(p.id));
+    T.centerOn(ln.ids[0], .6);
+  }
+
+  function renderNotes() {
+    const box = $('#ftNotesWrap'), list = $('#ftNotes');
+    list.replaceChildren(...notes.filter(n => n && (n.title || n.note)).map(n => el('li', {}, el('b', { text: n.title || '' }), ' ' + (n.note || ''))));
+    box.hidden = !list.children.length;
+  }
+
+  const link = id => el('button', { class: 'ft-link', type: 'button', onclick: () => T.select(id, { center: true }), text: people.get(id).name });
+  const links = ids => { const o = []; ids.forEach((id, i) => { if (i) o.push(', '); o.push(link(id)); }); return o.length ? o : ['—']; };
+
+  function renderDrawer() {
+    const d = $('#ftDrawer'); d.replaceChildren();
+    const add = (...k) => d.append(...k.filter(x => x != null));
+    const id = T && T.selected;
+    if (!id || !people.has(id)) {
+      add(el('div', { class: 'ft-label', text: 'How to explore' }), el('h3', { text: 'Select a person' }),
+        el('div', { class: 'ft-hint' },
+          el('p', { text: 'Every card is one relative from the family tree poster. Select a card to read their record and light up their line, from ancestors down to descendants.' }),
+          el('ul', {},
+            el('li', { text: 'Drag to move. Scroll, pinch or use the buttons to zoom.' }),
+            el('li', { text: 'Press / to search. Press Enter to step through matches.' }),
+            el('li', { text: 'Focus line shows one person’s ancestors, descendants and partners.' })),
+          lines.length ? el('div', { class: 'ft-label', style: { 'margin-top': '18px' }, text: 'Start with the founders' }) : null,
+          el('div', { class: 'ft-flist' }, lines.map((ln, i) => el('button', { type: 'button', onclick: () => { setLine(i); T.select(ln.ids[0], { center: true }); } },
+            el('span', { text: ln.label }), el('small', { text: ln.desc.size + ' desc.' }))))));
+      return;
+    }
+    const p = people.get(id), kids = R.childrenOf(id), grand = [...new Set(kids.flatMap(R.childrenOf))];
+    let all = 0; { const seen = new Set(); const w = x => R.childrenOf(x).forEach(c => { if (!seen.has(c)) { seen.add(c); w(c); } }); w(id); all = seen.size; }
+    add(el('div', { class: 'ft-label', text: `Generation ${T.genOf(id) + 1}` + (all ? ` · ${all} descendant${all === 1 ? '' : 's'}` : '') }),
+      el('h3', { text: p.name }),
+      p.nickname ? el('div', { class: 'ft-nick', text: `“${p.nickname}”` }) : null,
+      el('dl', {},
+        el('dt', { text: 'Born · life' }), el('dd', { text: p.born || '—' }),
+        el('dt', { text: 'Place' }), el('dd', { text: p.place || '—' }),
+        el('dt', { text: 'Parents' }), el('dd', {}, links(R.parentsOf(id))),
+        el('dt', { text: 'Partners' }), el('dd', {}, links(R.partnersOf(id))),
+        el('dt', { text: 'Siblings' }), el('dd', {}, links(R.siblingsOf(id))),
+        el('dt', { text: 'Children' }), el('dd', {}, links(kids)),
+        grand.length ? el('dt', { text: 'Grandkids' }) : null, grand.length ? el('dd', {}, links(grand)) : null),
+      p.story ? el('div', { class: 'ft-note' }, el('h4', { text: 'From the poster' }), el('p', { text: p.story })) : null,
+      el('div', { class: 'ft-actions' },
+        el('button', { class: 'ft-btn', type: 'button', 'aria-pressed': String(T.focus), onclick: () => { T.setFocus(!T.focus); renderDrawer(); syncFocus(); }, text: T.focus ? 'Show whole tree' : 'Focus this line' }),
+        el('button', { class: 'ft-btn', type: 'button', onclick: () => T.centerOn(id), text: 'Center' }),
+        el('a', { class: 'ft-btn', href: '#family', onclick: () => { const s = $('#st-about'); if (s) { s.value = p.name; const d = s.closest('details'); if (d) d.open = true; setTimeout(() => s.closest('.section').scrollIntoView({ behavior: 'smooth' }), 30); } }, text: 'Share a story about them' })));
+  }
+  function syncFocus() {
+    if (!T) return;
+    $('#ftFocusBtn').setAttribute('aria-pressed', String(T.focus));
+    $('#ftFocusBar').hidden = !T.focus;
+    if (T.focus) $('#ftFocusText').textContent = T.selected && people.has(T.selected) ? `Showing the line of ${people.get(T.selected).name} · ${T.shown.size} people` : 'Select a person to focus on their line';
+  }
+
+  function wire() {
+    $('#ftFocusBtn').onclick = () => { T.setFocus(!T.focus); renderDrawer(); syncFocus(); };
+    $('#ftFocusExit').onclick = () => { T.setFocus(false); renderDrawer(); syncFocus(); };
+    $$('[data-ft-orient]').forEach(b => b.onclick = () => {
+      $$('[data-ft-orient]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+      T.setOrient(b.dataset.ftOrient);
+    });
+    $$('[data-ft-mode]').forEach(b => b.onclick = () => {
+      $$('[data-ft-mode]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+      $('#ftOrient').hidden = b.dataset.ftMode === 'tree';
+      T.setMode(b.dataset.ftMode); T.fit();
+    });
+    $('#ftZin').onclick = () => T.zoom(1.25); $('#ftZout').onclick = () => T.zoom(.8); $('#ftFit').onclick = () => T.fit();
+    const q = $('#ftQ'); let hits = [], ix = -1;
+    q.addEventListener('input', () => {
+      T.setQuery(q.value); hits = q.value.trim() ? T.matches() : []; ix = -1;
+      $('#ftCount').textContent = q.value.trim() ? `${hits.length} found` : '';
+    });
+    q.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); if (hits.length) { ix = (ix + 1) % hits.length; T.select(hits[ix], { center: true }); $('#ftCount').textContent = `${ix + 1} of ${hits.length}`; } }
+      if (e.key === 'Escape') { q.value = ''; q.dispatchEvent(new Event('input')); }
+    });
+    document.addEventListener('keydown', e => {
+      const visible = $('#ftStage').getBoundingClientRect().width > 0;
+      if (visible && e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement && document.activeElement.tagName)) { e.preventDefault(); q.focus(); }
+    });
+    addEventListener('resize', () => { if (T && !T.selected) refit(); });
+  }
+
+  window.LRTree = { load, refit };
+})();

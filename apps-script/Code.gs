@@ -9,7 +9,7 @@
  * deployment → Web app → Execute as: Me · Who has access: Anyone → copy the /exec URL.
  */
 
-const TAB = { reg: 'Registrations', pay: 'Payments', ent: 'Entries', cfg: 'Config', agenda: 'Agenda', branches: 'Branches', names: 'Names' };
+const TAB = { reg: 'Registrations', pay: 'Payments', ent: 'Entries', cfg: 'Config', agenda: 'Agenda', branches: 'Branches', names: 'Names', people: 'People', treeNotes: 'Tree notes' };
 const TYPES = ['story', 'memoriam', 'veteran', 'directory', 'photo', 'market'];
 const DAY_LABELS = { fri: 'Fri Jul 2', sat: 'Sat Jul 3', sun: 'Sun Jul 4', mon: 'Mon Jul 5' };
 const PHOTO_MAX_BYTES = 8 * 1024 * 1024;
@@ -72,9 +72,24 @@ function familyData_(cfg) {
     photo: r['Photo ID'] ? 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(r['Photo ID']) + '&sz=w1600' : ''
   })).reverse();
   return {
-    ok: true, branches, names, roll, entries,
+    ok: true, branches, names, roll, entries, tree: tree_(), treeNotes: treeNotes_(),
     pay: { zelle: String(cfg.zelle || ''), cashapp: String(cfg.cashapp || ''), venmo: String(cfg.venmo || ''), paypal: String(cfg.paypal || ''), verifier: String(cfg.verifier || '') }
   };
+}
+
+/** The family tree (People tab): one row per person; Parents and Partners hold comma-separated person IDs. */
+function tree_() {
+  let rows;
+  try { rows = rows_(TAB.people); } catch (err) { return []; }
+  const ids = s => String(s || '').split(',').map(x => x.trim()).filter(String);
+  return rows.filter(r => r.ID && r.Name).map(r => ({
+    id: String(r.ID), name: String(r.Name), nickname: str_(r.Nickname), born: str_(r.Born), place: str_(r.Place), story: str_(r.Story),
+    parents: ids(r.Parents), partners: ids(r.Partners), createdAt: Number(r.Order) || 0
+  }));
+}
+function treeNotes_() {
+  try { return rows_(TAB.treeNotes).filter(r => r.Title || r.Note).map(r => ({ title: str_(r.Title), note: str_(r.Note) })); }
+  catch (err) { return []; }
 }
 
 function mine_(p, cfg) {

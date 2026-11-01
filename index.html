@@ -247,6 +247,94 @@ td.r,th.r{text-align:right}
 .photo img,.entry img,.strip-in img{filter:grayscale(1) sepia(.45) contrast(1.06) brightness(.98);transition:filter .5s}
 .photo:hover img,.entry:hover img{filter:none}
 @media(prefers-reduced-motion:reduce){.photo img,.entry img{transition:none}}
+/* family tree tab: monochrome by design */
+.ft{--ink:#141414;--ink-soft:#5a5a5a;--ink-faint:#8c8c8c;--line:rgba(0,0,0,.10);--line-2:rgba(0,0,0,.24);--node:#ffffff;--node-sel:#ececec;--edge:rgba(0,0,0,.32);--edge-far:rgba(0,0,0,.18);--glass:#fafafa;--glass-2:#efefef;--btn:#141414;--btn-ink:#ffffff;--stage:#f7f7f7;margin-bottom:34px;color:var(--ink)}
+[data-mode="dark"] .ft{--ink:#ededed;--ink-soft:#a6a6a6;--ink-faint:#707070;--line:rgba(255,255,255,.10);--line-2:rgba(255,255,255,.24);--node:#151515;--node-sel:#262626;--edge:rgba(255,255,255,.30);--edge-far:rgba(255,255,255,.16);--glass:#111111;--glass-2:#1d1d1d;--btn:#ededed;--btn-ink:#0b0b0b;--stage:#0b0b0b}
+.ft-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px;border:1px solid var(--line);border-bottom:0;border-radius:14px 14px 0 0;background:var(--glass)}
+.ft-search{flex:1 1 240px;min-width:0;display:flex;align-items:center;gap:8px;border:1px solid var(--line-2);border-radius:9px;padding:0 10px;background:var(--node);margin:0;color:var(--ink)}
+.ft-search input{flex:1;min-width:0;border:0;background:transparent;padding:8px 0;min-height:40px;outline:none;color:var(--ink);font-size:.95rem}
+.ft-count{font:11px var(--mono);color:var(--ink-faint);white-space:nowrap}
+.ft-search kbd{font:10px var(--mono);color:var(--ink-faint);border:1px solid var(--line);border-radius:4px;padding:0 5px}
+.ft-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-2);background:var(--node);color:var(--ink);border-radius:9px;padding:0 12px;min-height:40px;cursor:pointer;font:500 .84rem var(--body);text-decoration:none;white-space:nowrap}
+.ft-btn:hover{background:var(--glass-2)}
+.ft-btn[aria-pressed="true"]{background:var(--btn);color:var(--btn-ink);border-color:var(--btn)}
+.ft-seg{display:inline-flex;border:1px solid var(--line-2);border-radius:9px;overflow:hidden}
+.ft-seg button{border:0;background:var(--node);color:var(--ink-soft);padding:0 12px;min-height:40px;cursor:pointer;font:500 .84rem var(--body)}
+.ft-seg button[aria-pressed="true"]{background:var(--btn);color:var(--btn-ink)}
+.ft-lines{display:flex;flex-wrap:wrap;gap:6px;padding:10px;border:1px solid var(--line);border-bottom:0;background:var(--glass);align-items:center}
+.ft-label{font:500 .7rem var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin-right:4px}
+.ft-chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-2);border-radius:999px;padding:4px 11px;min-height:32px;font:.8rem var(--body);background:transparent;cursor:pointer;color:var(--ink-soft)}
+.ft-chip[aria-pressed="true"]{color:var(--btn-ink);background:var(--btn);border-color:var(--btn)}
+.ft-chip .n{font-family:var(--mono);opacity:.7}
+.ft-console{display:grid;grid-template-columns:minmax(0,1fr) 340px;border:1px solid var(--line);border-radius:0 0 14px 14px;overflow:hidden;background:var(--stage)}
+.ft-stage{position:relative;height:clamp(480px,72vh,780px);min-width:0;touch-action:none;cursor:grab;overflow:hidden;background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:22px 22px}
+.ft-stage.dragging{cursor:grabbing}
+.ft-stage svg{display:block;width:100%;height:100%}
+.ft-empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-soft);pointer-events:none}
+.ft-zoom{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:6px}
+.ft-zoom button{width:40px;height:40px;border-radius:9px;border:1px solid var(--line-2);background:var(--node);color:var(--ink);cursor:pointer;font-size:16px}
+.ft-hud{position:absolute;left:12px;bottom:12px;font:11px var(--mono);color:var(--ink-faint);pointer-events:none;display:flex;gap:14px;flex-wrap:wrap;max-width:calc(100% - 70px)}
+.ft-focusbar{position:absolute;left:12px;top:12px;right:12px;display:flex;gap:8px;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:10px;font-size:.84rem;background:var(--node);border:1px solid var(--line-2)}
+.ft .edge{fill:none;stroke:var(--edge);stroke-width:1.3}
+.ft .edge.partner{stroke-width:1.6}
+.ft .edge.far{stroke:var(--edge-far);stroke-dasharray:4 5}
+.ft .edge.hl{stroke:var(--ink);stroke-width:2.2;stroke-dasharray:none}
+.ft .node{cursor:pointer}
+.ft .node rect.card{fill:var(--node);stroke:var(--line-2);stroke-width:1}
+.ft .node:hover rect.card{stroke:var(--ink)}
+.ft .node.sel rect.card{fill:var(--btn);stroke:var(--btn);stroke-width:2}
+.ft .node.sel text{fill:var(--btn-ink)}
+.ft .node.hit rect.card{stroke:var(--ink);stroke-width:2.4;stroke-dasharray:5 3}
+.ft .node text{fill:var(--ink);font-family:var(--mono)}
+.ft .node .nm{font-size:12.5px;font-weight:600}
+.ft .node .meta{font-size:10px;fill:var(--ink-soft)}
+.ft .node .tag{font-size:8.5px;letter-spacing:.14em;fill:var(--ink-soft)}
+.ft .node.sel .meta,.ft .node.sel .tag{fill:var(--btn-ink);opacity:.75}
+.ft .node .pip{fill:none;stroke:var(--ink-soft);stroke-width:1.2}
+.ft .node.sel .pip{fill:var(--btn-ink);stroke:var(--btn-ink)}
+.ft .trunk{fill:var(--glass-2);stroke:var(--line-2);stroke-width:1.5}
+.ft .root{fill:none;stroke:var(--line-2);stroke-linecap:round}
+.ft .branch{fill:none;stroke:var(--edge);stroke-linecap:round}
+.ft .branch.limb{stroke:var(--line-2)}
+.ft .branch.hl{stroke:var(--ink)}
+.ft .node .hitbox{fill:transparent}
+.ft .node .tl{font-size:12px;fill:var(--ink);font-family:var(--mono)}
+.ft .node.tnode:hover .tl{text-decoration:underline}
+.ft .node.tnode.sel .tl{font-weight:700;fill:var(--ink)}
+.ft .node.sel .bud{stroke:var(--ink);stroke-width:3;fill:var(--ink)}
+.ft .node.hit .tl{text-decoration:underline;font-weight:700}
+.ft .dim{opacity:.14}
+.ft .node,.ft .edge{transition:opacity .2s}
+.ft-drawer{border-left:1px solid var(--line);padding:20px;overflow:auto;height:clamp(480px,72vh,780px);min-width:0;background:var(--node)}
+.ft-drawer h3{font:600 1.8rem/1.08 var(--display);margin:6px 0 4px;color:var(--ink)}
+.ft-nick{color:var(--ink-soft);font-style:italic;font-family:var(--display)}
+.ft-drawer dl{display:grid;grid-template-columns:92px minmax(0,1fr);gap:8px 12px;margin:16px 0;font-size:.86rem}
+.ft-drawer dt{font:500 .66rem var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);padding-top:3px}
+.ft-drawer dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.ft-link{border:0;background:none;padding:0;cursor:pointer;color:var(--ink);font:inherit;text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:3px;text-align:left}
+.ft-link:hover{text-decoration-color:var(--ink)}
+.ft-note{border-top:1px solid var(--line);padding-top:12px}
+.ft-note h4{margin:0 0 4px;font:500 .66rem var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+.ft-note p{margin:0}
+.ft-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.ft-hint{color:var(--ink-soft);font-size:.86rem}
+.ft-hint ul{padding-left:18px;margin:10px 0}
+.ft-flist{display:grid;gap:6px;margin-top:10px}
+.ft-flist button{display:flex;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--ink);padding:10px 12px;cursor:pointer;text-align:left;font:inherit;font-size:.86rem}
+.ft-flist button:hover{background:var(--glass-2)}
+.ft-flist small{font-family:var(--mono);color:var(--ink-faint);white-space:nowrap}
+.ft-ledger{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--glass)}
+.ft-ledger div{padding:12px 16px;border-right:1px solid var(--line)}
+.ft-ledger div:last-child{border-right:0}
+.ft-ledger b{display:block;font:600 1.5rem/1.15 var(--mono);font-variant-numeric:tabular-nums;color:var(--ink)}
+.ft-ledger span{font:.66rem var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
+.ft-notes{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:14px 18px;background:var(--glass)}
+.ft-notes summary{font-family:var(--body);font-size:.92rem;color:var(--ink)}
+.ft-notes ol{margin:12px 0 0;padding-left:20px;color:var(--ink-soft);font-size:.86rem}
+.ft-notes li{padding:8px 0;border-top:1px solid var(--line)}
+.ft-notes li b{color:var(--ink);font-weight:600}
+@media(max-width:1000px){.ft-console{grid-template-columns:1fr}.ft-drawer{border-left:0;border-top:1px solid var(--line);height:auto}}
+@media(max-width:560px){.ft-ledger{grid-template-columns:repeat(2,minmax(0,1fr))}.ft-ledger div:nth-child(2){border-right:0}.ft-ledger div:nth-child(-n+2){border-bottom:1px solid var(--line)}.ft-stage{height:520px}.ft-hud{display:none}}
 footer{border-top:1px solid var(--line);padding:34px 0;color:var(--faint);font-size:.86rem}
 footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 @media(prefers-reduced-motion:reduce){.strip-in{animation:none}.tile{transition:none}}
@@ -489,6 +577,37 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
       </div>
 
       <div data-subview="tree">
+        <div class="ft" id="ft">
+          <div class="ft-toolbar">
+            <label class="ft-search" for="ftQ"><span aria-hidden="true">⌕</span><input id="ftQ" type="search" placeholder="Find a name, nickname, place or year" autocomplete="off"><span class="ft-count" id="ftCount"></span><kbd>/</kbd></label>
+            <button class="ft-btn" type="button" id="ftFocusBtn" aria-pressed="false" title="Show only the selected person's line">Focus line</button>
+            <div class="ft-seg" role="group" aria-label="View">
+              <button type="button" data-ft-mode="tree" aria-pressed="true">Crown</button>
+              <button type="button" data-ft-mode="chart" aria-pressed="false">Chart</button>
+            </div>
+            <div class="ft-seg" role="group" aria-label="Tree direction" id="ftOrient" hidden>
+              <button type="button" data-ft-orient="down" aria-pressed="true">Elders on top</button>
+              <button type="button" data-ft-orient="up" aria-pressed="false">Elders below</button>
+            </div>
+          </div>
+          <div class="ft-lines" id="ftLines" role="group" aria-label="Highlight a founding line"></div>
+          <div class="ft-console">
+            <div class="ft-stage" id="ftStage">
+              <svg id="ftSvg" role="img" aria-label="Lewis and Antone family tree"></svg>
+              <div class="ft-empty" id="ftEmpty"><p>The family tree loads here for family members.</p></div>
+              <div class="ft-focusbar" id="ftFocusBar" hidden><span id="ftFocusText"></span><button class="ft-btn" type="button" id="ftFocusExit">Show whole tree</button></div>
+              <div class="ft-hud"><span>Lines lead to children</span><span>◡ partners</span><span>┄ partners from other branches</span><span id="ftZoom"></span></div>
+              <div class="ft-zoom">
+                <button type="button" id="ftZin" aria-label="Zoom in">+</button>
+                <button type="button" id="ftZout" aria-label="Zoom out">−</button>
+                <button type="button" id="ftFit" aria-label="Fit the whole tree">⤢</button>
+              </div>
+            </div>
+            <aside class="ft-drawer" id="ftDrawer" aria-live="polite"></aside>
+          </div>
+          <div class="ft-ledger"><div><b id="ftPeople">0</b><span>People</span></div><div><b id="ftGens">0</b><span>Generations</span></div><div><b id="ftCouples">0</b><span>Couples</span></div><div><b>1807</b><span>Earliest date</span></div></div>
+          <details class="ft-notes" id="ftNotesWrap" hidden><summary>Notes from the poster: connections that could be read more than one way</summary><ol id="ftNotes"></ol></details>
+        </div>
         <div class="lines" id="lines"></div>
         <div class="meet" id="meet" hidden></div>
         <div class="section">
@@ -664,6 +783,8 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
   </div>
 </footer>
 
+<script src="tree-engine.js"></script>
+<script src="tree.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
 </body>
