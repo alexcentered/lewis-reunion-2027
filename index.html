@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="dark" data-look="sequoia">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lewis Family Reunion 2027</title>
+<meta name="description" content="Lewis Family Reunion · Fresno, California · July 2–5, 2027">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: slim top bar, one view at a time (hash routes), generous whitespace; tree-ring canvas behind the hero. */
+:root{
+  --bg:#0c0d0c;--surface:rgba(255,255,255,.035);--surface-2:rgba(255,255,255,.065);--line:rgba(255,255,255,.09);--line-2:rgba(255,255,255,.16);
+  --text:#ecebe6;--muted:#a3a39c;--faint:#6f6f69;--accent:#86c3a0;--on-accent:#0c0d0c;
+  --ok:#5fc48a;--warn:#e2b25a;--bad:#ef7a6e;
+  --display:'Instrument Serif',Georgia,'Times New Roman',serif;
+  --body:'Geist',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'Geist Mono',ui-monospace,Menlo,Consolas,monospace;
+  --r:14px;color-scheme:dark;
+}
+[data-mode="dark"][data-look="harvest"]{--accent:#e5b766}
+[data-mode="dark"][data-look="slate"]{--accent:#aec1d4}
+[data-mode="light"]{
+  --bg:#f5f4ef;--surface:#ffffff;--surface-2:#ecebe5;--line:rgba(20,20,15,.1);--line-2:rgba(20,20,15,.2);
+  --text:#1b1b18;--muted:#5d5d56;--faint:#8b8b83;--accent:#2f6e4e;--on-accent:#ffffff;
+  --ok:#1f7a48;--warn:#94600b;--bad:#b3352a;color-scheme:light;
+}
+[data-mode="light"][data-look="harvest"]{--accent:#93600f}
+[data-mode="light"][data-look="slate"]{--accent:#3b5a75}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:400 16px/1.6 var(--body);-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(1100px 520px at 85% -120px,color-mix(in oklab,var(--accent) 13%,transparent),transparent 70%);background-repeat:no-repeat}
+a{color:inherit}
+h1,h2,h3{font-weight:400;margin:0;text-wrap:balance}
+h1,h2{font-family:var(--display);letter-spacing:-.01em}
+h1{font-size:clamp(2.8rem,8vw,5.6rem);line-height:.98}
+h2{font-size:clamp(2rem,4.4vw,2.9rem);line-height:1.05}
+h3{font:600 1.02rem/1.35 var(--body)}
+p{margin:.5em 0}
+em{font-family:var(--display);font-style:italic;font-size:1.08em}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+
+/* top bar */
+.top{position:sticky;top:0;z-index:20;background:color-mix(in oklab,var(--bg) 82%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:18px;min-height:60px}
+.mark{font-family:var(--display);font-size:1.35rem;text-decoration:none;white-space:nowrap}
+.mark i{color:var(--accent)}
+.nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1}
+.nav::-webkit-scrollbar{display:none}
+.nav a{padding:8px 12px;border-radius:99px;font-size:.88rem;color:var(--muted);text-decoration:none;white-space:nowrap}
+.nav a:hover{color:var(--text)}
+.nav a[aria-current="page"]{color:var(--text);background:var(--surface-2)}
+.nav a.admin{color:var(--accent)}
+.prefs{display:flex;align-items:center;gap:8px}
+.looks{display:flex;gap:6px}
+.looks button{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;outline-offset:2px}
+.looks button[aria-pressed="true"]{border-color:var(--text)}
+.looks [data-l="sequoia"]{background:#5f9f7c}.looks [data-l="harvest"]{background:#c99a45}.looks [data-l="slate"]{background:#7f97ad}
+.mode{font:inherit;font-size:.82rem;border:1px solid var(--line-2);background:transparent;color:var(--text);border-radius:99px;padding:6px 12px;cursor:pointer;min-height:34px}
+
+/* buttons, fields */
+.btn{font:500 .95rem var(--body);display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 20px;border-radius:99px;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);cursor:pointer;text-decoration:none;transition:filter .15s}
+.btn:hover{filter:brightness(1.08)}
+.btn.quiet{background:transparent;color:var(--text);border-color:var(--line-2)}
+.btn.sm{min-height:36px;padding:0 14px;font-size:.85rem}
+.btn.danger{background:transparent;color:var(--bad);border-color:color-mix(in oklab,var(--bad) 50%,transparent)}
+.btn[disabled]{opacity:.5;cursor:default}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+label{display:block;font-size:.84rem;color:var(--muted);margin-bottom:6px}
+input,select,textarea{font:inherit;font-size:1rem;color:var(--text);background:var(--surface);border:1px solid var(--line-2);border-radius:10px;padding:11px 13px;width:100%;min-height:48px}
+[data-mode="light"] input,[data-mode="light"] select,[data-mode="light"] textarea{background:#fff}
+input[type=checkbox],input[type=radio]{width:20px;height:20px;min-height:0;accent-color:var(--accent);flex:none;margin:2px 0 0}
+input[type=file]{padding:9px}
+textarea{min-height:110px;resize:vertical}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:16px}
+.full{grid-column:1/-1}
+.check{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:12px;cursor:pointer;color:var(--text);font-size:.95rem;margin:0}
+.check:has(input:checked){border-color:var(--accent);background:color-mix(in oklab,var(--accent) 8%,transparent)}
+.checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px}
+.hint{font-size:.84rem;color:var(--faint)}
+.msg{font-size:.9rem;min-height:1.4em;margin-top:10px}
+.msg.ok{color:var(--ok)}.msg.err{color:var(--bad)}
+
+/* layout pieces */
+main{padding-bottom:70px}
+[data-view]{display:none}
+[data-view].on{display:block}
+.section{padding:56px 0 8px}
+.section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.section-head p{color:var(--muted);max-width:60ch;margin:.6em 0 0}
+.kicker{font:500 .74rem var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px}
+[data-mode="light"] .card{box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.grid.tight{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.split{display:grid;gap:28px;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr)}
+@media(max-width:860px){.split{grid-template-columns:1fr}}
+.pill{display:inline-flex;align-items:center;gap:6px;font:500 .74rem var(--mono);letter-spacing:.04em;padding:4px 10px;border-radius:99px;border:1px solid var(--line-2);color:var(--muted);white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.ok{color:var(--ok);border-color:color-mix(in oklab,var(--ok) 40%,transparent)}
+.pill.warn{color:var(--warn);border-color:color-mix(in oklab,var(--warn) 40%,transparent)}
+.pill.bad{color:var(--bad);border-color:color-mix(in oklab,var(--bad) 40%,transparent)}
+.pill.info{color:var(--accent);border-color:color-mix(in oklab,var(--accent) 40%,transparent)}
+.banner{border:1px dashed var(--line-2);border-radius:12px;padding:12px 16px;color:var(--muted);font-size:.9rem;margin-top:22px}
+.banner b{color:var(--text);font-weight:600}
+.empty{color:var(--faint);font-size:.92rem;padding:18px 0}
+hr{border:0;border-top:1px solid var(--line);margin:26px 0}
+
+/* hero */
+.hero{position:relative;padding:72px 0 40px;overflow:hidden}
+#rings{position:absolute;right:-180px;top:-120px;width:720px;height:720px;pointer-events:none;opacity:.9}
+@media(max-width:700px){#rings{right:-320px;top:-200px;opacity:.55}}
+.hero .wrap{position:relative}
+.hero .when{font:500 .8rem var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.hero h1{margin:18px 0 22px;max-width:11ch}
+.hero h1 i{color:var(--accent)}
+.lead{font-size:1.14rem;color:var(--muted);max-width:52ch}
+.count{display:flex;gap:34px;flex-wrap:wrap;margin:34px 0}
+.count div b{display:block;font:400 2.6rem/1 var(--display);color:var(--text)}
+.count div span{font-size:.78rem;color:var(--faint);text-transform:uppercase;letter-spacing:.1em}
+.quote{font-family:var(--display);font-style:italic;font-size:clamp(1.5rem,3.2vw,2.2rem);line-height:1.2;max-width:28ch;margin:0}
+.quote-wrap{padding:60px 0 20px;border-top:1px solid var(--line);margin-top:56px}
+.quote-wrap cite{display:block;margin-top:14px;font:400 .82rem var(--body);color:var(--faint);font-style:normal}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px}
+.tile{display:block;text-decoration:none;padding:22px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);transition:border-color .2s,transform .2s}
+.tile:hover{border-color:var(--accent);transform:translateY(-2px)}
+.tile .n{font:500 .72rem var(--mono);color:var(--faint)}
+.tile h3{margin:10px 0 6px;font:400 1.6rem/1.1 var(--display)}
+.tile p{color:var(--muted);font-size:.92rem;margin:0}
+.tile .go{display:inline-block;margin-top:14px;color:var(--accent);font-size:.88rem}
+
+/* roll */
+.roll{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:10px}
+.who{padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.who b{display:block;font-weight:600}
+.who span{font-size:.84rem;color:var(--muted)}
+
+/* schedule */
+.days{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.day h3{font:400 1.7rem/1.1 var(--display)}
+.day .d{font:500 .74rem var(--mono);color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.item{padding:12px 0;border-top:1px solid var(--line)}
+.item:first-of-type{border-top:0}
+.item .t{font:500 .78rem var(--mono);color:var(--faint)}
+.item .w{font-weight:500}
+.item .p{font-size:.86rem;color:var(--muted)}
+.place h3{margin-bottom:4px}
+.place p{color:var(--muted);font-size:.92rem;margin:0}
+details{border-top:1px solid var(--line);padding:16px 0}
+details:last-child{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;font-weight:500;list-style:none;display:flex;justify-content:space-between;gap:12px}
+summary::after{content:"+";color:var(--accent);font-family:var(--mono)}
+details[open] summary::after{content:"−"}
+details p{color:var(--muted);max-width:68ch}
+
+/* register */
+.steps{display:grid;gap:18px}
+.step{padding:26px}
+.step h3{font:400 1.55rem/1.15 var(--display);margin-bottom:4px}
+.step .sub{color:var(--muted);font-size:.92rem;margin:0 0 18px}
+.att{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:10px;align-items:end;padding:14px 0;border-top:1px solid var(--line)}
+.att:first-child{border-top:0;padding-top:0}
+@media(max-width:720px){.att{grid-template-columns:1fr 1fr}.att .nm{grid-column:1/-1}}
+.summary{position:sticky;top:80px}
+.sumrow{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line);font-size:.94rem}
+.sumrow:first-of-type{border-top:0}
+.sumrow span:first-child{color:var(--muted)}
+.big{font:400 2.4rem/1 var(--display)}
+
+/* family */
+.lines{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.line h3{font:400 1.8rem/1.1 var(--display)}
+.line .f{color:var(--muted);font-size:.9rem;margin:4px 0 14px}
+.kids{list-style:none;margin:0;padding:0;columns:2;column-gap:20px}
+@media(max-width:480px){.kids{columns:1}}
+.kids li{padding:7px 0;border-top:1px solid var(--line);break-inside:avoid;font-size:.94rem;display:flex;gap:10px}
+.kids li .num{color:var(--faint);font-size:.78rem;padding-top:2px;min-width:18px}
+.meet{margin-top:14px;padding:16px 18px;border-radius:12px;border:1px solid color-mix(in oklab,var(--accent) 40%,transparent);background:color-mix(in oklab,var(--accent) 7%,transparent);font-size:.94rem}
+.names{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
+.name h3{font:400 1.45rem/1.15 var(--display)}
+.name p{color:var(--muted);font-size:.9rem;margin:6px 0 0}
+.name .q{color:var(--accent);font-size:.86rem;margin-top:10px}
+.subnav{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 26px}
+.subnav button{font:inherit;font-size:.9rem;padding:8px 16px;border-radius:99px;border:1px solid var(--line-2);background:transparent;color:var(--muted);cursor:pointer;min-height:40px}
+.subnav button[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.entries{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+.entry{padding:18px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);display:flex;flex-direction:column;gap:6px}
+.entry img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;margin-bottom:6px;background:var(--surface-2)}
+.entry h3{font:400 1.4rem/1.15 var(--display)}
+.entry .meta{font:500 .76rem var(--mono);color:var(--accent)}
+.entry p{color:var(--muted);font-size:.92rem;margin:0;white-space:pre-wrap}
+.entry .by{font-size:.78rem;color:var(--faint);margin-top:auto;padding-top:8px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.linkbtn{font:inherit;font-size:.78rem;background:none;border:0;color:var(--bad);cursor:pointer;padding:4px}
+.adder{margin-top:26px}
+.adder summary{font:400 1.3rem var(--display)}
+.adder[open]{padding-bottom:24px}
+
+/* photos */
+.photos{columns:3 260px;column-gap:12px}
+.photo{break-inside:avoid;margin:0 0 12px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--surface)}
+.photo img{display:block;width:100%;height:auto}
+.photo figcaption{padding:10px 12px;font-size:.86rem;color:var(--muted)}
+.photo figcaption b{color:var(--text);font-weight:500}
+.strip{overflow:hidden;border-block:1px solid var(--line);padding:14px 0;margin:6px 0 28px}
+.strip-in{display:flex;gap:12px;width:max-content;animation:drift 60s linear infinite}
+.strip-in img{height:120px;width:auto;border-radius:8px}
+.strip-in span{font:400 1.5rem var(--display);font-style:italic;color:var(--faint);white-space:nowrap;padding:0 18px;align-self:center}
+@keyframes drift{to{transform:translateX(-50%)}}
+
+/* me + committee */
+.stats{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}
+.stat{padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.stat b{display:block;font:400 2rem/1.1 var(--display)}
+.stat span{font-size:.76rem;color:var(--faint);text-transform:uppercase;letter-spacing:.08em}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;white-space:nowrap}
+th{font:500 .72rem var(--mono);color:var(--faint);text-transform:uppercase;letter-spacing:.06em;background:var(--surface)}
+tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right}
+.pay-line{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.pay-line:first-child{border-top:0}
+.out{font-family:var(--mono);font-size:.78rem;min-height:160px}
+
+.gate{border:1px solid color-mix(in oklab,var(--accent) 40%,transparent);background:color-mix(in oklab,var(--accent) 6%,transparent);border-radius:var(--r);padding:22px;margin:0 0 22px}
+.gate h3{font:400 1.5rem var(--display);margin-bottom:4px}
+.gate p{color:var(--muted);margin:0 0 14px;max-width:60ch}
+.done{margin-bottom:22px;border-color:color-mix(in oklab,var(--ok) 45%,transparent)}
+.done h3{font:400 1.6rem var(--display)}
+.linkbox{font-family:var(--mono);font-size:.8rem;word-break:break-all;padding:10px 12px;border:1px dashed var(--line-2);border-radius:10px;margin:10px 0;color:var(--muted)}
+.loading{opacity:.55;pointer-events:none}
+@media(max-width:760px){.top .wrap{flex-wrap:wrap;gap:6px 12px;padding-top:8px;padding-bottom:8px}.prefs{margin-left:auto}.nav{order:3;flex-basis:100%;margin:0 -8px}}
+footer{border-top:1px solid var(--line);padding:34px 0;color:var(--faint);font-size:.86rem}
+footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+@media(prefers-reduced-motion:reduce){.strip-in{animation:none}.tile{transition:none}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="mark" href="#home">Lewis <i>’27</i></a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#home">Home</a>
+      <a href="#reunion">The Reunion</a>
+      <a href="#register">Register</a>
+      <a href="#family">Our Family</a>
+      <a href="#photos">Photos</a>
+      <a href="#market">Marketplace</a>
+      <a href="#me">My Registration</a>
+    </nav>
+    <div class="prefs">
+      <div class="looks" role="group" aria-label="Look">
+        <button type="button" data-l="sequoia" aria-label="Sequoia look" title="Sequoia" aria-pressed="true"></button>
+        <button type="button" data-l="harvest" aria-label="Harvest look" title="Harvest" aria-pressed="false"></button>
+        <button type="button" data-l="slate" aria-label="Slate look" title="Slate" aria-pressed="false"></button>
+      </div>
+      <button type="button" class="mode" id="modeBtn">Light</button>
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- HOME -->
+<section data-view="home">
+  <div class="hero">
+    <canvas id="rings" aria-hidden="true"></canvas>
+    <div class="wrap">
+      <div class="when">July 2 – 5, 2027 · Fresno, California</div>
+      <h1>Come home to <i>Fresno.</i></h1>
+      <p class="lead">The Lewis Family Reunion. Four days to reconnect the generations, meet the cousins you haven't met yet, and add your branch to the family tree.</p>
+      <div class="count">
+        <div><b class="num" id="cdDays">—</b><span>days to go</span></div>
+        <div><b class="num" id="cdHouses">—</b><span>households on the list</span></div>
+        <div><b class="num" id="cdBranches">—</b><span>branches represented</span></div>
+      </div>
+      <div class="row">
+        <a class="btn" href="#register">Register your household</a>
+        <a class="btn quiet" href="#reunion">See the schedule</a>
+      </div>
+      <div class="banner" id="accessBanner" hidden></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="section">
+      <div class="tiles">
+        <a class="tile" href="#reunion"><div class="n">01</div><h3>The reunion</h3><p>Hotel, venues, the four-day schedule and things to do around Fresno.</p><span class="go">Details →</span></a>
+        <a class="tile" href="#family"><div class="n">02</div><h3>Our family</h3><p>Both lines of the tree, the names behind the nicknames, our veterans and those we've lost.</p><span class="go">Explore →</span></a>
+        <a class="tile" href="#photos"><div class="n">03</div><h3>Photos</h3><p>Grandma's albums, the 2008 reunion, last Thanksgiving. Bring them all.</p><span class="go">Share a photo →</span></a>
+        <a class="tile" href="#market"><div class="n">04</div><h3>Marketplace</h3><p>Family businesses, handmade goods and fundraisers for the reunion.</p><span class="go">Browse →</span></a>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <div><div class="kicker">Who's coming</div><h2>Households on the list</h2>
+        <p>Families who chose to show their name here when they registered. Contact details are never shown.</p></div>
+      </div>
+      <div class="gate" data-gate hidden></div>
+      <div class="roll" id="roll"><p class="empty">No households yet. Be the first one on the list.</p></div>
+    </div>
+
+    <div class="quote-wrap">
+      <p class="quote">“Somehow, some way, your foundation is Lewis — and you belong here.”</p>
+      <cite>California cousins, Texas cousins, Mobile cousins, East Coast cousins: one family.</cite>
+    </div>
+
+    <div class="section">
+      <div class="split">
+        <div>
+          <div class="kicker">Why we're doing this</div>
+          <h2>Family can be ten buildings away.</h2>
+        </div>
+        <div>
+          <p class="lead" style="font-size:1rem">Two cousins spent years working on the same base in San Antonio, about ten buildings apart, without knowing they were family. By the time they found out, they had about a year together before one was transferred to Japan.</p>
+          <p class="lead" style="font-size:1rem">Another time a cousin was stranded, and a chain of relatives got her picked up at the airport and home safely. Later, family in Dallas–Fort Worth gave her a place at their Thanksgiving table.</p>
+          <p class="lead" style="font-size:1rem">Registering for this reunion is the start of a family directory we keep after July, so we always know where our people are.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- REUNION -->
+<section data-view="reunion">
+  <div class="wrap">
+    <div class="section">
+      <div class="section-head">
+        <div><div class="kicker">The reunion</div><h2>Four days in Fresno</h2>
+        <p>Friday, July 2 through Monday, July 5, 2027. Fourth of July weekend. Times and venues marked TBA will be posted here as the committee confirms them.</p></div>
+        <a class="btn" href="#register">Register</a>
+      </div>
+      <div class="days" id="agenda"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><div><div class="kicker">Where</div><h2>Hotel and venues</h2></div></div>
+      <div class="grid">
+        <div class="card place"><div class="kicker">Reunion hotel</div><h3>Home2 Suites by Hilton Fresno Northwest</h3><p>6965 W. Farrington Avenue, Fresno, CA 93722<br>(559) 512-8410</p><p class="hint" style="margin-top:10px" id="roomBlock">Room-block details coming from the committee.</p></div>
+        <div class="card place"><div class="kicker">Gathering place</div><h3>Dante Club</h3><p>6176 N Grantland Ave, Fresno, CA 93722</p></div>
+        <div class="card place"><div class="kicker">Gathering place</div><h3>Frasier Gardens</h3><p>1745 N Cornelia Ave, Fresno, CA 93722</p></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><div><div class="kicker">Free time</div><h2>Around Fresno</h2><p>Check hours and admission before you go.</p></div></div>
+      <div class="grid tight">
+        <div class="card place"><h3>Forestiere Underground Gardens</h3><p>Rooms, passages and fruit trees carved underground by hand by one man over forty years.</p></div>
+        <div class="card place"><h3>Fresno Chaffee Zoo</h3><p>An easy half-day with the little ones, in Roeding Park.</p></div>
+        <div class="card place"><h3>Woodward Park</h3><p>Trails along the San Joaquin River and the Shinzen Japanese Garden.</p></div>
+        <div class="card place"><h3>Tower District</h3><p>Old theaters, restaurants and coffee for an evening out with the cousins.</p></div>
+        <div class="card place"><h3>Yosemite</h3><p>A full day trip north into the Sierra. Leave early in July.</p></div>
+        <div class="card place"><h3>Sequoia &amp; Kings Canyon</h3><p>A day trip east to the giant sequoias.</p></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><div><div class="kicker">Questions</div><h2>Good to know</h2></div></div>
+      <div>
+        <details><summary>How do I pay?</summary><p id="faqPay">Pay the committee using the method they post here. Then go to My Registration and report the payment. Your balance updates once the committee's payment verifier confirms the money arrived. A reported payment shows as “awaiting confirmation” until then.</p></details>
+        <details><summary>I married into the family. Should I register?</summary><p>Yes. Choose “Married into the family” for your branch, and list your spouse so we can place you on the tree together.</p></details>
+        <details><summary>I'm not sure which branch I'm from.</summary><p>Choose “Not sure yet” and tell us your parents' and grandparents' names. A family tree captain will help you find your place.</p></details>
+        <details><summary>My last name isn't Lewis or Antone.</summary><p>That's fine. We record your current last name and your birth surname separately, so a Green, a Williams or an Arnwine stays connected to the Lewis line.</p></details>
+        <details><summary>Who can see what I enter?</summary><p>Your contact details, attendees and payments are visible only to you and the reunion committee. The “Who's coming” list shows only your household name, branch and city, and only if you tick that box. Stories, tributes and photos you share are visible to family members who have this page.</p></details>
+        <details><summary>Getting here</summary><p>Please arrange your own travel to Fresno and between the hotel and venues. Fresno Yosemite International Airport (FAT) is the closest airport.</p></details>
+      </div>
+      <p class="hint" style="margin-top:22px">Committee email: <span class="num" id="committeeEmail">lewisfamilyreunion2027@gmail.com</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- REGISTER -->
+<section data-view="register">
+  <div class="wrap">
+    <div class="section">
+      <div class="section-head">
+        <div><div class="kicker">Register</div><h2 id="regTitle">Register your household</h2>
+        <p>One person fills this in for everyone traveling together. You can come back and change it any time before the reunion.</p></div>
+      </div>
+      <div class="gate" data-gate hidden></div>
+      <div class="card done" id="regDone" hidden></div>
+      <form id="regForm" class="split" novalidate>
+        <div class="steps">
+          <div class="card step">
+            <h3>About you</h3><p class="sub">The main contact for your household.</p>
+            <div class="fields">
+              <div><label for="fFirst">First name *</label><input id="fFirst" autocomplete="given-name"></div>
+              <div><label for="fMiddle">Middle name</label><input id="fMiddle" autocomplete="additional-name"></div>
+              <div><label for="fLast">Current last name *</label><input id="fLast" autocomplete="family-name"></div>
+              <div><label for="fBirth">Birth or maiden surname</label><input id="fBirth" placeholder="If different"></div>
+              <div><label for="fPreferred">What family calls you</label><input id="fPreferred" placeholder="Nickname"></div>
+              <div><label for="fEmail">Email *</label><input id="fEmail" type="email" autocomplete="email"></div>
+              <div><label for="fPhone">Cell phone</label><input id="fPhone" type="tel" autocomplete="tel"></div>
+              <div><label for="fCity">City *</label><input id="fCity" autocomplete="address-level2"></div>
+              <div><label for="fState">State *</label><input id="fState" autocomplete="address-level1" maxlength="30"></div>
+            </div>
+          </div>
+
+          <div class="card step">
+            <h3>Your place on the tree</h3><p class="sub">Which child of the founding couples do you descend from?</p>
+            <div class="fields">
+              <div class="full"><label for="fBranch">Branch *</label><select id="fBranch"></select></div>
+              <div><label for="fParents">Your parents' names</label><input id="fParents"></div>
+              <div><label for="fGrand">Your Lewis or Antone grandparent</label><input id="fGrand"></div>
+              <div class="full"><label for="fSpouse">Spouse or partner</label><input id="fSpouse"></div>
+            </div>
+          </div>
+
+          <div class="card step">
+            <h3>Who's coming</h3><p class="sub">Everyone in your household who is attending, including you.</p>
+            <div id="attendees"></div>
+            <button type="button" class="btn quiet sm" id="addAtt">+ Add a person</button>
+          </div>
+
+          <div class="card step">
+            <h3>Dates</h3><p class="sub">Which days will you be with us?</p>
+            <div class="checks" id="dayChecks"></div>
+            <div class="fields" style="margin-top:16px">
+              <div><label for="fArrive">Arriving</label><input id="fArrive" type="date" min="2027-06-28" max="2027-07-08" value="2027-07-02"></div>
+              <div><label for="fDepart">Leaving</label><input id="fDepart" type="date" min="2027-06-28" max="2027-07-08" value="2027-07-05"></div>
+              <div><label for="fLodging">Where are you staying?</label>
+                <select id="fLodging"><option>Reunion hotel (Home2 Suites)</option><option>Another hotel</option><option>With family</option><option>I live locally</option><option>Not decided yet</option></select></div>
+            </div>
+          </div>
+
+          <div class="card step">
+            <h3>Anything we should know</h3>
+            <div class="fields">
+              <div><label for="fDiet">Dietary needs</label>
+                <select id="fDiet"><option>None</option><option>Vegetarian</option><option>Vegan</option><option>Kosher</option><option>Halal</option><option>Gluten-free</option><option>Diabetic-friendly</option><option>Other (tell us below)</option></select></div>
+              <div class="full"><label for="fNeeds">Accessibility, health or other needs (optional)</label><textarea id="fNeeds" rows="3" placeholder="Wheelchair access, seating near the front, allergies…"></textarea></div>
+            </div>
+            <div class="checks" style="margin-top:14px">
+              <label class="check"><input type="checkbox" id="fTravel"> I'll arrange my own travel to Fresno and around town. *</label>
+              <label class="check"><input type="checkbox" id="fShow" checked> Show my household name, branch and city on the “Who's coming” list.</label>
+            </div>
+          </div>
+        </div>
+
+        <aside>
+          <div class="card summary">
+            <div class="kicker">Your registration</div>
+            <div class="sumrow"><span>Adults</span><span class="num" id="sAdults">0</span></div>
+            <div class="sumrow"><span>Children</span><span class="num" id="sKids">0</span></div>
+            <div class="sumrow"><span>Nights</span><span class="num" id="sNights">3</span></div>
+            <div class="sumrow"><span>Estimated total</span><span class="num" id="sTotal">TBA</span></div>
+            <p class="hint" id="sFeeNote">The committee will post registration fees soon. You can register now and pay later.</p>
+            <button class="btn" type="submit" style="width:100%;margin-top:10px" id="regSubmit">Save registration</button>
+            <div class="msg" id="regMsg" aria-live="polite"></div>
+          </div>
+        </aside>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- FAMILY -->
+<section data-view="family">
+  <div class="wrap">
+    <div class="section">
+      <div class="section-head"><div><div class="kicker">Our family</div><h2>Two lines, one family</h2>
+        <p>From the family tree chart compiled in January 2026. Tree captains are checking it branch by branch. If something is missing or wrong, tell the committee.</p></div></div>
+      <div class="gate" data-gate hidden></div>
+      <div class="subnav" role="group" aria-label="Family sections">
+        <button type="button" data-sub="tree" aria-pressed="true">The tree</button>
+        <button type="button" data-sub="memoriam" aria-pressed="false">In memoriam</button>
+        <button type="button" data-sub="veterans" aria-pressed="false">Veterans</button>
+        <button type="button" data-sub="directory" aria-pressed="false">What we do</button>
+      </div>
+
+      <div data-subview="tree">
+        <div class="lines" id="lines"></div>
+        <div class="meet" id="meet" hidden></div>
+        <div class="section">
+          <div class="section-head"><div><div class="kicker">Names need stories</div><h2>Why that name?</h2>
+          <p>Our elders carry names with history behind them. Know the story? Share it in the Stories section below, or tell a tree captain.</p></div></div>
+          <div class="names" id="names"></div>
+        </div>
+        <div class="section">
+          <div class="section-head"><div><div class="kicker">Stories</div><h2>Family stories</h2><p>Name stories, favorite memories, the funny one, the strict one, what Grandma cooked.</p></div></div>
+          <div class="entries" id="list-stories"></div>
+          <details class="adder" data-adder="stories"><summary>Share a story</summary>
+            <div class="fields" style="margin-top:16px">
+              <div><label for="st-title">Title</label><input id="st-title" placeholder="How Uncle Rene got his name"></div>
+              <div><label for="st-about">About whom</label><input id="st-about"></div>
+              <div class="full"><label for="st-body">The story</label><textarea id="st-body" rows="5"></textarea></div>
+            </div>
+            <div class="fields" style="margin-top:12px"><div><label for="st-by">Your name</label><input id="st-by" autocomplete="name"></div></div>
+            <button type="button" class="btn" data-add="stories" style="margin-top:14px">Share story</button><div class="msg" data-msg="stories"></div>
+          </details>
+        </div>
+      </div>
+
+      <div data-subview="memoriam" hidden>
+        <p class="lead" style="font-size:1rem;margin-bottom:22px">Honoring family we've lost, especially since our 2008 reunion. A name stays on the tree, and a tribute here becomes part of the family archive.</p>
+        <div class="entries" id="list-memoriam"></div>
+        <details class="adder"><summary>Add a tribute</summary>
+          <div class="fields" style="margin-top:16px">
+            <div><label for="me-name">Full name</label><input id="me-name"></div>
+            <div><label for="me-nick">Known as</label><input id="me-nick"></div>
+            <div><label for="me-dates">Born – passed</label><input id="me-dates" placeholder="1938 – 2019"></div>
+            <div><label for="me-rel">Branch or relationship</label><input id="me-rel" placeholder="Branch · my grandfather"></div>
+            <div class="full"><label for="me-body">A memory or tribute</label><textarea id="me-body"></textarea></div>
+            <div class="full upload"><label for="me-photo">Photo (optional)</label><input id="me-photo" type="file" accept="image/*"></div>
+          </div>
+          <div class="fields" style="margin-top:12px"><div><label for="me-by">Your name</label><input id="me-by" autocomplete="name"></div></div>
+            <button type="button" class="btn" data-add="memoriam" style="margin-top:14px">Add tribute</button><div class="msg" data-msg="memoriam"></div>
+        </details>
+      </div>
+
+      <div data-subview="veterans" hidden>
+        <p class="lead" style="font-size:1rem;margin-bottom:22px">The Lewis Family Veterans. Living or passed, add the family members who served, and what they'd want remembered.</p>
+        <div class="entries" id="list-veterans"></div>
+        <details class="adder"><summary>Add a veteran</summary>
+          <div class="fields" style="margin-top:16px">
+            <div><label for="ve-name">Name</label><input id="ve-name"></div>
+            <div><label for="ve-branch">Service branch</label><input id="ve-branch" placeholder="Army, Navy, Air Force…"></div>
+            <div><label for="ve-years">Years served</label><input id="ve-years" placeholder="1998 – 2006"></div>
+            <div><label for="ve-rank">Rank or role</label><input id="ve-rank"></div>
+            <div class="full"><label for="ve-body">Duty stations, stories, honors</label><textarea id="ve-body"></textarea></div>
+            <div class="full upload"><label for="ve-photo">Photo (optional)</label><input id="ve-photo" type="file" accept="image/*"></div>
+          </div>
+          <div class="fields" style="margin-top:12px"><div><label for="ve-by">Your name</label><input id="ve-by" autocomplete="name"></div></div>
+            <button type="button" class="btn" data-add="veterans" style="margin-top:14px">Add veteran</button><div class="msg" data-msg="veterans"></div>
+        </details>
+      </div>
+
+      <div data-subview="directory" hidden>
+        <p class="lead" style="font-size:1rem;margin-bottom:22px">Nurses, teachers, engineers, barbers, writers, business owners. When our young people see what the family does, they see what's possible.</p>
+        <div class="entries" id="list-directory"></div>
+        <details class="adder"><summary>Add yourself</summary>
+          <div class="fields" style="margin-top:16px">
+            <div><label for="di-name">Name</label><input id="di-name"></div>
+            <div><label for="di-work">Profession, trade or business</label><input id="di-work"></div>
+            <div><label for="di-where">City, state</label><input id="di-where"></div>
+            <div><label for="di-contact">Public website or contact (optional)</label><input id="di-contact"></div>
+            <div class="full"><label for="di-body">What you do, and how family can reach out</label><textarea id="di-body"></textarea></div>
+            <div class="full upload"><label for="di-photo">Headshot or logo (optional)</label><input id="di-photo" type="file" accept="image/*"></div>
+          </div>
+          <div class="fields" style="margin-top:12px"><div><label for="di-by">Your name</label><input id="di-by" autocomplete="name"></div></div>
+            <button type="button" class="btn" data-add="directory" style="margin-top:14px">Add to directory</button><div class="msg" data-msg="directory"></div>
+        </details>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PHOTOS -->
+<section data-view="photos">
+  <div class="wrap">
+    <div class="section">
+      <div class="section-head"><div><div class="kicker">Photos</div><h2>Give me that picture</h2>
+      <p>Old albums, the 2008 reunion, weddings, military portraits, last week's cookout. Say who's in it and roughly when, so the photo stays with the people in it.</p></div></div>
+    </div>
+  </div>
+  <div class="strip" aria-hidden="true"><div class="strip-in" id="strip"></div></div>
+  <div class="wrap">
+    <div class="gate" data-gate hidden></div>
+    <div class="photos" id="list-photos"></div>
+    <details class="adder"><summary>Add a photo</summary>
+      <div class="fields" style="margin-top:16px">
+        <div class="full upload"><label for="ph-photo">Photo *</label><input id="ph-photo" type="file" accept="image/*"></div>
+        <div><label for="ph-who">Who's in it</label><input id="ph-who"></div>
+        <div><label for="ph-year">About what year</label><input id="ph-year" inputmode="numeric"></div>
+        <div><label for="ph-where">Where</label><input id="ph-where"></div>
+        <div><label for="ph-body">The story behind it</label><input id="ph-body"></div>
+      </div>
+      <div class="fields" style="margin-top:12px"><div><label for="ph-by">Your name</label><input id="ph-by" autocomplete="name"></div></div>
+            <button type="button" class="btn" data-add="photos" style="margin-top:14px">Add photo</button><div class="msg" data-msg="photos"></div>
+    </details>
+  </div>
+</section>
+
+<!-- MARKET -->
+<section data-view="market">
+  <div class="wrap">
+    <div class="section">
+      <div class="section-head"><div><div class="kicker">Marketplace</div><h2>Buy from family</h2>
+      <p>Family businesses, handmade goods, services, and fundraisers for the reunion. Deal directly with the seller.</p></div></div>
+      <div class="gate" data-gate hidden></div>
+      <div class="entries" id="list-market"></div>
+      <details class="adder"><summary>Post a listing</summary>
+        <div class="fields" style="margin-top:16px">
+          <div><label for="mk-item">Product or service</label><input id="mk-item"></div>
+          <div><label for="mk-seller">Seller or family name</label><input id="mk-seller"></div>
+          <div><label for="mk-price">Price or suggested donation</label><input id="mk-price" placeholder="$25"></div>
+          <div><label for="mk-contact">How to reach you</label><input id="mk-contact"></div>
+          <div class="full"><label for="mk-body">Description</label><textarea id="mk-body"></textarea></div>
+          <div class="full upload"><label for="mk-photo">Photo (optional)</label><input id="mk-photo" type="file" accept="image/*"></div>
+        </div>
+        <div class="fields" style="margin-top:12px"><div><label for="mk-by">Your name</label><input id="mk-by" autocomplete="name"></div></div>
+            <button type="button" class="btn" data-add="market" style="margin-top:14px">Post listing</button><div class="msg" data-msg="market"></div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ME -->
+<section data-view="me">
+  <div class="wrap">
+    <div class="section">
+      <div class="section-head"><div><div class="kicker">My registration</div><h2 id="meTitle">Your household</h2></div><span id="meStatus"></span></div>
+      <div id="meEmpty" class="card" style="max-width:640px">
+        <h3 style="font:400 1.5rem var(--display)">Find your registration</h3>
+        <p class="hint">Open the private link we emailed you when you registered. Lost it? Enter your email and we'll send a new one.</p>
+        <div class="row" style="margin-top:12px"><input id="lostEmail" type="email" placeholder="you@example.com" autocomplete="email" aria-label="Your email" style="flex:1;min-width:220px"><button type="button" class="btn" id="lostBtn">Email my link</button></div>
+        <div class="msg" id="lostMsg" aria-live="polite"></div>
+        <p class="hint" style="margin-top:14px">Not registered yet? <a href="#register">Register your household</a>.</p>
+      </div>
+      <div id="meBody" hidden>
+        <div class="stats" id="meStats"></div>
+        <div class="split" style="margin-top:22px">
+          <div class="card">
+            <h3>Payments</h3>
+            <p class="hint">A payment counts toward your balance once the committee confirms it arrived.</p>
+            <div id="meReports"></div>
+          </div>
+          <div class="card">
+            <h3>Report a payment</h3>
+            <p class="hint" id="payHow">The committee will post where to send payment.</p>
+            <div class="fields" style="margin-top:12px">
+              <div><label for="pAmount">Amount (USD)</label><input id="pAmount" type="number" min="1" step="0.01" inputmode="decimal"></div>
+              <div><label for="pMethod">Method</label><select id="pMethod"><option>Zelle</option><option>Cash App</option><option>Venmo</option><option>PayPal</option><option>Check</option><option>Cash to committee</option></select></div>
+              <div><label for="pDate">Date sent</label><input id="pDate" type="date"></div>
+              <div><label for="pRef">Confirmation number</label><input id="pRef" placeholder="If you have one"></div>
+              <div class="full"><label for="pNote">Note</label><input id="pNote" placeholder="Paid for my mom's household too, etc."></div>
+            </div>
+            <button type="button" class="btn" id="payBtn" style="margin-top:14px">Report payment</button>
+            <div class="msg" id="payMsg" aria-live="polite"></div>
+          </div>
+        </div>
+        <p style="margin-top:18px"><a class="btn quiet sm" href="#register">Edit my registration</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>Lewis Family Reunion 2027 · Fresno, California · July 2 – 5<br>Presented by the Lewis Family Reunion Committee · A Forever Family Journal project</div>
+    <div class="num">lewisfamilyreunion2027@gmail.com</div>
+  </div>
+</footer>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
