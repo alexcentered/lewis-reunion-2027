@@ -206,14 +206,51 @@
       if (!keepView) fit();
       opts.onLayout?.(api);
     }
+    // a closed, gently irregular loop around the centre: a few slow waves plus a little grain
+    function woodRing(r, seed) {
+      const n = 96, pts = [];
+      const p1 = seed * 1.7, p2 = seed * 2.9 + 1, p3 = seed * .7 + 2, p4 = seed * 5.3;
+      for (let i = 0; i < n; i++) {
+        const a = i / n * Math.PI * 2;
+        const k = 1 + .018 * Math.sin(2 * a + p1) + .012 * Math.sin(3 * a + p2) + .006 * Math.sin(7 * a + p3) + .0025 * Math.sin(17 * a + p4);
+        pts.push([r * k * Math.cos(a), r * k * Math.sin(a)]);
+      }
+      const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      let m = mid(pts[n - 1], pts[0]), d = `M${m[0].toFixed(1)},${m[1].toFixed(1)}`;
+      for (let i = 0; i < n; i++) { const q = pts[i], m2 = mid(q, pts[(i + 1) % n]); d += ` Q${q[0].toFixed(1)},${q[1].toFixed(1)} ${m2[0].toFixed(1)},${m2[1].toFixed(1)}`; }
+      return d + "Z";
+    }
+    // a root-like line from the heart out to a founding family: it meanders a little, like a crack along the grain
+    function rootLine(t, id) {
+      let s = 0; for (const ch of String(id)) s = (s * 31 + ch.charCodeAt(0)) % 997;
+      const L = Math.hypot(t.x, t.y), ux = t.x / L, uy = t.y / L, amp = Math.min(22, L * .035), n = 28, pts = [];
+      for (let i = 0; i <= n; i++) {
+        const f = i / n, w = Math.sin(f * Math.PI) * (Math.sin(f * Math.PI * 2.6 + s) * .75 + Math.sin(f * Math.PI * 6.3 + s * .7) * .25) * amp;
+        pts.push([ux * L * f - uy * w, uy * L * f + ux * w]);
+      }
+      let d = `M0,0`;
+      for (let i = 1; i < n; i++) { const q = pts[i], m = [(q[0] + pts[i + 1][0]) / 2, (q[1] + pts[i + 1][1]) / 2]; d += ` Q${q[0].toFixed(1)},${q[1].toFixed(1)} ${m[0].toFixed(1)},${m[1].toFixed(1)}`; }
+      return d + ` L${t.x.toFixed(1)},${t.y.toFixed(1)}`;
+    }
     function drawTree() {
       const H = trunkH;
       if (!showTrunk) {
         // growth rings: one per generation, between the leaf rings, plus the heartwood
-        gEdges.append(el("svg:circle", { class: "ringguide heart", r: (R0 * .55).toFixed(1) }));
+        // growth rings drawn as slightly irregular loops, like real wood grain
+        const heart = R0 * .55;
+        for (let k = 0; k < 5; k++) gEdges.append(el("svg:path", { class: "ringguide grain", d: woodRing(heart * (k + 1) / 6, 40 + k) }));
+        gEdges.append(el("svg:path", { class: "ringguide heart", d: woodRing(heart, 7) }));
+        let inner = heart;
         rings.forEach((r, k) => {
-          gEdges.append(el("svg:circle", { class: "ringguide", r: (r - 14).toFixed(1) }));
-          gEdges.append(el("svg:circle", { class: "ringguide grain", r: (r + TL + 30).toFixed(1) }));
+          const outer = r - 14;
+          // thin latewood lines between the generation rings
+          const n = Math.max(2, Math.round((outer - inner) / 46));
+          for (let j = 1; j < n; j++) gEdges.append(el("svg:path", { class: "ringguide grain", d: woodRing(inner + (outer - inner) * j / n, k * 11 + j) }));
+          gEdges.append(el("svg:path", { class: "ringguide", d: woodRing(outer, k + 1) }));
+          inner = outer;
+          const out2 = r + TL + 30;
+          gEdges.append(el("svg:path", { class: "ringguide grain", d: woodRing(out2, 90 + k) }));
+          inner = out2;
         });
       }
       // trunk and roots
@@ -226,7 +263,8 @@
       for (const id of shown.keys()) {
         if (R.parentsOf(id).length || L.inlawOf[id]) continue;
         const t = TP[id], [cx, cy] = polar(t.rad * .55, t.th);
-        const e = el("svg:path", { class: "branch limb", "stroke-width": 11, d: `M0,0 C0,${-t.rad * .3} ${cx},${cy} ${t.x},${t.y}` });
+        const d = showTrunk ? `M0,0 C0,${-t.rad * .3} ${cx},${cy} ${t.x},${t.y}` : rootLine(t, id);
+        const e = el("svg:path", { class: "branch limb", "stroke-width": showTrunk ? 11 : 7, d });
         e._limb = id; e._ids = [id]; edgeEls.push(e); gEdges.append(e);
       }
       // partners: an arc along the ring when side by side, a dashed chord when they sit in different branches
