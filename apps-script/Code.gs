@@ -16,7 +16,48 @@ const PHOTO_MAX_BYTES = 8 * 1024 * 1024;
 
 /* ---------------- entry points ---------------- */
 
-function doGet(e) { return handle_((e && e.parameter) || {}); }
+function doGet(e) {
+  const p = (e && e.parameter) || {};
+  if (p.action === 'signup') return signup_(p);
+  return handle_(p);
+}
+
+/* ---------------- sign-up by link ----------------
+   The Claude page cannot send data in the background, so its Register button opens this URL in a new tab:
+   ?action=signup&c=<family code>&d=<registration as base64url JSON>. The row is written and a confirmation page is shown. */
+function signup_(p) {
+  const cfg = config_();
+  if (!codeOk_(p.c, cfg)) return page_('This link is not valid', '<p>Please open the registration page from the link the reunion committee sent you, and try again.</p>');
+  let reg;
+  try { reg = JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(String(p.d || ''))).getDataAsString('UTF-8')); }
+  catch (err) { return page_('Something went wrong', '<p>Your registration did not come through. Please go back to the registration page and press Send again.</p>'); }
+  let res;
+  try { res = locked_(() => register_({ reg: reg }, cfg)); }
+  catch (err) { console.error(err && err.stack || err); return page_('Something went wrong', '<p>Please try again in a minute. If it keeps happening, email ' + htmlEsc_(cfg.email || 'the committee') + '.</p>'); }
+  if (!res.ok && res.error === 'exists') {
+    return page_('You are already registered', '<p>We already have a registration for <b>' + htmlEsc_(String(reg.email || '')) + '</b>, so nothing was changed.</p><p>To change who is coming or anything else, email the committee at <b>' + htmlEsc_(cfg.email || '') + '</b>.</p>');
+  }
+  if (!res.ok) return page_('A few things are missing', '<p>' + htmlEsc_(res.message || 'Please check the form.') + '</p><p>Go back to the registration page, fill them in, and press Send again.</p>');
+  const r = res.mine.reg, s = res.mine.summary;
+  const people = (r.attendees || []).map(a => '<li>' + htmlEsc_(a.name) + (a.band === 'child' ? ' <span>(child' + (a.age ? ', ' + htmlEsc_(a.age) : '') + ')</span>' : '') + '</li>').join('');
+  const due = s.due == null ? 'The committee will post fees soon.' : 'Total due: $' + s.due + '.';
+  return page_('You’re registered!',
+    '<p>Thank you, ' + htmlEsc_(r.preferred || r.first) + '. The ' + htmlEsc_(r.last) + ' household is on the list for the Lewis Family Reunion, July 2–5, 2027 in Fresno.</p>' +
+    '<h2>Coming</h2><ul>' + people + '</ul>' +
+    '<p>' + htmlEsc_(due) + ' We sent a confirmation to <b>' + htmlEsc_(r.email) + '</b>.</p>' +
+    '<p>You can close this tab.</p>');
+}
+function page_(title, body) {
+  const cfg = config_();
+  const html = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Geist:wght@400;500&display=swap" rel="stylesheet">' +
+    '<style>body{margin:0;background:#f3eee3;color:#211a13;font:17px/1.6 Geist,system-ui,sans-serif}main{max-width:560px;margin:0 auto;padding:56px 24px}' +
+    '.k{font:500 12px/1 ui-monospace,Menlo,monospace;letter-spacing:.16em;text-transform:uppercase;color:#5b4433}h1{font:600 40px/1.1 "Playfair Display",Georgia,serif;margin:14px 0 18px}' +
+    'h2{font:600 20px "Playfair Display",Georgia,serif;margin:22px 0 6px}ul{padding-left:20px}li span{color:#5c5145}footer{margin-top:36px;color:#5c5145;font-size:14px;border-top:1px solid #d8ccb6;padding-top:16px}</style></head>' +
+    '<body><main><div class="k">Lewis Family Reunion · Fresno · July 2–5, 2027</div><h1>' + htmlEsc_(title) + '</h1>' + body +
+    '<footer>Somehow, some way, your foundation is Lewis, and you belong here.<br>' + htmlEsc_(cfg.email || '') + '</footer></main></body></html>';
+  return HtmlService.createHtmlOutput(html).setTitle('Lewis Family Reunion 2027').addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
 
 function doPost(e) {
   let p = {};
@@ -329,6 +370,7 @@ function sendLink_(row, cfg, rotate, token) {
       if (all[i][H.col['Household ID']] === row['Household ID']) { sh.getRange(i + 1, H.col['Token hash'] + 1).setValue(hash_(token)); break; }
     }
   }
+  if (!yes_(cfg.siteLive)) return sendReceipt_(row, cfg);
   const base = String(cfg.siteUrl || '').replace(/[?#].*$/, '');
   const link = base + '?c=' + encodeURIComponent(cfg.familyCode) + '&t=' + token + '#me';
   const name = row.Preferred || row.First || 'cousin';
@@ -345,6 +387,21 @@ function sendLink_(row, cfg, rotate, token) {
     to: String(row.Email), subject: rotate ? 'Your Lewis Reunion registration link' : 'You are registered: Lewis Family Reunion 2027',
     htmlBody: html, name: 'Lewis Family Reunion 2027', replyTo: cfg.email || undefined
   });
+}
+
+/** Until the full site is live, registrants get a plain receipt instead of a private edit link. */
+function sendReceipt_(row, cfg) {
+  const name = row.Preferred || row.First || 'cousin';
+  const people = String(row.Attendees || '').split('\n').filter(String).map(l => '<li>' + htmlEsc_(l.split(' · ')[0]) + '</li>').join('');
+  const html =
+    '<div style="font-family:Georgia,serif;font-size:16px;line-height:1.6;color:#1b1b18;max-width:560px">' +
+    '<p>Hi ' + htmlEsc_(name) + ',</p>' +
+    '<p>Thank you for registering for the Lewis Family Reunion, July 2–5, 2027 in Fresno. Here is who we have on your registration:</p>' +
+    '<ul>' + people + '</ul>' +
+    '<p>The committee will email you about fees and payment. To change anything, reply to this email.</p>' +
+    '<p>Somehow, some way, your foundation is Lewis — and you belong here.</p>' +
+    '<p>The Lewis Family Reunion Committee<br>' + htmlEsc_(cfg.email || '') + '</p></div>';
+  MailApp.sendEmail({ to: String(row.Email), subject: 'You are registered: Lewis Family Reunion 2027', htmlBody: html, name: 'Lewis Family Reunion 2027', replyTo: cfg.email || undefined });
 }
 
 function findByToken_(token) {

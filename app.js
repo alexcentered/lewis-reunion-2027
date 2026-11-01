@@ -9,6 +9,12 @@ const store = {
   set(k, v){ try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
 };
 const API = (window.LR && window.LR.apiUrl) || '';
+/* Link mode: on a Claude page, which cannot call the backend in the background. Family data is built into the page,
+   and the Register button opens the backend's sign-up URL in a new tab, which records the row and confirms it. */
+const EMB = (window.LR && window.LR.embedded) || null;
+const LINK = (window.LR && window.LR.linkOut) || '';
+const LINKMODE = !!EMB;
+if (LINKMODE) document.documentElement.classList.add('linkmode');
 
 /* ---------- link parameters: ?c=<family code>&t=<private registration token> ---------- */
 (function readLink(){
@@ -82,7 +88,7 @@ const DAYS = [
 const S = {
   info: { agenda: DEFAULT_AGENDA, email: 'lewisfamilyreunion2027@gmail.com', feeAdult: null, feeChild: null, childAge: 12, deadline: '', roomBlock: '' },
   family: null,            // branches, names, roll, entries, pay — only with the family code
-  code: store.get('lr-code') || '', token: store.get('lr-token') || '',
+  code: LINKMODE ? String(window.LR.code || '') : (store.get('lr-code') || ''), token: LINKMODE ? '' : (store.get('lr-token') || ''),
   mine: null, codeBad: false
 };
 
@@ -187,11 +193,11 @@ function renderFamily(){
   $('#meet').textContent = meet ? MEET + ': ' + meet.note : '';
   $('#names').innerHTML = (F.names || []).filter(n => n.name !== MEET).map(n => `<div class="card name"><h3>${esc(n.name)}</h3><p>${esc(n.note)}</p>${n.question ? `<div class="q">${esc(n.question)}</div>` : ''}</div>`).join('');
   const roll = (F.roll || []).slice().sort((a, b) => String(a.household).localeCompare(String(b.household)));
-  $('#roll').innerHTML = roll.length ? roll.map(r => `<div class="who"><b>${esc(r.household)}</b><span>${esc(r.branch)}${r.place ? ' · ' + esc(r.place) : ''}${r.count ? ' · ' + r.count + (r.count == 1 ? ' person' : ' people') : ''}</span></div>`).join('') : '<p class="empty">No households yet. Be the first one on the list.</p>';
+  $('#roll').innerHTML = roll.length ? roll.map(r => `<div class="who"><b>${esc(r.household)}</b><span>${esc(r.branch)}${r.place ? ' · ' + esc(r.place) : ''}${r.count ? ' · ' + r.count + (r.count == 1 ? ' person' : ' people') : ''}</span></div>`).join('') : `<p class="empty">${LINKMODE ? 'Registrations are coming in. The list of households will appear here on the full website.' : 'No households yet. Be the first one on the list.'}</p>`;
   const groups = { stories: 'story', memoriam: 'memoriam', veterans: 'veteran', directory: 'directory', photos: 'photo', market: 'market' };
   Object.entries(groups).forEach(([list, type]) => {
     const items = (F.entries || []).filter(e => e.type === type);
-    $('#list-' + list).innerHTML = items.length ? items.map(CARD[type]).join('') : `<p class="empty">${EMPTY[type]}</p>`;
+    $('#list-' + list).innerHTML = items.length ? items.map(CARD[type]).join('') : `<p class="empty">${LINKMODE ? 'Sharing opens soon on the full website.' : EMPTY[type]}</p>`;
     if (type === 'photo') renderStrip(items);
   });
   renderCounts(); renderInfo();
@@ -273,6 +279,7 @@ $('#regForm').addEventListener('submit', async e => {
   if (!r.attendees.length) miss.push('at least one person attending');
   if (!r.days.length) miss.push('at least one day'); if (!r.travelAck) miss.push('the travel box');
   if (miss.length){ say(msg, 'Still needed: ' + miss.join(', ') + '.', false); return; }
+  if (LINKMODE){ linkOutSubmit(r); return; }
   const btn = $('#regSubmit'); btn.disabled = true; say(msg, 'Saving…', true);
   try {
     const was = !!S.mine;
@@ -291,6 +298,28 @@ $('#regForm').addEventListener('submit', async e => {
   } catch (err) { say(msg, failText(err), false); }
   btn.disabled = false;
 });
+
+function linkOutSubmit(r){
+  const msg = $('#regMsg'), d = $('#regDone');
+  if (!LINK){ say(msg, 'Registration opens very soon. Please check back, or email the committee.', false); return; }
+  const data = {}; Object.entries(r).forEach(([k, v]) => { if (v !== '' && v != null && !(Array.isArray(v) && !v.length)) data[k] = v; });
+  const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(data)))).replace(/\+/g, '-').replace(/\//g, '_');
+  const url = LINK + '?action=signup&c=' + encodeURIComponent(S.code) + '&d=' + encodeURIComponent(b64);
+  const names = r.attendees.map(a => esc(a.name)).join(', ');
+  d.hidden = false;
+  d.innerHTML = `<h3>One last step</h3><p class="hint">You're registering <b>${names}</b>. Press the button below. It opens a page that sends your registration to the committee and confirms it.</p>
+    <div class="row" style="margin-top:12px"><a class="btn" id="sendReg" href="${esc(url)}" target="_blank" rel="noopener">Send my registration ↗</a></div>
+    <p class="hint" id="sendNote" style="margin-top:10px">Nothing is sent until you press it. Pressing it twice won't register you twice.</p>
+    <div class="row" style="margin-top:10px"><button type="button" class="btn quiet sm" id="regAnother" hidden>Register another household</button></div>`;
+  $('#sendReg').addEventListener('click', () => { $('#sendNote').textContent = 'Sent. Check the page that opened for your confirmation. If no page opened, press the button again.'; $('#regAnother').hidden = false; });
+  $('#regAnother').addEventListener('click', () => {
+    $('#regForm').reset(); attendees = [{ name: '', band: 'adult', age: '', shirt: '' }]; renderAttendees();
+    d.hidden = true; d.innerHTML = ''; say($('#regMsg'), '', true); $('#fFirst').focus();
+    $('[data-view="register"]').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
+  });
+  say(msg, 'Almost done: press "Send my registration" above.', true);
+  d.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+}
 
 /* ---------- my registration ---------- */
 function renderMe(){
@@ -377,10 +406,16 @@ $$('[data-add]').forEach(btn => btn.addEventListener('click', async () => {
 
 /* ---------- loading ---------- */
 async function loadInfo(){
+  if (EMB){ S.info = { ...S.info, ...(EMB.info || {}) }; renderInfo(); return; }
   if (!API) return;
   try { const res = await fetch(API + '?action=info'); const d = await res.json(); if (d.ok){ S.info = { ...S.info, ...d.info }; renderInfo(); } } catch (e) {}
 }
 async function loadFamily(quiet){
+  if (EMB){
+    S.family = EMB.family; renderGates(); renderFamily();
+    if (window.LRTree && !S.treeSig){ S.treeSig = 'embedded'; LRTree.load(S.family.tree || [], S.family.treeNotes || []); }
+    return;
+  }
   if (!S.code){ renderGates(); return; }
   if (!API){ renderGates(); setBanner(); return; }
   try {
@@ -402,6 +437,7 @@ async function loadMine(){
 }
 function setBanner(text){
   const b = $('#accessBanner');
+  if (LINKMODE){ b.hidden = !!LINK; if (!LINK) b.innerHTML = '<b>Almost ready.</b> Registration opens very soon.'; return; }
   if (!API){ b.hidden = false; b.innerHTML = '<b>Almost ready.</b> Registration opens as soon as the committee connects this site to its spreadsheet.'; return; }
   b.hidden = !text; if (text) b.textContent = text;
 }
@@ -409,6 +445,7 @@ function setBanner(text){
 /* ---------- boot ---------- */
 setLook(LOOKS.includes(store.get('lr-look')) ? store.get('lr-look') : 'sequoia');
 setMode(store.get('lr-theme') || 'light');
+if (LINKMODE) $('#meEmpty').innerHTML = '<h3 style="font:400 1.5rem var(--display)">Coming soon</h3><p class="hint">Checking your registration and reporting payments will open here on the full website. Until then, the committee will email you about fees and payment.</p><p class="hint" style="margin-top:14px">Not registered yet? <a href="#register">Register your household</a>.</p>';
 renderAttendees(); renderInfo(); renderMe(); renderFamily(); renderGates(); route(); setBanner();
 document.addEventListener('visibilitychange', () => { if (!document.hidden && currentView === 'home') drawRings(false); });
 addEventListener('lr-refresh', () => { loadFamily(true); if (S.token) loadMine(); });
