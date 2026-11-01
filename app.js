@@ -396,5 +396,6 @@ setLook(store.get('lr-look') || 'sequoia');
 setMode(store.get('lr-mode') || 'dark');
 renderAttendees(); renderInfo(); renderMe(); renderFamily(); renderGates(); route(); setBanner();
 document.addEventListener('visibilitychange', () => { if (!document.hidden && currentView === 'home') drawRings(false); });
+addEventListener('lr-refresh', () => { loadFamily(true); if (S.token) loadMine(); });
 loadInfo(); loadFamily();
 })();
