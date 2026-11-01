@@ -154,7 +154,9 @@
     let selected = null, focus = false, orient = "down", query = "", dimFn = null, hl = null;
     let mode = opts.mode || "tree", TP = {}, trunkH = 0;
     // crown geometry: label length, ring spacing, minimum arc gap between neighbours, fan span, innermost radius
-    const TL = 160, RING = 230, GAPPX = 21, SPAN = 180 * Math.PI / 180, R0 = 440;
+    const TL = 160, RING = 230, GAPPX = 21, R0 = 440;
+    // ring style: a full circle of rings with no trunk; crown style: a half fan over a trunk
+    let SPAN = 180 * Math.PI / 180, showTrunk = true, rings = [];
     const view = { x: 0, y: 0, k: 1 };
     const nodeEls = new Map(); let edgeEls = [];
 
@@ -169,12 +171,12 @@
       const want = i => ids.length === 1 ? 0 : -SPAN / 2 + (L.pos[i].x - x0) / W * SPAN;
       const rows = {};
       for (const i of ids) (rows[L.pos[i].r] ||= []).push(i);
-      let prev = null; const half = SPAN / 2;
+      let prev = null; const half = SPAN / 2; rings = [];
       for (const g of Object.keys(rows).map(Number).sort((a, b) => a - b)) {
         const ring = rows[g].sort((a, b) => L.pos[a].x - L.pos[b].x);
         // each ring is just big enough for its own leaves, then leaves are nudged apart along it
         let r = Math.max(prev == null ? R0 : prev + RING, ring.length * GAPPX / (SPAN * .92));
-        prev = r;
+        prev = r; rings.push(r);
         const gap = GAPPX / r, d = ring.map(want), a = [];
         ring.forEach((_, k) => a[k] = k ? Math.max(d[k], a[k - 1] + gap) : d[k]);
         const off = d.reduce((t, v, k) => t + v - a[k], 0) / ring.length;
@@ -206,9 +208,17 @@
     }
     function drawTree() {
       const H = trunkH;
+      if (!showTrunk) {
+        // growth rings: one per generation, between the leaf rings, plus the heartwood
+        gEdges.append(el("svg:circle", { class: "ringguide heart", r: (R0 * .55).toFixed(1) }));
+        rings.forEach((r, k) => {
+          gEdges.append(el("svg:circle", { class: "ringguide", r: (r - 14).toFixed(1) }));
+          gEdges.append(el("svg:circle", { class: "ringguide grain", r: (r + TL + 30).toFixed(1) }));
+        });
+      }
       // trunk and roots
-      gEdges.append(el("svg:path", { class: "trunk", d: `M-26,0 C-30,${H * .35} -46,${H * .72} -88,${H} L88,${H} C46,${H * .72} 30,${H * .35} 26,0 Z` }));
-      for (let i = -3; i <= 3; i++) {
+      if (showTrunk) gEdges.append(el("svg:path", { class: "trunk", d: `M-26,0 C-30,${H * .35} -46,${H * .72} -88,${H} L88,${H} C46,${H * .72} 30,${H * .35} 26,0 Z` }));
+      for (let i = -3; i <= 3 && showTrunk; i++) {
         const ex = i * H * .42, ey = H + 140 + (3 - Math.abs(i)) * 45;
         gEdges.append(el("svg:path", { class: "root", "stroke-width": 16 - Math.abs(i) * 3.5, d: `M${i * 14},${H - 12} C${i * 26},${H + 70} ${ex * .55},${ey - 50} ${ex},${ey}` }));
       }
@@ -344,7 +354,7 @@
           const [ox, oy] = polar(t.rad + TL + 10, t.th);
           x0 = Math.min(x0, t.x, ox); x1 = Math.max(x1, t.x, ox); y0 = Math.min(y0, t.y, oy); y1 = Math.max(y1, t.y, oy);
         }
-        if (ids.length === shown.size) { x0 = Math.min(x0, -trunkH * 1.3); x1 = Math.max(x1, trunkH * 1.3); y1 = Math.max(y1, trunkH + 300); }
+        if (ids.length === shown.size && showTrunk) { x0 = Math.min(x0, -trunkH * 1.3); x1 = Math.max(x1, trunkH * 1.3); y1 = Math.max(y1, trunkH + 300); }
         return { x0, y0, x1, y1 };
       }
       for (const id of ids) { if (!L.pos[id]) continue; x0 = Math.min(x0, X(id) - NW / 2); x1 = Math.max(x1, X(id) + NW / 2); y0 = Math.min(y0, Y(id) - NH / 2); y1 = Math.max(y1, Y(id) + NH / 2); }
@@ -443,6 +453,7 @@
       setFocus(on) { focus = !!on; rebuild(false); if (focus && selected) centerOn(selected); },
       setOrient(o) { orient = o; rebuild(false); },
       setMode(m) { mode = m; rebuild(false); if (selected) centerOn(selected); },
+      setCrown({ span = 180, trunk = true } = {}) { SPAN = span * Math.PI / 180; showTrunk = trunk; if (mode === "tree") { rebuild(false); if (selected) centerOn(selected); } },
       get mode() { return mode; },
       setQuery(q) { query = (q || "").trim().toLowerCase(); paint(); },
       matches() { return [...shown.keys()].filter(id => matches(shown.get(id))).sort(R.order); },

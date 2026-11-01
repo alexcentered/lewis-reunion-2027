@@ -247,9 +247,9 @@ td.r,th.r{text-align:right}
 .photo img,.entry img,.strip-in img{filter:grayscale(1) sepia(.45) contrast(1.06) brightness(.98);transition:filter .5s}
 .photo:hover img,.entry:hover img{filter:none}
 @media(prefers-reduced-motion:reduce){.photo img,.entry img{transition:none}}
-/* family tree tab: monochrome by design */
-.ft{--ink:#141414;--ink-soft:#5a5a5a;--ink-faint:#8c8c8c;--line:rgba(0,0,0,.10);--line-2:rgba(0,0,0,.24);--node:#ffffff;--node-sel:#ececec;--edge:rgba(0,0,0,.32);--edge-far:rgba(0,0,0,.18);--glass:#fafafa;--glass-2:#efefef;--btn:#141414;--btn-ink:#ffffff;--stage:#f7f7f7;margin-bottom:34px;color:var(--ink)}
-[data-mode="dark"] .ft{--ink:#ededed;--ink-soft:#a6a6a6;--ink-faint:#707070;--line:rgba(255,255,255,.10);--line-2:rgba(255,255,255,.24);--node:#151515;--node-sel:#262626;--edge:rgba(255,255,255,.30);--edge-far:rgba(255,255,255,.16);--glass:#111111;--glass-2:#1d1d1d;--btn:#ededed;--btn-ink:#0b0b0b;--stage:#0b0b0b}
+/* family tree tab: follows the site palette and the look switcher (Ledger, Rings, Columns) */
+.ft{--ink:var(--text);--ink-soft:var(--muted);--ink-faint:var(--faint);--node:var(--card);--node-sel:var(--accent);--edge:color-mix(in oklab,var(--text) 32%,transparent);--edge-far:color-mix(in oklab,var(--text) 18%,transparent);--glass:var(--surface);--glass-2:var(--surface-2);--btn:var(--accent);--btn-ink:var(--on-accent);--stage:var(--panel);--card:#fbf8f1;--panel:color-mix(in oklab,var(--bg) 70%,#fff);margin-bottom:34px;color:var(--ink)}
+[data-mode="dark"] .ft{--card:color-mix(in oklab,var(--bg) 82%,var(--text));--panel:color-mix(in oklab,var(--bg) 92%,var(--text))}
 .ft-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px;border:1px solid var(--line);border-bottom:0;border-radius:14px 14px 0 0;background:var(--glass)}
 .ft-search{flex:1 1 240px;min-width:0;display:flex;align-items:center;gap:8px;border:1px solid var(--line-2);border-radius:9px;padding:0 10px;background:var(--node);margin:0;color:var(--ink)}
 .ft-search input{flex:1;min-width:0;border:0;background:transparent;padding:8px 0;min-height:40px;outline:none;color:var(--ink);font-size:.95rem}
@@ -333,7 +333,42 @@ td.r,th.r{text-align:right}
 .ft-notes ol{margin:12px 0 0;padding-left:20px;color:var(--ink-soft);font-size:.86rem}
 .ft-notes li{padding:8px 0;border-top:1px solid var(--line)}
 .ft-notes li b{color:var(--ink);font-weight:600}
-@media(max-width:1000px){.ft-console{grid-template-columns:1fr}.ft-drawer{border-left:0;border-top:1px solid var(--line);height:auto}}
+.ft-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:0}
+.ft-seg button{display:inline-flex;align-items:center}
+/* Ledger: printed register, square cards, serif names, no dot grid */
+.ft[data-ftview="ledger"] .ft-stage{background-image:none}
+.ft[data-ftview="ledger"] .node rect.card{rx:2px;ry:2px}
+.ft[data-ftview="ledger"] .node .nm{font-family:var(--display);font-size:13.5px;font-weight:600}
+.ft[data-ftview="ledger"] .node .tag{fill:var(--accent-2)}
+.ft[data-ftview="ledger"] .edge.hl{stroke:var(--accent-2)}
+/* Rings: a full circle of growth rings around the heartwood */
+.ft[data-ftview="rings"] .ft-stage{background-image:none}
+.ft .ringguide{fill:none;stroke:color-mix(in oklab,var(--accent-2) 40%,transparent);stroke-width:1.4}
+.ft .ringguide.grain{stroke:color-mix(in oklab,var(--accent-2) 18%,transparent);stroke-width:1;stroke-dasharray:2 6}
+.ft .ringguide.heart{fill:color-mix(in oklab,var(--accent-2) 10%,transparent);stroke:color-mix(in oklab,var(--accent-2) 55%,transparent);stroke-width:2}
+.ft[data-ftview="rings"] .branch.limb{stroke:color-mix(in oklab,var(--accent-2) 45%,transparent)}
+.ft[data-ftview="rings"] .branch.hl{stroke:var(--accent-2)}
+.ft[data-ftview="rings"] .node.sel .tl{fill:var(--accent-2)}
+.ft[data-ftview="rings"] .node.sel .bud{stroke:var(--accent-2);fill:var(--accent-2)}
+/* Columns: browse one family at a time */
+.ft-cols{display:flex;overflow-x:auto;height:clamp(480px,72vh,780px);min-width:0;background:var(--stage);scroll-behavior:smooth}
+.ft-col{flex:none;width:250px;border-right:1px solid var(--line);padding:8px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.ft-colhead{padding:10px 10px 8px;display:flex;flex-direction:column;gap:2px}
+.ft-colhead span{font:500 .64rem var(--mono);letter-spacing:.14em;color:var(--ink-faint)}
+.ft-colhead b{font-weight:500;font-size:.86rem;color:var(--ink)}
+.ft-row{display:flex;align-items:center;gap:10px;min-height:42px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:var(--ink);font:.88rem var(--body);text-align:left;cursor:pointer;width:100%}
+.ft-row:hover{background:var(--glass-2)}
+.ft-row.path{background:var(--glass-2);font-weight:500}
+.ft-row.sel{background:var(--btn);color:var(--btn-ink);font-weight:500}
+.ft-mono{width:26px;height:26px;flex:none;border:1px solid var(--line-2);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font:10px var(--mono);color:var(--ink-soft)}
+.ft-row.sel .ft-mono{border-color:currentColor;color:inherit}
+.ft-rname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ft-rname small{color:var(--ink-faint);font-size:.78rem}
+.ft-row.sel .ft-rname small{color:inherit;opacity:.75}
+.ft-rcount{font:11px var(--mono);color:var(--ink-faint);flex:none}
+.ft-row.sel .ft-rcount{color:inherit;opacity:.75}
+.ft[data-ftview="columns"] .ft-console{grid-template-columns:minmax(0,1fr) 340px}
+@media(max-width:1000px){.ft-console{grid-template-columns:1fr}.ft[data-ftview="columns"] .ft-console{grid-template-columns:1fr}.ft-cols{height:440px}.ft-drawer{border-left:0;border-top:1px solid var(--line);height:auto}}
 @media(max-width:560px){.ft-ledger{grid-template-columns:repeat(2,minmax(0,1fr))}.ft-ledger div:nth-child(2){border-right:0}.ft-ledger div:nth-child(-n+2){border-bottom:1px solid var(--line)}.ft-stage{height:520px}.ft-hud{display:none}}
 footer{border-top:1px solid var(--line);padding:34px 0;color:var(--faint);font-size:.86rem}
 footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
@@ -357,9 +392,9 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
     </nav>
     <div class="prefs">
       <div class="looks" role="group" aria-label="Look">
-        <button type="button" data-l="sequoia" aria-label="Sequoia look" title="Sequoia" aria-pressed="true"></button>
-        <button type="button" data-l="harvest" aria-label="Harvest look" title="Harvest" aria-pressed="false"></button>
-        <button type="button" data-l="slate" aria-label="Slate look" title="Slate" aria-pressed="false"></button>
+        <button type="button" data-l="sequoia" aria-label="Sequoia look, ledger family tree" title="Sequoia · Ledger tree" aria-pressed="true"></button>
+        <button type="button" data-l="harvest" aria-label="Harvest look, rings family tree" title="Harvest · Rings tree" aria-pressed="false"></button>
+        <button type="button" data-l="slate" aria-label="Slate look, columns family tree" title="Slate · Columns tree" aria-pressed="false"></button>
       </div>
       <button type="button" class="mode" id="modeBtn">Light</button>
     </div>
@@ -581,9 +616,10 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
           <div class="ft-toolbar">
             <label class="ft-search" for="ftQ"><span aria-hidden="true">⌕</span><input id="ftQ" type="search" placeholder="Find a name, nickname, place or year" autocomplete="off"><span class="ft-count" id="ftCount"></span><kbd>/</kbd></label>
             <button class="ft-btn" type="button" id="ftFocusBtn" aria-pressed="false" title="Show only the selected person's line">Focus line</button>
-            <div class="ft-seg" role="group" aria-label="View">
-              <button type="button" data-ft-mode="tree" aria-pressed="true">Crown</button>
-              <button type="button" data-ft-mode="chart" aria-pressed="false">Chart</button>
+            <div class="ft-seg" role="group" aria-label="Tree style">
+              <button type="button" data-ft-view="ledger" aria-pressed="true"><i class="ft-dot" style="background:#1d4a32"></i>Ledger</button>
+              <button type="button" data-ft-view="rings" aria-pressed="false"><i class="ft-dot" style="background:#c99a45"></i>Rings</button>
+              <button type="button" data-ft-view="columns" aria-pressed="false"><i class="ft-dot" style="background:#7f97ad"></i>Columns</button>
             </div>
             <div class="ft-seg" role="group" aria-label="Tree direction" id="ftOrient" hidden>
               <button type="button" data-ft-orient="down" aria-pressed="true">Elders on top</button>
@@ -603,6 +639,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
                 <button type="button" id="ftFit" aria-label="Fit the whole tree">⤢</button>
               </div>
             </div>
+            <div class="ft-cols" id="ftCols" hidden></div>
             <aside class="ft-drawer" id="ftDrawer" aria-live="polite"></aside>
           </div>
           <div class="ft-ledger"><div><b id="ftPeople">0</b><span>People</span></div><div><b id="ftGens">0</b><span>Generations</span></div><div><b id="ftCouples">0</b><span>Couples</span></div><div><b>1807</b><span>Earliest date</span></div></div>
