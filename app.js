@@ -129,6 +129,7 @@ function renderGates(){
   $$('[data-gate]').forEach((g, i) => {
     g.hidden = !show;
     if (!show) return;
+    if (S.loadingFamily){ g.innerHTML = `<h3>Opening the family pages…</h3><p class="hint">One moment while we check your family code.</p>`; return; }
     g.innerHTML = `<h3>Family members only</h3><p>${S.codeBad ? 'That family code did not work. ' : ''}This part of the site is for Lewis and Antone family. Open the link the reunion committee sent you, or enter the family code from it.</p>
       <div class="row"><input type="text" id="gate-in-${i}" placeholder="Family code" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Family code" style="flex:1;min-width:200px;max-width:340px"><button type="button" class="btn" data-gate-go="${i}">Continue</button></div>`;
   });
@@ -425,11 +426,13 @@ async function loadFamily(quiet){
   }
   if (!S.code){ renderGates(); return; }
   if (!API){ renderGates(); setBanner(); return; }
+  S.loadingFamily = !S.family; if (S.loadingFamily) renderGates();
   try {
     const d = await api('family', {});
     if (d.ok){ S.family = d; S.codeBad = false; store.set('lr-code', S.code); }
     else if (d.error === 'code'){ S.family = null; store.set('lr-code', null); }
   } catch (e) { if (!quiet) setBanner('We could not reach the reunion server just now. Some sections will appear when the connection returns.'); }
+  S.loadingFamily = false;
   renderGates(); renderFamily();
   if (S.family && window.LRTree){ const sig = (S.family.tree || []).length + ':' + JSON.stringify((S.family.tree || []).slice(-1)); if (sig !== S.treeSig){ S.treeSig = sig; LRTree.load(S.family.tree || [], S.family.treeNotes || []); } }
   if (S.family && S.token && !S.mine) loadMine();
