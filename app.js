@@ -310,6 +310,7 @@ function linkOutSubmit(r){
   d.innerHTML = `<h3>One last step</h3><p class="hint">You're registering <b>${names}</b>. Press the button below. It opens a page that sends your registration to the committee and confirms it.</p>
     <div class="row" style="margin-top:12px"><a class="btn" id="sendReg" href="${esc(url)}" target="_blank" rel="noopener">Send my registration ↗</a></div>
     <p class="hint" id="sendNote" style="margin-top:10px">Nothing is sent until you press it. Pressing it twice won't register you twice.</p>
+    <p class="hint" style="margin-top:6px">If Google says “unable to open the file”, your browser is signed in to more than one Google account. Right-click the button (long-press on a phone), choose <b>Open link in incognito window</b>, and it will go through.</p>
     <div class="row" style="margin-top:10px"><button type="button" class="btn quiet sm" id="regAnother" hidden>Register another household</button></div>`;
   $('#sendReg').addEventListener('click', () => { $('#sendNote').textContent = 'Sent. Check the page that opened for your confirmation. If no page opened, press the button again.'; $('#regAnother').hidden = false; });
   $('#regAnother').addEventListener('click', () => {

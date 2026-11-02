@@ -418,8 +418,10 @@ function agenda_() {
   const days = [];
   rows_(TAB.agenda).forEach(r => {
     if (!r.Day && !r.What) return;
-    let d = days.find(x => x.title === String(r.Day) && x.date === String(r.Date));
-    if (!d) { d = { title: String(r.Day), date: String(r.Date), items: [] }; days.push(d); }
+    // Sheets turns a typed "July 2" into a date; show it as text again ("July 2"), never a raw timestamp.
+    const date = r.Date instanceof Date ? Utilities.formatDate(r.Date, Session.getScriptTimeZone() || 'America/Los_Angeles', 'MMMM d') : String(r.Date || '');
+    let d = days.find(x => x.title === String(r.Day) && x.date === date);
+    if (!d) { d = { title: String(r.Day), date: date, items: [] }; days.push(d); }
     d.items.push({ time: String(r.Time || ''), what: String(r.What || ''), where: String(r.Where || '') });
   });
   return { days };
