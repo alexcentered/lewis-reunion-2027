@@ -272,13 +272,19 @@ function privateLink(){ return location.origin + location.pathname + '?c=' + enc
 
 $('#regForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const msg = $('#regMsg'), r = collectReg(), miss = [];
-  if (!r.first) miss.push('first name'); if (!r.last) miss.push('last name');
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email)) miss.push('a valid email');
-  if (!r.city || !r.state) miss.push('city and state'); if (!r.branch) miss.push('branch');
-  if (!r.attendees.length) miss.push('at least one person attending');
-  if (!r.days.length) miss.push('at least one day'); if (!r.travelAck) miss.push('the travel box');
-  if (miss.length){ say(msg, 'Still needed: ' + miss.join(', ') + '.', false); return; }
+  const msg = $('#regMsg'), r = collectReg(), miss = [], at = [];
+  const need = (bad, label, sel) => { if (bad){ miss.push(label); at.push(sel); } };
+  need(!r.first, 'first name', '#fFirst'); need(!r.last, 'last name', '#fLast');
+  need(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email), 'a valid email', '#fEmail');
+  need(!r.city || !r.state, 'city and state', r.city ? '#fState' : '#fCity'); need(!r.branch, 'branch', '#fBranch');
+  need(!r.attendees.length, 'at least one person attending', '#attendees input');
+  need(!r.days.length, 'at least one day', '#regForm input[name="day"], #regForm [data-day]'); need(!r.travelAck, 'the travel box', '#fTravel');
+  if (miss.length){
+    say(msg, 'Still needed: ' + miss.join(', ') + '.', false);
+    const el = document.querySelector(at[0]);   // take them straight to the first thing missing
+    if (el){ el.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => { try { el.focus({ preventScroll: true }); } catch (_) {} }, 350); }
+    return;
+  }
   if (LINKMODE){ linkOutSubmit(r); return; }
   const btn = $('#regSubmit'); btn.disabled = true; say(msg, 'Saving…', true);
   try {
