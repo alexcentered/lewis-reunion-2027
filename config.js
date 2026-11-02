@@ -1,4 +1,4 @@
 /* Paste the Apps Script web-app URL (ends in /exec) between the quotes. Nothing else here is secret. */
 window.LR = {
-  apiUrl: ""
+  apiUrl: "https://script.google.com/macros/s/AKfycbxWbuV2mx6wxx8uVqMmty6O1FfD86oX_Qe5o99j3ZjN97NHSLrTrm6HVSdnAdXIaYWOQQ/exec"
 };
