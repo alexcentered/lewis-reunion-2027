@@ -18,7 +18,10 @@ const PHOTO_MAX_BYTES = 8 * 1024 * 1024;
 
 function doGet(e) {
   const p = (e && e.parameter) || {};
-  if (p.action === 'signup') return signup_(p);
+  if (p.action === 'signup') {
+    try { return signup_(p); }
+    catch (err) { console.error(err && err.stack || err); return page_('Something went wrong', '<p>Your registration may not have come through. Please email the committee and tell them: ' + htmlEsc_(String(err && err.message || err)) + '</p>'); }
+  }
   return handle_(p);
 }
 
@@ -47,15 +50,19 @@ function signup_(p) {
     '<p>' + htmlEsc_(due) + ' We sent a confirmation to <b>' + htmlEsc_(r.email) + '</b>.</p>' +
     '<p>You can close this tab.</p>');
 }
+/* The confirmation is plain text on purpose: Google refuses to show HtmlService pages to people signed in to
+   more than one Google account ("Sorry, unable to open the file"), but plain-text replies always get through. */
 function page_(title, body) {
   const cfg = config_();
-  const html = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Geist:wght@400;500&display=swap" rel="stylesheet">' +
-    '<style>body{margin:0;background:#f3eee3;color:#211a13;font:17px/1.6 Geist,system-ui,sans-serif}main{max-width:560px;margin:0 auto;padding:56px 24px}' +
-    '.k{font:500 12px/1 ui-monospace,Menlo,monospace;letter-spacing:.16em;text-transform:uppercase;color:#5b4433}h1{font:600 40px/1.1 "Playfair Display",Georgia,serif;margin:14px 0 18px}' +
-    'h2{font:600 20px "Playfair Display",Georgia,serif;margin:22px 0 6px}ul{padding-left:20px}li span{color:#5c5145}footer{margin-top:36px;color:#5c5145;font-size:14px;border-top:1px solid #d8ccb6;padding-top:16px}</style></head>' +
-    '<body><main><div class="k">Lewis Family Reunion · Fresno · July 2–5, 2027</div><h1>' + htmlEsc_(title) + '</h1>' + body +
-    '<footer>Somehow, some way, your foundation is Lewis, and you belong here.<br>' + htmlEsc_(cfg.email || '') + '</footer></main></body></html>';
-  return HtmlService.createHtmlOutput(html).setTitle('Lewis Family Reunion 2027').addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  const text = String(body)
+    .replace(/<li>/g, '  • ').replace(/<\/li>/g, '\n').replace(/<ul>/g, '').replace(/<\/ul>/g, '\n')
+    .replace(/<h2>/g, '\n').replace(/<\/h2>/g, '\n').replace(/<\/p>/g, '\n\n').replace(/<br\s*\/?>/g, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')
+    .replace(/\n{3,}/g, '\n\n').trim();
+  const out = 'LEWIS FAMILY REUNION 2027 · FRESNO · JULY 2–5, 2027\n\n' + title.toUpperCase() + '\n' + '─'.repeat(Math.min(48, title.length)) + '\n\n' +
+    text + '\n\n\nSomehow, some way, your foundation is Lewis, and you belong here.\n' + (cfg.email || '');
+  return ContentService.createTextOutput(out).setMimeType(ContentService.MimeType.TEXT);
 }
 
 
