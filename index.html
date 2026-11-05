@@ -222,6 +222,21 @@ details p{color:var(--muted);max-width:68ch}
 .strip-in img{height:120px;width:auto;border-radius:8px}
 .strip-in span{font:600 1.5rem var(--display);font-style:italic;color:var(--faint);white-space:nowrap;padding:0 18px;align-self:center}
 @keyframes drift{to{transform:translateX(-50%)}}
+/* uploads: neutral ink only (no accent colour), red only for a problem */
+.ph-open{display:block;-webkit-tap-highlight-color:transparent}
+.img-wait{padding:28px 14px;text-align:center;font-size:.84rem;color:var(--faint);background:var(--surface-2);border-radius:10px}
+.up-hint{margin:6px 0 0}
+.pick{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.pick img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line-2);flex:none}
+.pick span{flex:1;min-width:160px;font-size:.86rem;color:var(--muted);overflow-wrap:anywhere}
+.pick.bad{border-color:color-mix(in oklab,var(--bad) 50%,transparent)}.pick.bad span{color:var(--bad)}
+.upbar{height:6px;max-width:420px;margin-top:14px;border-radius:99px;background:var(--line);overflow:hidden}
+.upbar i{display:block;height:100%;width:0;border-radius:inherit;background:var(--text);transition:width .4s ease}
+.upbar.prep i{width:22%}
+.upbar.run i{width:38%;animation:upslide 1.3s ease-in-out infinite}
+.upbar.done i{width:100%;background:var(--ok)}
+@keyframes upslide{from{transform:translateX(-100%)}to{transform:translateX(265%)}}
+@media(prefers-reduced-motion:reduce){.upbar.run i{animation:none;width:100%;opacity:.45}}
 
 /* me + committee */
 .stats{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}

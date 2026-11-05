@@ -10,7 +10,7 @@ Family members register, report payments, and share stories, tributes, veterans,
 |---|---|
 | Website (`index.html`, `app.js`) | This repo, served by GitHub Pages |
 | Data (registrations, payments, stories, schedule, settings) | A private Google Sheet owned by the committee |
-| Photos | A private Drive folder next to the Sheet (each photo is viewable by link) |
+| Photos | A private Drive folder next to the Sheet. The folder can't be listed. Each visible photo opens only by its exact link, and those links go only to people with the family code |
 | Backend (`apps-script/Code.gs`) | Google Apps Script bound to the Sheet |
 
 This repo holds **no family data**. Family names, the tree, and everything people submit live only in the Sheet.
@@ -32,14 +32,16 @@ This repo holds **no family data**. Family names, the tree, and everything peopl
 
 When you change `Code.gs` later, use **Deploy → Manage deployments → Edit → New version**. That keeps the same URL.
 
+Photo sharing has an on/off switch in two places (Config tab `photosEnabled` and `config.js`). See **[TESTING.md](TESTING.md)** for how to turn it on and check it.
+
 ## Committee guide
 
 - **Dashboard tab:** households, adults, children, room nights, paid / partial / unpaid, confirmed dollars, dollars awaiting a check, and households by branch.
 - **Payments tab:** set **Status** to `Confirmed` or `Not received`. The date and your email fill in automatically, and the family member's page updates on their next visit.
 - **Config tab:** fees per adult and child, payment handles, the verifier's name, the room-block note, and the family code.
 - **Agenda tab:** one row per schedule item. The website groups them by day.
-- **Entries tab:** untick **Visible** to hide a story, photo or listing.
-- **Reunion menu** (in the Sheet's menu bar): refresh balances by hand.
+- **Entries tab:** untick **Visible** to hide a story, photo or listing. A hidden photo is also made private in Drive.
+- **Reunion menu** (in the Sheet's menu bar): refresh balances by hand, or **Sync photo privacy** to re-match every photo's Drive sharing to its Visible box.
 
 ## Sharing link
 
