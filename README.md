@@ -44,7 +44,9 @@ When you change `Code.gs` later, use **Deploy → Manage deployments → Edit �
 ## Sharing link
 
 ```
-https://alexcentered.github.io/lewis-reunion-2027/?c=FAMILY-CODE
+https://lewisfamilyroots.com/?c=FAMILY-CODE
 ```
 
 Replace `FAMILY-CODE` with the value on the Config tab. Don't post this link anywhere public.
+
+*Note: The old `alexcentered.github.io/lewis-reunion-2027` address redirects to the custom domain.*
