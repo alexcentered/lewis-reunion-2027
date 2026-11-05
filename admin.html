@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Committee back office · Lewis Family Reunion 2027</title>
+<meta name="robots" content="noindex, nofollow">
+<!-- Google's sign-in button checks the page origin from the Referer header, so keep the origin (never "no-referrer"). -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="color-scheme" content="dark light">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; connect-src https://script.google.com https://script.googleusercontent.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style; font-src https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com https://drive.google.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Monochrome glass. Colour is reserved for state: good (done), warn (needs the committee), bad (problem). */
+:root{
+  --bg:#050505;--glow:rgba(255,255,255,.09);--glow-2:rgba(255,255,255,.05);--grid:rgba(255,255,255,.035);
+  --glass:rgba(255,255,255,.045);--glass-2:rgba(255,255,255,.075);--glass-3:rgba(255,255,255,.12);--hi:rgba(255,255,255,.07);--shadow:rgba(0,0,0,.6);
+  --line:rgba(255,255,255,.1);--line-2:rgba(255,255,255,.2);
+  --text:#f2f2f2;--muted:#adadad;--faint:#8c8c8c;
+  --ink:rgba(255,255,255,.86);--track:rgba(255,255,255,.08);--g1:rgba(255,255,255,.62);--g2:rgba(255,255,255,.38);--g3:rgba(255,255,255,.2);
+  --solid:#f2f2f2;--on-solid:#050505;--scrim:rgba(0,0,0,.6);
+  --good:#0ca30c;--warn:#fab219;--bad:#d03b3b;
+  --font:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r:16px;color-scheme:dark;
+}
+:root[data-theme="light"]{
+  --bg:#ececec;--glow:rgba(255,255,255,.95);--glow-2:rgba(255,255,255,.7);--grid:rgba(0,0,0,.045);
+  --glass:rgba(255,255,255,.55);--glass-2:rgba(255,255,255,.78);--glass-3:rgba(255,255,255,.95);--hi:rgba(255,255,255,.9);--shadow:rgba(0,0,0,.14);
+  --line:rgba(0,0,0,.1);--line-2:rgba(0,0,0,.2);
+  --text:#0b0b0b;--muted:#3f3f3f;--faint:#5e5e5e;
+  --ink:rgba(0,0,0,.8);--track:rgba(0,0,0,.08);--g1:rgba(0,0,0,.55);--g2:rgba(0,0,0,.32);--g3:rgba(0,0,0,.16);
+  --solid:#0b0b0b;--on-solid:#f7f7f7;--scrim:rgba(20,20,20,.35);
+  --good:#0a7d0a;--warn:#b77900;--bad:#c42f2f;color-scheme:light;
+}
+@media (prefers-color-scheme:light){:root[data-theme="auto"]{
+  --bg:#ececec;--glow:rgba(255,255,255,.95);--glow-2:rgba(255,255,255,.7);--grid:rgba(0,0,0,.045);
+  --glass:rgba(255,255,255,.55);--glass-2:rgba(255,255,255,.78);--glass-3:rgba(255,255,255,.95);--hi:rgba(255,255,255,.9);--shadow:rgba(0,0,0,.14);
+  --line:rgba(0,0,0,.1);--line-2:rgba(0,0,0,.2);
+  --text:#0b0b0b;--muted:#3f3f3f;--faint:#5e5e5e;
+  --ink:rgba(0,0,0,.8);--track:rgba(0,0,0,.08);--g1:rgba(0,0,0,.55);--g2:rgba(0,0,0,.32);--g3:rgba(0,0,0,.16);
+  --solid:#0b0b0b;--on-solid:#f7f7f7;--scrim:rgba(20,20,20,.35);
+  --good:#0a7d0a;--warn:#b77900;--bad:#c42f2f;color-scheme:light;
+}}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--text);font:400 14.5px/1.55 var(--font);-webkit-font-smoothing:antialiased;font-variant-ligatures:none}
+a{color:inherit}
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.01em;text-wrap:balance}
+h1{font-size:clamp(1.7rem,4vw,2.2rem);line-height:1.1}
+h2{font-size:clamp(1.25rem,2.6vw,1.5rem);line-height:1.2}
+h3{font-size:.95rem}
+p{margin:.45em 0}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--text);outline-offset:2px;border-radius:8px}
+.num{font-variant-numeric:tabular-nums}
+.eyebrow{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.hint{font-size:.82rem;color:var(--faint)}
+.empty{color:var(--faint);font-size:.88rem;padding:14px 0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* backdrop the glass sits on */
+.bg{position:fixed;inset:0;z-index:-1;background:radial-gradient(70vmax 60vmax at 8% -12%,var(--glow),transparent 60%),radial-gradient(60vmax 50vmax at 108% 112%,var(--glow-2),transparent 62%),var(--bg)}
+.bg::after{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:44px 44px;-webkit-mask-image:radial-gradient(ellipse at 50% 0,#000,transparent 78%);mask-image:radial-gradient(ellipse at 50% 0,#000,transparent 78%)}
+.glass{background:var(--glass);border:1px solid var(--line);border-radius:var(--r);-webkit-backdrop-filter:blur(18px) saturate(120%);backdrop-filter:blur(18px) saturate(120%);box-shadow:inset 0 1px 0 var(--hi),0 24px 48px -28px var(--shadow)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:999px;border:1px solid var(--line-2);background:var(--glass-2);color:var(--text);cursor:pointer;font-size:.86rem;font-weight:500;white-space:nowrap;text-decoration:none;transition:background .15s,border-color .15s}
+.btn:hover{background:var(--glass-3);border-color:var(--text)}
+.btn.solid{background:var(--solid);color:var(--on-solid);border-color:var(--solid)}
+.btn.solid:hover{filter:contrast(1.15)}
+.btn.sm{min-height:32px;padding:0 12px;font-size:.8rem}
+.btn .k{color:var(--good)}.btn .x{color:var(--bad)}
+.btn[disabled]{opacity:.45;cursor:default}
+.link{background:none;border:0;padding:0;cursor:pointer;text-align:left;font-weight:600;text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:3px}
+.link:hover{text-decoration-color:var(--text)}
+input[type=search],input[type=text],select{min-height:40px;border-radius:999px;border:1px solid var(--line-2);background:var(--glass);padding:0 16px;font-size:.88rem}
+select{padding-right:10px;cursor:pointer}
+input::placeholder{color:var(--faint)}
+.seg{display:inline-flex;padding:3px;border-radius:999px;border:1px solid var(--line);background:var(--glass)}
+.seg button{border:0;background:transparent;color:var(--muted);min-height:32px;padding:0 12px;border-radius:999px;cursor:pointer;font-size:.8rem;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--glass-3);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
+.seg .n{color:var(--faint);margin-left:4px}
+.toolbar .seg{max-width:100%;overflow-x:auto;scrollbar-width:none}
+.toolbar .seg::-webkit-scrollbar{display:none}
+.theme-btn{min-width:84px}
+
+/* status pill: the colour sits in the icon, the words stay in text ink */
+.pill{display:inline-flex;align-items:center;gap:7px;padding:3px 11px 3px 9px;border-radius:999px;border:1px solid var(--line);background:var(--glass-2);font-size:.78rem;white-space:nowrap}
+.pill i{font-style:normal;font-weight:700}
+.t-good{color:var(--good)}.t-warn{color:var(--warn)}.t-bad{color:var(--bad)}.t-g1,.t-g2,.t-g3{color:var(--muted)}
+
+/* sign-in gate */
+.gate{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:28px 18px;gap:18px;align-content:center}
+.gate-card{width:min(100%,460px);padding:34px 30px 28px}
+.gate-card h1{margin:10px 0 8px}
+.gate-card .lead{color:var(--muted)}
+.gsi{min-height:44px;margin:22px 0 6px;display:flex}
+.gate-msg{min-height:1.4em;font-size:.88rem;margin-top:10px}
+.gate-msg.bad{color:var(--text)}
+.gate-msg.bad::before{content:"✕ ";color:var(--bad);font-weight:700}
+.gate-msg.busy::before{content:"◷ ";color:var(--muted)}
+.facts{list-style:none;padding:18px 0 0;margin:18px 0 0;border-top:1px solid var(--line);display:grid;gap:8px;font-size:.8rem;color:var(--muted)}
+.facts li{display:grid;grid-template-columns:18px 1fr;gap:6px}
+.facts b{font-weight:500;color:var(--text)}
+.back{font-size:.82rem;color:var(--faint);text-decoration:none}
+.back:hover{color:var(--text)}
+
+/* console chrome */
+.bar{position:sticky;top:10px;z-index:10;margin:10px auto 0;width:min(1240px,calc(100% - 20px));display:flex;align-items:center;gap:14px;padding:8px 10px 8px 18px;flex-wrap:wrap;border-radius:22px}
+.brand{font-weight:700;letter-spacing:.04em;white-space:nowrap}
+.brand span{color:var(--faint);font-weight:400}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
+.tabs::-webkit-scrollbar{display:none}
+.tabs a{padding:8px 13px;border-radius:999px;color:var(--muted);text-decoration:none;white-space:nowrap;font-size:.86rem}
+.tabs a:hover{color:var(--text)}
+.tabs a[aria-current="page"]{background:var(--glass-3);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
+.tabs .badge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;margin-left:6px;border-radius:999px;background:var(--solid);color:var(--on-solid);font-size:.7rem;font-weight:700}
+.tools{display:flex;align-items:center;gap:8px}
+.who{display:flex;align-items:center;gap:9px;padding-left:4px}
+.who img,.who .av{width:32px;height:32px;border-radius:50%;filter:grayscale(1);border:1px solid var(--line-2);object-fit:cover}
+.who .av{display:grid;place-items:center;background:var(--glass-3);font-weight:700;font-size:.85rem;filter:none}
+.who .nm{line-height:1.2;font-size:.8rem;max-width:180px}
+.who .nm b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who .nm span{color:var(--faint);font-size:.72rem;text-transform:uppercase;letter-spacing:.1em}
+@media (max-width:1439px){.who .nm{display:none}}
+.icon-btn{width:38px;min-width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--glass);cursor:pointer;font-size:1rem}
+.icon-btn:hover{border-color:var(--text)}
+.progress{position:fixed;top:0;left:0;right:0;height:2px;z-index:50;overflow:hidden}
+.progress i{position:absolute;inset:0;width:35%;background:var(--text);animation:slide 1.1s ease-in-out infinite}
+@keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(300%)}}
+
+main.wrap{width:min(1240px,calc(100% - 20px));margin:0 auto;padding:26px 8px 80px}
+.panel-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.sync{font-size:.78rem;color:var(--faint);text-align:right}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.toolbar input[type=search]{flex:1;min-width:200px;max-width:380px}
+.toolbar .grow{flex:1}
+.sum{font-size:.82rem;color:var(--faint);margin:0 0 12px}
+
+/* overview */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px}
+.kpi{padding:16px 18px}
+.kpi .lbl{font-size:.78rem;color:var(--muted)}
+.kpi .val{font-size:1.9rem;font-weight:600;letter-spacing:-.02em;line-height:1.25;margin-top:4px}
+.kpi .sub{font-size:.76rem;color:var(--faint)}
+.callout{margin-top:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.callout b{font-weight:600}
+.callout i{font-style:normal;color:var(--warn);font-weight:700;margin-right:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:12px;margin-top:12px}
+.card{padding:18px 20px}
+.card .sub{font-size:.78rem;color:var(--faint);margin:2px 0 14px}
+/* bars: one hue (text ink), 8px, square at the baseline, 4px round at the data end */
+.bars{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.bars .bl{display:flex;justify-content:space-between;gap:12px;font-size:.82rem;margin-bottom:4px}
+.bars .bl span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+.bars .bl b{font-weight:600;font-variant-numeric:tabular-nums}
+.track{height:8px;background:var(--track);border-radius:0 4px 4px 0}
+.track i{display:block;height:100%;background:var(--ink);border-radius:0 4px 4px 0;min-width:2px}
+/* thin segmented bar: a 2px surface gap between parts, no text on it */
+.split{display:flex;gap:2px;height:8px;margin-bottom:14px}
+.split i{border-radius:999px;min-width:3px}
+.split .s-good{background:var(--good)}.split .s-warn{background:var(--warn)}.split .s-g1{background:var(--g1)}.split .s-g2{background:var(--g2)}.split .s-g3{background:var(--g3)}
+.legend{list-style:none;margin:0;padding:0;display:grid;gap:7px;font-size:.84rem}
+.legend li{display:grid;grid-template-columns:18px 1fr auto;gap:8px;align-items:baseline}
+.legend i{font-style:normal;font-weight:700}
+.legend b{font-weight:600;font-variant-numeric:tabular-nums}
+
+/* payments */
+.list{display:grid;gap:10px}
+.pay{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 18px;align-items:center;padding:14px 16px}
+.pay-meta,.pay-note{font-size:.8rem;color:var(--muted)}
+.pay-note{font-style:italic}
+.pay-amt{font-size:1.15rem;font-weight:600;text-align:right}
+.pay-act{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding-top:8px;border-top:1px solid var(--line);margin-top:4px}
+.pay-act:empty{display:none}
+
+/* households table */
+.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:.85rem}
+.tbl th{text-align:left;font-weight:500;color:var(--faint);font-size:.74rem;text-transform:uppercase;letter-spacing:.1em;padding:10px 14px;border-bottom:1px solid var(--line)}
+.tbl td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tbody tr{cursor:pointer}
+.tbl tbody tr:hover td{background:var(--glass)}
+.tbl tr:last-child td{border-bottom:0}
+.tbl .r{text-align:right}
+.tbl .hint{margin-top:2px}
+.tbl-wrap{padding:4px 4px;overflow:hidden}
+
+/* entries */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px}
+.entry{padding:16px 18px;display:flex;flex-direction:column;gap:6px}
+.entry.off{opacity:.62}
+.entry img{width:100%;max-height:180px;object-fit:cover;border-radius:10px;filter:grayscale(1);border:1px solid var(--line)}
+.entry .body{font-size:.84rem;color:var(--muted);white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+.entry .foot{margin-top:auto;padding-top:10px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.switch{display:inline-flex;align-items:center;gap:9px;cursor:pointer;font-size:.8rem}
+.switch input{appearance:none;-webkit-appearance:none;width:38px;height:22px;border-radius:999px;background:var(--track);border:1px solid var(--line-2);position:relative;cursor:pointer;margin:0;transition:background .15s}
+.switch input::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--muted);transition:transform .15s,background .15s}
+.switch input:checked{background:var(--solid)}
+.switch input:checked::after{transform:translateX(16px);background:var(--on-solid)}
+.switch input[disabled]{opacity:.5;cursor:default}
+
+/* dialogs */
+dialog{border:1px solid var(--line-2);border-radius:20px;padding:0;color:var(--text);background:var(--glass-2);-webkit-backdrop-filter:blur(24px) saturate(120%);backdrop-filter:blur(24px) saturate(120%);box-shadow:0 40px 80px -30px var(--shadow);width:min(560px,calc(100% - 24px));max-height:calc(100dvh - 40px)}
+dialog::backdrop{background:var(--scrim);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.dlg{padding:24px 24px 20px}
+.dlg h2{font-size:1.15rem;margin-bottom:8px}
+.dlg p{color:var(--muted);font-size:.88rem}
+.dlg .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;flex-wrap:wrap}
+#hh{width:min(720px,calc(100% - 24px))}
+.dl{display:grid;grid-template-columns:140px 1fr;gap:6px 16px;font-size:.85rem;margin:14px 0}
+.dl dt{color:var(--faint)}
+.dl dd{margin:0;overflow-wrap:anywhere}
+.mini{width:100%;border-collapse:collapse;font-size:.82rem;margin:6px 0 4px}
+.mini td,.mini th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+.mini th{color:var(--faint);font-weight:500}
+.money{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
+.money div{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--glass)}
+.money b{display:block;font-size:1.05rem;font-variant-numeric:tabular-nums}
+.money span{font-size:.72rem;color:var(--faint)}
+.sec{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:18px 0 6px}
+
+/* toast (a popover, so it sits above open dialogs; the UA popover box is reset here) */
+.toast{position:fixed;inset:auto auto 22px 50%;margin:0;transform:translateX(-50%);z-index:60;padding:12px 18px;border-radius:999px;font-size:.86rem;max-width:calc(100% - 24px);display:flex;gap:10px;align-items:center;color:var(--text);overflow:visible}
+.toast i{font-style:normal;font-weight:700}
+
+@media (max-width:760px){
+  .bar{top:0;margin-top:0;width:100%;border-radius:0 0 18px 18px;padding:8px 10px 6px 14px}
+  .tabs{order:3;flex-basis:100%}
+  .tools{margin-left:auto;gap:6px}
+  .brand span,.theme-btn .tl{display:none}
+  .sync{text-align:left}
+  .theme-btn{min-width:38px;width:38px;padding:0}
+  .pay{grid-template-columns:minmax(0,1fr) auto}
+  .pay-st{grid-column:1/-1}
+  .tbl thead{display:none}
+  .tbl,.tbl tbody,.tbl tr,.tbl td{display:block}
+  .tbl tr{display:grid;grid-template-columns:1fr auto;padding:10px 4px;border-bottom:1px solid var(--line)}
+  .tbl td{border:0;padding:3px 10px}
+  .tbl td.c-branch,.tbl td.c-from{grid-column:1/-1;font-size:.8rem;color:var(--muted)}
+  .money{grid-template-columns:repeat(2,1fr)}
+  .dl{grid-template-columns:1fr}
+  .dl dt{margin-top:6px}
+}
+@media (prefers-reduced-motion:reduce){.progress i{animation:none;width:100%;opacity:.5}*{transition:none!important}}
+@media (forced-colors:active){.track i,.split i{background:CanvasText}}
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"></div>
+<div class="progress" id="progress" hidden><i></i></div>
+
+<!-- SIGN-IN -->
+<main class="gate" id="gate" hidden>
+  <section class="glass gate-card" aria-labelledby="gateTitle">
+    <div class="eyebrow">Lewis Family Reunion 2027 · Committee</div>
+    <h1 id="gateTitle">Back office</h1>
+    <p class="lead">Sign in with the Google account the committee added to the access list.</p>
+    <div class="gsi" id="gsiBtn"></div>
+    <div class="gate-msg" id="gateMsg" role="status" aria-live="polite"></div>
+    <ul class="facts">
+      <li><span aria-hidden="true">⊘</span><span><b>Your Google password never reaches this site.</b> Google confirms who you are.</span></li>
+      <li><span aria-hidden="true">⊙</span><span>The committee Sheet's <b>Admins</b> tab decides who gets in and what they can see.</span></li>
+      <li><span aria-hidden="true">◷</span><span>Sessions end after <b>6 hours</b>, or when you close this tab.</span></li>
+    </ul>
+  </section>
+  <a class="back" href="./">← Back to the reunion site</a>
+</main>
+
+<!-- CONSOLE -->
+<div id="app" hidden>
+  <header class="bar glass">
+    <div class="brand">LEWIS ’27 <span>/ back office</span></div>
+    <nav class="tabs" id="tabs" aria-label="Back office sections"></nav>
+    <div class="tools">
+      <button type="button" class="icon-btn" id="refreshBtn" title="Refresh from the Sheet" aria-label="Refresh from the Sheet">↻</button>
+      <button type="button" class="btn sm theme-btn" id="themeBtn"></button>
+      <div class="who" id="who"></div>
+      <button type="button" class="btn sm" id="signOutBtn">Sign out</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- OVERVIEW -->
+    <section data-panel="overview" hidden>
+      <div class="panel-head">
+        <div><div class="eyebrow">Overview</div><h2>The reunion at a glance</h2></div>
+        <div class="sync" data-sync></div>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <div class="callout glass" id="reviewCallout" hidden></div>
+      <div class="grid">
+        <article class="glass card"><h3>Payment status</h3><p class="sub">Households, by where their payment stands</p><div id="ovStatus"></div></article>
+        <article class="glass card"><h3>Headcount by day</h3><p class="sub">People attending each day, for food and venues</p><div id="ovDays"></div></article>
+        <article class="glass card"><h3>Branches</h3><p class="sub">Households per branch</p><div id="ovBranches"></div></article>
+        <article class="glass card"><h3>T-shirts</h3><p class="sub" id="ovShirtsSub">Shirts to order, by size</p><div id="ovShirts"></div></article>
+        <article class="glass card"><h3>Lodging</h3><p class="sub">Where households plan to stay</p><div id="ovLodging"></div></article>
+        <article class="glass card"><h3>Dietary needs</h3><p class="sub">Households that told us about one</p><div id="ovDiet"></div></article>
+      </div>
+    </section>
+
+    <!-- PAYMENTS -->
+    <section data-panel="payments" hidden>
+      <div class="panel-head">
+        <div><div class="eyebrow">Payments</div><h2>Confirm what arrived</h2></div>
+        <div class="sync" data-sync></div>
+      </div>
+      <div class="toolbar">
+        <div class="seg" role="group" aria-label="Show payments" id="payFilter"></div>
+        <input type="search" id="payQ" placeholder="Search household, method or confirmation #" aria-label="Search payments" data-search>
+      </div>
+      <p class="sum" id="paySum"></p>
+      <div class="list" id="payList"></div>
+    </section>
+
+    <!-- HOUSEHOLDS -->
+    <section data-panel="households" hidden>
+      <div class="panel-head">
+        <div><div class="eyebrow">Households</div><h2>Who's registered</h2></div>
+        <div class="sync" data-sync></div>
+      </div>
+      <div class="toolbar">
+        <input type="search" id="hhQ" placeholder="Search name, email, city or branch" aria-label="Search households" data-search>
+        <select id="hhStatus" aria-label="Filter by payment status"></select>
+        <span class="grow"></span>
+        <button type="button" class="btn sm" id="csvBtn" title="Download the households shown, for a spreadsheet">⇩ Export CSV</button>
+      </div>
+      <p class="sum" id="hhSum"></p>
+      <div class="glass tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th scope="col">Household</th><th scope="col">Branch</th><th scope="col">From</th><th scope="col" class="r">People</th><th scope="col">Status</th><th scope="col" class="r">Balance</th></tr></thead>
+          <tbody id="hhRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ENTRIES -->
+    <section data-panel="entries" hidden>
+      <div class="panel-head">
+        <div><div class="eyebrow">Entries</div><h2>Stories, tributes and listings</h2></div>
+        <div class="sync" data-sync></div>
+      </div>
+      <div class="toolbar">
+        <select id="entType" aria-label="Filter by section"></select>
+        <div class="seg" role="group" aria-label="Show entries" id="entVis"></div>
+        <input type="search" id="entQ" placeholder="Search title, words or who shared it" aria-label="Search entries" data-search>
+      </div>
+      <p class="sum" id="entSum"></p>
+      <div class="cards" id="entList"></div>
+    </section>
+
+    <!-- ACTIVITY -->
+    <section data-panel="activity" hidden>
+      <div class="panel-head">
+        <div><div class="eyebrow">Activity</div><h2>Who did what, and when</h2></div>
+        <div class="sync" data-sync></div>
+      </div>
+      <div class="toolbar"><input type="search" id="actQ" placeholder="Search person, action or detail" aria-label="Search activity" data-search></div>
+      <p class="sum">The newest 300 rows. The full record is on the Sheet's <b>Audit</b> tab.</p>
+      <div class="glass tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th scope="col">When</th><th scope="col">Who</th><th scope="col">Action</th><th scope="col">Detail</th></tr></thead>
+          <tbody id="actRows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<dialog id="ask" aria-labelledby="askTitle"><form method="dialog" class="dlg">
+  <h2 id="askTitle"></h2><p id="askBody"></p>
+  <div class="actions"><button class="btn" value="cancel">Cancel</button><button class="btn solid" value="ok" id="askOk"></button></div>
+</form></dialog>
+<dialog id="hh" aria-labelledby="hhTitle"><div class="dlg" id="hhBody"></div></dialog>
+<div class="toast glass" id="toast" role="status" aria-live="polite" popover="manual" hidden></div>
+
+<script src="config.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

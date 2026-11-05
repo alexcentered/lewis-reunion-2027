@@ -9,7 +9,7 @@
  * deployment → Web app → Execute as: Me · Who has access: Anyone → copy the /exec URL.
  */
 
-const TAB = { reg: 'Registrations', pay: 'Payments', ent: 'Entries', cfg: 'Config', agenda: 'Agenda', branches: 'Branches', names: 'Names', people: 'People', treeNotes: 'Tree notes' };
+const TAB = { reg: 'Registrations', pay: 'Payments', ent: 'Entries', cfg: 'Config', agenda: 'Agenda', branches: 'Branches', names: 'Names', people: 'People', treeNotes: 'Tree notes', admins: 'Admins', audit: 'Audit' };
 const TYPES = ['story', 'memoriam', 'veteran', 'directory', 'photo', 'market'];
 const DAY_LABELS = { fri: 'Fri Jul 2', sat: 'Sat Jul 3', sun: 'Sun Jul 4', mon: 'Mon Jul 5' };
 const PHOTO_MAX_BYTES = 8 * 1024 * 1024;
@@ -70,6 +70,8 @@ function doPost(e) {
   let p = {};
   try { p = JSON.parse((e && e.postData && e.postData.contents) || '{}'); }
   catch (err) { return out_({ ok: false, error: 'bad_request' }); }
+  // The committee back office signs in with Google instead of the family code, and only over POST, so session keys never sit in a URL.
+  if (p && p.action === 'admin') return out_(admin_(p));
   return handle_(p);
 }
 
@@ -331,25 +333,329 @@ function recompute_() {
   sh.getRange(2, H.col.Due + 1, outRows.length, 5).setValues(outRows);
 }
 
-/** Run once from the editor: creates the private photo folder and asks Google for permissions. */
+/** Run once from the editor: creates the private photo folder and the back-office tabs, and asks Google for permissions.
+    Safe to run again: it only adds what is missing. The person who runs it becomes the first back-office owner. */
 function setup() {
   const cfg = config_();
   const folder = photoFolder_(cfg);
+  ensureTab_(TAB.audit, AUDIT_HEADERS);
+  const admins = ensureAdminsTab_();
+  if (admins.getLastRow() < 2) {
+    const me = String(Session.getEffectiveUser().getEmail() || '').toLowerCase();
+    if (me) admins.appendRow([me, '', 'owner', true, new Date(), '', 'Added by setup()']);
+  }
+  if (!Object.prototype.hasOwnProperty.call(cfg, 'googleClientId')) {
+    sheet_(TAB.cfg).appendRow(['googleClientId', '', 'OAuth client ID for the committee back office (admin.html). See docs/back-office.md.']);
+  }
   recompute_();
   console.log('Setup complete. Photo folder: ' + folder.getUrl());
 }
 
+/* ---------------- committee back office (admin.html) ----------------
+   1. admin.html shows Google's "Sign in with Google" button. Google hands the page a signed ID token (a JWT).
+   2. The page posts that token here once (op "session"). We ask Google to check its signature, then check that it was
+      issued to OUR client ID (Config: googleClientId), is unexpired, and carries a verified email.
+   3. That email must be on the Admins tab, marked Active, with a known Role. If so, we return a random session key.
+      Only its SHA-256 hash is kept, in the script cache, for at most 6 hours (an absolute limit, never extended).
+   4. Every later call carries the key. The Admins tab is re-read on every call, so removing someone, unticking
+      Active or changing a Role takes effect on their very next click.
+   Every sign-in, refused sign-in and change is written to the Audit tab. */
+
+const ROLES = {
+  owner:       ['dash', 'reg', 'reg.resend', 'pay', 'pay.write', 'ent', 'ent.write', 'audit'],
+  treasurer:   ['dash', 'reg', 'reg.resend', 'pay', 'pay.write'],
+  coordinator: ['dash', 'reg', 'reg.resend', 'ent', 'ent.write'],
+  viewer:      ['dash']
+};
+const ADMIN_SESSION_SECONDS = 6 * 60 * 60;   // the script cache's own maximum
+const PAY_STATUSES = ['Reported', 'Confirmed', 'Not received'];
+const ADMIN_HEADERS = ['Email', 'Name', 'Role', 'Active', 'Added', 'Last sign-in', 'Notes'];
+const AUDIT_HEADERS = ['When', 'Who', 'Action', 'Target', 'Detail'];
+const GOOGLE_ISSUERS = ['accounts.google.com', 'https://accounts.google.com'];
+
+function admin_(p) {
+  try {
+    const cfg = config_(), op = String(p.op || '');
+    if (op === 'session') return adminSignIn_(p, cfg);
+    const who = adminWho_(p.session);
+    if (!who) return { ok: false, error: 'session', message: 'Your session has ended. Please sign in again.' };
+    const can = perm => who.perms.indexOf(perm) >= 0;
+    const deny = { ok: false, error: 'forbidden', message: 'Your committee role does not include that.' };
+    switch (op) {
+      case 'snapshot': return { ok: true, me: adminMe_(who), data: adminSnapshot_(who, cfg) };
+      case 'signout':
+        CacheService.getScriptCache().remove(sessionKey_(p.session));
+        audit_(who.email, 'signout', '', '');
+        return { ok: true };
+      case 'payment.set':
+        if (!can('pay.write')) return deny;
+        return withSnapshot_(locked_(() => adminSetPayment_(p, who)), who, cfg);
+      case 'entry.visible':
+        if (!can('ent.write')) return deny;
+        return withSnapshot_(locked_(() => adminSetVisible_(p, who)), who, cfg);
+      case 'household.resend':
+        if (!can('reg.resend')) return deny;
+        return withSnapshot_(locked_(() => adminResend_(p, who, cfg)), who, cfg);
+    }
+    return { ok: false, error: 'unknown_action' };
+  } catch (err) {
+    console.error(err && err.stack || err);
+    return { ok: false, error: 'server', message: 'Something went wrong on our side. Please try again in a minute.' };
+  }
+}
+
+function adminSignIn_(p, cfg) {
+  const id = verifyGoogleIdToken_(p.credential, cfg);
+  if (!id.ok) return id;
+  const role = adminRole_(id.email);
+  if (!role) {
+    const cache = CacheService.getScriptCache(), k = 'adm-denied:' + id.email;
+    if (!cache.get(k)) { cache.put(k, '1', 600); audit_(id.email, 'signin.denied', '', 'Not an active committee member on the Admins tab'); }
+    return { ok: false, error: 'not_listed', email: id.email,
+      message: id.email + ' is not on the committee access list. Ask a committee owner to add it on the Admins tab, or sign in with a different Google account.' };
+  }
+  const key = newToken_();
+  CacheService.getScriptCache().put(sessionKey_(key), JSON.stringify({ email: id.email, name: id.name, picture: id.picture }), ADMIN_SESSION_SECONDS);
+  stampSignIn_(id.email, id.name);
+  audit_(id.email, 'signin', '', role);
+  const who = adminWho_(key);
+  return { ok: true, session: key, expiresIn: ADMIN_SESSION_SECONDS, me: adminMe_(who), data: adminSnapshot_(who, cfg) };
+}
+
+/** Asks Google to verify the ID token's signature, then checks the claims that make it ours. */
+function verifyGoogleIdToken_(credential, cfg) {
+  const clientId = String(cfg.googleClientId || '').trim();
+  if (!clientId) return { ok: false, error: 'not_configured', message: 'The back office is not switched on yet. A committee owner needs to add googleClientId on the Config tab.' };
+  const bad = { ok: false, error: 'signin', message: 'Google sign-in did not go through. Please try again.' };
+  const jwt = String(credential || '');
+  if (jwt.length > 4096 || !/^[\w-]+\.[\w-]+\.[\w-]+$/.test(jwt)) return bad;
+  let t;
+  try {
+    const res = UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(jwt), { muteHttpExceptions: true });
+    if (res.getResponseCode() !== 200) return bad;
+    t = JSON.parse(res.getContentText());
+  } catch (err) { console.warn('tokeninfo failed', err); return bad; }
+  if (!t || String(t.aud) !== clientId) return bad;
+  if (GOOGLE_ISSUERS.indexOf(String(t.iss)) < 0) return bad;
+  if (!(Number(t.exp) > Date.now() / 1000)) return bad;
+  if (String(t.email_verified) !== 'true') return bad;
+  const email = String(t.email || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return bad;
+  const picture = String(t.picture || '');
+  return { ok: true, email: email, name: String(t.name || '').slice(0, 120), picture: /^https:\/\/[\w.-]+\.googleusercontent\.com\//.test(picture) ? picture : '' };
+}
+
+/** The member's role from the Admins tab, or '' if they are not an active member with a known role. Fails closed. */
+function adminRole_(email) {
+  email = String(email || '').trim().toLowerCase();
+  if (!email) return '';
+  let list;
+  try { list = rows_(TAB.admins); } catch (err) { return ''; }
+  const r = list.find(x => String(x.Email || '').trim().toLowerCase() === email && yes_(x.Active));
+  const role = r ? String(r.Role || '').trim().toLowerCase() : '';
+  return Object.prototype.hasOwnProperty.call(ROLES, role) ? role : '';
+}
+
+function sessionKey_(key) { return 'adm:' + hash_(String(key || '')); }
+function adminWho_(key) {
+  key = String(key || '');
+  if (key.length < 32 || key.length > 128) return null;
+  const raw = CacheService.getScriptCache().get(sessionKey_(key));
+  if (!raw) return null;
+  let s;
+  try { s = JSON.parse(raw); } catch (err) { return null; }
+  const role = adminRole_(s.email);
+  if (!role) return null;
+  return { email: s.email, name: s.name || '', picture: s.picture || '', role: role, perms: ROLES[role] };
+}
+function adminMe_(who) { return { email: who.email, name: who.name, picture: who.picture, role: who.role, perms: who.perms.slice() }; }
+function withSnapshot_(res, who, cfg) { res.me = adminMe_(who); res.data = adminSnapshot_(who, cfg); return res; }
+
+/** Everything this member's role may see, in one round trip (Apps Script calls are slow, so the console asks rarely). */
+function adminSnapshot_(who, cfg) {
+  const can = k => who.perms.indexOf(k) >= 0;
+  const regs = rows_(TAB.reg).filter(r => r['Household ID']);
+  const pays = rows_(TAB.pay).filter(r => r['Payment ID'] || r['Household ID']);
+  const data = {
+    generated: new Date().toISOString(),
+    fees: { adult: num_(cfg.feeAdult), child: num_(cfg.feeChild), deadline: iso_(cfg.deadline) },
+    siteLive: yes_(cfg.siteLive),
+    dash: adminDashboard_(regs, pays)
+  };
+  if (can('reg')) data.households = regs.map(adminHousehold_);
+  if (can('pay')) data.payments = pays.map(adminPayment_).reverse();
+  if (can('ent')) data.entries = rows_(TAB.ent).filter(r => r['Entry ID']).map(adminEntry_).reverse();
+  if (can('audit')) data.audit = auditRows_(300);
+  return data;
+}
+
+/** Headline numbers plus tallies. Tallies are [label, count] lists (Maps inside, so no family-typed text can collide
+    with an object's built-in keys), largest first, except days, which stay in calendar order. */
+function adminDashboard_(regs, pays) {
+  const d = { households: regs.length, adults: 0, children: 0, due: 0, confirmed: 0, awaiting: 0, balance: 0,
+    hotelHouseholds: 0, hotelNights: 0, toReview: 0 };
+  const t = { status: new Map(), branches: new Map(), shirts: new Map(), diet: new Map(), lodging: new Map() };
+  const bump = (m, k) => m.set(k, (m.get(k) || 0) + 1);
+  const days = Object.keys(DAY_LABELS).map(k => [DAY_LABELS[k], 0]);
+  regs.forEach(r => {
+    const adults = Number(r.Adults) || 0, children = Number(r.Children) || 0, said = String(r.Days || ''), lodging = str_(r.Lodging), diet = str_(r.Diet);
+    d.adults += adults; d.children += children;
+    d.due += Number(r.Due) || 0; d.confirmed += Number(r.Confirmed) || 0; d.awaiting += Number(r.Awaiting) || 0; d.balance += Number(r.Balance) || 0;
+    bump(t.status, str_(r.Status) || 'Registered');
+    bump(t.branches, str_(r.Branch) || 'Not given');
+    bump(t.lodging, lodging || 'Not given');
+    if (diet && diet !== 'None') bump(t.diet, diet);
+    days.forEach(x => { if (said.indexOf(x[0]) >= 0) x[1] += adults + children; });
+    attendees_(r.Attendees).forEach(a => { if (a.shirt && a.shirt !== 'No shirt') bump(t.shirts, a.shirt); });
+    if (/^Reunion hotel/.test(lodging)) { d.hotelHouseholds++; d.hotelNights += Number(r.Nights) || 0; }
+  });
+  pays.forEach(p => { if ((str_(p.Status) || 'Reported') === 'Reported') d.toReview++; });
+  Object.keys(t).forEach(k => { d[k] = Array.from(t[k].entries()).sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0]))); });
+  d.days = days;
+  return d;
+}
+
+function adminHousehold_(r) {
+  return {
+    id: str_(r['Household ID']), name: str_(r.Preferred || r.First) + ' ' + str_(r.Last),
+    first: str_(r.First), middle: str_(r.Middle), last: str_(r.Last), preferred: str_(r.Preferred), birthSurname: str_(r['Birth surname']),
+    email: str_(r.Email), phone: str_(r.Phone), city: str_(r.City), state: str_(r.State),
+    branch: str_(r.Branch), parents: str_(r.Parents), grandparent: str_(r.Grandparent), spouse: str_(r.Spouse),
+    adults: Number(r.Adults) || 0, children: Number(r.Children) || 0, attendees: attendees_(r.Attendees),
+    days: str_(r.Days), arrive: iso_(r.Arrive), depart: iso_(r.Depart), nights: Number(r.Nights) || 0,
+    lodging: str_(r.Lodging), diet: str_(r.Diet), needs: str_(r.Needs), showOnList: yes_(r['Show on list']),
+    registered: when_(r.Registered), updated: when_(r.Updated),
+    due: num_(r.Due), confirmed: Number(r.Confirmed) || 0, awaiting: Number(r.Awaiting) || 0, balance: num_(r.Balance),
+    status: str_(r.Status) || 'Registered'
+  };
+}
+function adminPayment_(p) {
+  return {
+    id: str_(p['Payment ID']), householdId: str_(p['Household ID']), household: str_(p.Household), reported: when_(p.Reported),
+    amount: Number(p.Amount) || 0, method: str_(p.Method), sent: iso_(p['Date sent']), ref: str_(p.Reference), note: str_(p.Note),
+    status: str_(p.Status) || 'Reported', decidedOn: when_(p['Confirmed on']), decidedBy: str_(p['Confirmed by'])
+  };
+}
+function adminEntry_(r) {
+  return {
+    id: str_(r['Entry ID']), type: str_(r.Type), posted: when_(r.Posted), by: str_(r['Posted by']), visible: yes_(r.Visible),
+    title: str_(r.Title), subtitle: str_(r.Subtitle), meta: str_(r.Meta), body: str_(r.Body), contact: str_(r.Contact),
+    photo: r['Photo ID'] ? 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(r['Photo ID']) + '&sz=w480' : ''
+  };
+}
+
+/** Moves a payment between Reported, Confirmed and Not received. `expect` is the status the member saw: if someone
+    else changed it meanwhile, nothing is written and they get the fresh list (optimistic concurrency). */
+function adminSetPayment_(p, who) {
+  const id = String(p.id || ''), status = String(p.status || '');
+  if (!id) return { ok: false, error: 'invalid', message: 'That payment has no ID. Change it on the Payments tab of the Sheet instead.' };
+  if (PAY_STATUSES.indexOf(status) < 0) return { ok: false, error: 'invalid', message: 'Unknown payment status.' };
+  const sh = sheet_(TAB.pay), H = headers_(sh), all = sh.getDataRange().getValues();
+  for (let i = 1; i < all.length; i++) {
+    if (String(all[i][H.col['Payment ID']]) !== id) continue;
+    const was = String(all[i][H.col.Status] || '') || 'Reported';
+    if (p.expect != null && String(p.expect) !== was) {
+      return { ok: false, error: 'stale', message: 'Someone else changed this payment a moment ago. It now reads “' + was + '”. Your list has been refreshed.' };
+    }
+    if (was === status) return { ok: true, message: 'No change needed.' };
+    const row = i + 1, decided = status !== 'Reported';
+    sh.getRange(row, H.col.Status + 1).setValue(status);
+    if (H.col['Confirmed on'] != null) sh.getRange(row, H.col['Confirmed on'] + 1).setValue(decided ? new Date() : '');
+    if (H.col['Confirmed by'] != null) sh.getRange(row, H.col['Confirmed by'] + 1).setValue(decided ? clean_(who.email, 120) : '');
+    recompute_();
+    const amount = Number(all[i][H.col.Amount]) || 0, household = str_(all[i][H.col.Household]);
+    const action = status === 'Confirmed' ? 'payment.confirm' : status === 'Not received' ? 'payment.not_received' : 'payment.reopen';
+    audit_(who.email, action, id, household + ' · $' + amount + ' · ' + was + ' → ' + status);
+    const said = { 'Confirmed': 'Confirmed. The ' + household + ' balance is updated.', 'Not received': 'Marked not received. The family sees this on their page.', 'Reported': 'Moved back to review.' };
+    return { ok: true, message: said[status] };
+  }
+  return { ok: false, error: 'missing', message: 'That payment is no longer on the Sheet.' };
+}
+
+function adminSetVisible_(p, who) {
+  const id = String(p.id || '');
+  if (typeof p.visible !== 'boolean') return { ok: false, error: 'invalid', message: 'Choose show or hide.' };
+  const sh = sheet_(TAB.ent), H = headers_(sh), all = sh.getDataRange().getValues();
+  for (let i = 1; i < all.length; i++) {
+    if (String(all[i][H.col['Entry ID']]) !== id) continue;
+    sh.getRange(i + 1, H.col.Visible + 1).setValue(p.visible);
+    audit_(who.email, p.visible ? 'entry.show' : 'entry.hide', id, str_(all[i][H.col.Type]) + ' · ' + (str_(all[i][H.col.Title]) || '(untitled)'));
+    return { ok: true, message: p.visible ? 'Showing on the family pages.' : 'Hidden from the family pages.' };
+  }
+  return { ok: false, error: 'missing', message: 'That entry is no longer on the Sheet.' };
+}
+
+/** Emails the household a fresh private link (or a receipt while the site is not live). Retires their old link. */
+function adminResend_(p, who, cfg) {
+  const id = String(p.id || ''), cache = CacheService.getScriptCache(), k = 'adm-resend:' + id;
+  if (cache.get(k)) return { ok: false, error: 'busy', message: 'This household was sent a link in the last two minutes. Give it a moment to arrive.' };
+  const sh = sheet_(TAB.reg), H = headers_(sh), all = sh.getDataRange().getValues();
+  for (let i = 1; i < all.length; i++) {
+    if (String(all[i][H.col['Household ID']]) !== id) continue;
+    const row = rowAt_(sh, H, i + 1), email = str_(row.Email);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: 'invalid', message: 'This household has no valid email on file.' };
+    sendLink_(row, cfg, true);
+    cache.put(k, '1', 120);
+    audit_(who.email, 'household.resend', id, str_(row.Preferred || row.First) + ' ' + str_(row.Last));
+    return { ok: true, message: yes_(cfg.siteLive) ? 'A fresh private link is on its way to ' + email + '. Their old link no longer works.' : 'A registration receipt is on its way to ' + email + '.' };
+  }
+  return { ok: false, error: 'missing', message: 'That household is no longer on the Sheet.' };
+}
+
+function stampSignIn_(email, name) {
+  try {
+    const sh = sheet_(TAB.admins), H = headers_(sh), all = sh.getDataRange().getValues();
+    if (H.col['Last sign-in'] == null) return;
+    for (let i = 1; i < all.length; i++) {
+      if (String(all[i][H.col.Email] || '').trim().toLowerCase() !== email) continue;
+      sh.getRange(i + 1, H.col['Last sign-in'] + 1).setValue(new Date());
+      if (H.col.Name != null && !all[i][H.col.Name] && name) sh.getRange(i + 1, H.col.Name + 1).setValue(clean_(name, 80));
+      return;
+    }
+  } catch (err) { console.warn('sign-in stamp failed', err); }
+}
+
+/** One row per sign-in and change. Best effort: a failed audit write is logged but never blocks the committee. */
+function audit_(who, action, target, detail) {
+  try { ensureTab_(TAB.audit, AUDIT_HEADERS).appendRow([new Date(), clean_(who, 120), clean_(action, 40), clean_(target, 40), clean_(detail, 300)]); }
+  catch (err) { console.warn('audit failed', err); }
+}
+function auditRows_(n) {
+  let rows;
+  try { rows = rows_(TAB.audit); } catch (err) { return []; }
+  return rows.slice(-n).reverse().map(r => ({ when: when_(r.When), who: str_(r.Who), action: str_(r.Action), target: str_(r.Target), detail: str_(r.Detail) }));
+}
+
+function ensureTab_(name, headers) {
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName(name);
+  if (!sh) {
+    sh = ss.insertSheet(name);
+    sh.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+function ensureAdminsTab_() {
+  const fresh = !SpreadsheetApp.getActive().getSheetByName(TAB.admins);
+  const sh = ensureTab_(TAB.admins, ADMIN_HEADERS);
+  if (fresh) {
+    sh.getRange(2, 3, 200, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(Object.keys(ROLES), true).setAllowInvalid(false).build());
+    sh.getRange(2, 4, 200, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().build());   // validation only: no FALSE values, so getLastRow() stays honest
+  }
+  return sh;
+}
+
 /* ---------------- helpers ---------------- */
+
+function when_(v) { return v instanceof Date ? v.toISOString() : str_(v); }
 
 function mineData_(row, cfg) {
   const pays = rows_(TAB.pay).filter(p => p['Household ID'] === row['Household ID']).map(p => ({
     amount: Number(p.Amount) || 0, method: String(p.Method || ''), date: iso_(p['Date sent']), ref: String(p.Reference || ''),
     status: String(p.Status || 'Reported'), confirmedOn: iso_(p['Confirmed on'])
   }));
-  const att = String(row.Attendees || '').split('\n').filter(String).map(l => {
-    const [name, band, age, shirt] = l.split(' · ');
-    return { name: name || '', band: /child/i.test(band || '') ? 'child' : 'adult', age: age || '', shirt: shirt || '' };
-  });
+  const att = attendees_(row.Attendees);
   const dayKeys = Object.keys(DAY_LABELS).filter(k => String(row.Days || '').indexOf(DAY_LABELS[k]) >= 0);
   return {
     householdId: row['Household ID'],
@@ -366,6 +672,14 @@ function mineData_(row, cfg) {
     },
     payments: pays
   };
+}
+
+/** The Attendees cell holds one person per line: "Name · Adult|Child · age · shirt". */
+function attendees_(text) {
+  return String(text || '').split('\n').filter(String).map(l => {
+    const [name, band, age, shirt] = l.split(' · ');
+    return { name: str_(name), band: /child/i.test(band || '') ? 'child' : 'adult', age: age || '', shirt: shirt || '' };
+  });
 }
 
 function sendLink_(row, cfg, rotate, token) {

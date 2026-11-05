@@ -9,6 +9,7 @@ Family members register, report payments, and share stories, tributes, veterans,
 | Piece | Where it lives |
 |---|---|
 | Website (`index.html`, `app.js`) | This repo, served by GitHub Pages |
+| Committee back office (`admin.html`, `admin.js`) | This repo. Sign in with Google; access is set on the Sheet's **Admins** tab |
 | Data (registrations, payments, stories, schedule, settings) | A private Google Sheet owned by the committee |
 | Photos | A private Drive folder next to the Sheet (each photo is viewable by link) |
 | Backend (`apps-script/Code.gs`) | Google Apps Script bound to the Sheet |
@@ -30,7 +31,19 @@ This repo holds **no family data**. Family names, the tree, and everything peopl
 4. Click **Deploy → New deployment → Web app**. Set **Execute as: Me** and **Who has access: Anyone**. Click **Deploy** and copy the URL that ends in `/exec`.
 5. Paste that URL into `config.js` (`apiUrl: "…/exec"`) and commit.
 
-When you change `Code.gs` later, use **Deploy → Manage deployments → Edit → New version**. That keeps the same URL.
+When you change `Code.gs` later, use **Deploy → Manage deployments → Edit → New version**. That keeps the same URL. If the new code needs a new permission (the back office does), run `setup` once more first.
+
+## Committee back office
+
+`https://lewisfamilyroots.com/admin.html` (also linked as *Committee sign-in* in the site footer). Committee members sign in with Google to confirm payments, look up households, resend lost links, hide posts and see headcounts. They can do all of this from a phone, without opening the Sheet. Who gets in, and as which role (`owner`, `treasurer`, `coordinator`, `viewer`), is set on the **Admins** tab. Every sign-in and change is logged on the **Audit** tab.
+
+Setup, the sign-in flow, roles and the security model are in **[docs/back-office.md](docs/back-office.md)**. In short:
+
+1. Create a Google OAuth **Web** client with `https://lewisfamilyroots.com` as an authorized JavaScript origin.
+2. Put its client ID in `config.js` (`googleClientId`) and on the Config tab (`googleClientId`).
+3. Paste the new `Code.gs`, run `setup`, and deploy a new version.
+
+Backend tests: `node --test` (Node 18+, nothing to install).
 
 ## Committee guide
 
@@ -40,6 +53,8 @@ When you change `Code.gs` later, use **Deploy → Manage deployments → Edit �
 - **Agenda tab:** one row per schedule item. The website groups them by day.
 - **Entries tab:** untick **Visible** to hide a story, photo or listing.
 - **Reunion menu** (in the Sheet's menu bar): refresh balances by hand.
+- **Admins tab:** who can use the back office. One row per person: Email, Role, and a ticked **Active** box. Untick to remove access.
+- **Audit tab:** filled in automatically. One row per back-office sign-in, refused sign-in and change.
 
 ## Sharing link
 
