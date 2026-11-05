@@ -9,6 +9,7 @@ const store = {
   set(k, v){ try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
 };
 const API = (window.LR && window.LR.apiUrl) || '';
+const PHOTOS_ENABLED = (window.LR && window.LR.photosEnabled) !== false;
 /* Link mode: on a Claude page, which cannot call the backend in the background. Family data is built into the page,
    and the Register button opens the backend's sign-up URL in a new tab, which records the row and confirms it. */
 const EMB = (window.LR && window.LR.embedded) || null;
@@ -138,6 +139,7 @@ function renderGates(){
   $$('[data-subview]').forEach(d => { if (show) d.hidden = true; });
   if (!show){ const on = $('.subnav [aria-pressed="true"]'); $$('[data-subview]').forEach(d => d.hidden = d.dataset.subview !== (on ? on.dataset.sub : 'tree')); }
   $$('.adder').forEach(a => a.hidden = show);
+  renderPhotosGate();
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-gate-go]'); if (!b) return;
@@ -392,6 +394,7 @@ function shrink(file){
 }
 $$('[data-add]').forEach(btn => btn.addEventListener('click', async () => {
   const key = btn.dataset.add, F = FORM[key], msg = $(`[data-msg="${key}"]`);
+  if (key === 'photos' && !PHOTOS_ENABLED){ say(msg, 'Photo uploads are temporarily disabled during beta.', false); return; }
   if (!hasFamily()){ say(msg, 'Enter the family code first.', false); return; }
   if (F.need && !$('#' + F.need).value.trim()){ say(msg, F.needMsg, false); return; }
   const file = F.photo && $('#' + F.photo).files[0];
@@ -452,11 +455,24 @@ function setBanner(text){
   b.hidden = !text; if (text) b.textContent = text;
 }
 
+/* ---------- photos beta gate ---------- */
+function renderPhotosGate(){
+  const gate = $('#photosBetaGate');
+  if (!gate) return;
+  if (!PHOTOS_ENABLED){
+    gate.hidden = false;
+    $$('[data-view="photos"] .adder').forEach(el => el.hidden = true);
+  } else {
+    gate.hidden = true;
+    $$('[data-view="photos"] .adder').forEach(el => el.hidden = !hasFamily());
+  }
+}
+
 /* ---------- boot ---------- */
 setLook(LOOKS.includes(store.get('lr-look')) ? store.get('lr-look') : 'sequoia');
 setMode(store.get('lr-theme') || 'light');
 if (LINKMODE) $('#meEmpty').innerHTML = '<h3 style="font:400 1.5rem var(--display)">Coming soon</h3><p class="hint">Checking your registration and reporting payments will open here on the full website. Until then, the committee will email you about fees and payment.</p><p class="hint" style="margin-top:14px">Not registered yet? <a href="#register">Register your household</a>.</p>';
-renderAttendees(); renderInfo(); renderMe(); renderFamily(); renderGates(); route(); setBanner();
+renderAttendees(); renderInfo(); renderMe(); renderFamily(); renderGates(); route(); setBanner(); renderPhotosGate();
 document.addEventListener('visibilitychange', () => { if (!document.hidden && currentView === 'home') drawRings(false); });
 addEventListener('lr-refresh', () => { loadFamily(true); if (S.token) loadMine(); });
 loadInfo(); loadFamily();
