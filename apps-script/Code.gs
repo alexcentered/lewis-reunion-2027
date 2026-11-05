@@ -20,7 +20,7 @@ function doGet(e) {
   const p = (e && e.parameter) || {};
   if (p.action === 'signup') {
     try { return signup_(p); }
-    catch (err) { console.error(err && err.stack || err); return page_('Something went wrong', '<p>Your registration may not have come through. Please email the committee and tell them: ' + htmlEsc_(String(err && err.message || err)) + '</p>'); }
+    catch (err) { console.error(err && err.stack || err); return page_('Something went wrong', '<p>Your registration may not have come through. Please email the committee.</p>'); }
   }
   return handle_(p);
 }
@@ -228,6 +228,7 @@ function report_(p, cfg) {
 function post_(p, cfg) {
   const type = String(p.type || '');
   if (TYPES.indexOf(type) < 0) return { ok: false, error: 'invalid', message: 'Unknown section.' };
+  if (type === 'photo' && !yes_(cfg.photosEnabled)) return { ok: false, error: 'disabled', message: 'Photo uploads are temporarily disabled during beta.' };
   const f = p.fields || {};
   const data = {
     'Entry ID': 'E-' + Utilities.getUuid().slice(0, 8).toUpperCase(), 'Type': type, 'Posted': new Date(),
@@ -336,7 +337,6 @@ function setup() {
   const folder = photoFolder_(cfg);
   recompute_();
   console.log('Setup complete. Photo folder: ' + folder.getUrl());
-  console.log('Family code: ' + cfg.familyCode);
 }
 
 /* ---------------- helpers ---------------- */

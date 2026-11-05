@@ -214,6 +214,9 @@ details p{color:var(--muted);max-width:68ch}
 .photo img{display:block;width:100%;height:auto}
 .photo figcaption{padding:10px 12px;font-size:.86rem;color:var(--muted)}
 .photo figcaption b{color:var(--text);font-weight:500}
+.photos-beta-banner{margin:24px 0;padding:24px;border-radius:12px;background:var(--surface);border:1px solid var(--line);text-align:center}
+.photos-beta-banner h3{font:500 1.2rem var(--display);color:var(--text);margin:0 0 8px}
+.photos-beta-banner p{font-size:.95rem;color:var(--muted);margin:0;line-height:1.5}
 .strip{overflow:hidden;border-block:1px solid var(--line);padding:14px 0;margin:6px 0 28px}
 .strip-in{display:flex;gap:12px;width:max-content;animation:drift 60s linear infinite}
 .strip-in img{height:120px;width:auto;border-radius:8px}
@@ -757,6 +760,10 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
     <div class="section">
       <div class="section-head"><div><div class="kicker">Give me that picture</div><h2>Photo Sharing</h2>
       <p>Old albums, the 2008 reunion, weddings, military portraits, last week's cookout. Say who's in it and roughly when, so the photo stays with the people in it.</p></div></div>
+      <div class="photos-beta-banner" id="photosBetaGate" hidden>
+        <h3>Photos are coming soon</h3>
+        <p>We're finishing a few privacy touches before family photo sharing opens. Thanks for your patience!</p>
+      </div>
     </div>
   </div>
   <div class="strip" aria-hidden="true"><div class="strip-in" id="strip"></div></div>
