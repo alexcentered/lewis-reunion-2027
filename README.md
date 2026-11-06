@@ -18,7 +18,8 @@ This repo holds **no family data**. Family names, the tree, and everything peopl
 ### Privacy
 
 - **Public, no code needed:** dates, schedule, hotel, venues, things to do in Fresno and the FAQ.
-- **Family code needed:** the tree, the "Who's coming" list, stories, photos, the marketplace and registration. The code is built into the link the committee shares (`?c=…`), so relatives just tap the link. The code is set on the Sheet's **Config** tab. Change it to retire an old link.
+- **Family code needed:** the "Who's coming" list, stories, photos, the marketplace and registration. The code is built into the link the committee shares (`?c=…`), so relatives just tap the link. The code is set on the Sheet's **Config** tab (`familyCode`). Change it to retire an old link.
+- **Tree code needed:** the family tree requires a separate code (`treeCode` in Config) on top of the family code. This adds an extra layer of protection for family genealogy data.
 - **Private to the household and the committee:** contact details, attendees and payments. Each household gets a private edit link by email. Only a SHA-256 hash of that link's token is stored.
 - **Payments:** a reported payment never lowers the balance. It counts only after the committee sets its **Status** to `Confirmed` on the **Payments** tab.
 
@@ -30,13 +31,20 @@ This repo holds **no family data**. Family names, the tree, and everything peopl
 4. Click **Deploy → New deployment → Web app**. Set **Execute as: Me** and **Who has access: Anyone**. Click **Deploy** and copy the URL that ends in `/exec`.
 5. Paste that URL into `config.js` (`apiUrl: "…/exec"`) and commit.
 
-When you change `Code.gs` later, use **Deploy → Manage deployments → Edit → New version**. That keeps the same URL.
+When you change `Code.gs` later:
+1. Save your changes in the Apps Script editor
+2. Go to **Deploy → Manage deployments**
+3. Click the edit icon (pencil) on your existing deployment
+4. Under "New description", change **Version** to **"New version"**
+5. Click **Deploy**
+
+This keeps the same `/exec` URL while deploying the updated code.
 
 ## Committee guide
 
 - **Dashboard tab:** households, adults, children, room nights, paid / partial / unpaid, confirmed dollars, dollars awaiting a check, and households by branch.
 - **Payments tab:** set **Status** to `Confirmed` or `Not received`. The date and your email fill in automatically, and the family member's page updates on their next visit.
-- **Config tab:** fees per adult and child, payment handles, the verifier's name, the room-block note, and the family code.
+- **Config tab:** fees per adult and child, payment handles, the verifier's name, the room-block note, the family code (`familyCode`), and the tree code (`treeCode`).
 - **Agenda tab:** one row per schedule item. The website groups them by day.
 - **Entries tab:** untick **Visible** to hide a story, photo or listing.
 - **Reunion menu** (in the Sheet's menu bar): refresh balances by hand.
