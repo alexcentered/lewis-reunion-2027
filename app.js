@@ -86,11 +86,16 @@ const DAYS = [
   { key: 'sun', label: 'Sun, July 4', long: 'Family day and fireworks' },
   { key: 'mon', label: 'Mon, July 5', long: 'Farewell breakfast' }
 ];
+const sessionStore = {
+  get(k){ try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v){ try { v == null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch (e) {} }
+};
 const S = {
   info: { agenda: DEFAULT_AGENDA, email: 'lewisfamilyreunion2027@gmail.com', feeAdult: null, feeChild: null, childAge: 12, deadline: '', roomBlock: '' },
   family: null,            // branches, names, roll, entries, pay — only with the family code
   code: LINKMODE ? String(window.LR.code || '') : (store.get('lr-code') || ''), token: LINKMODE ? '' : (store.get('lr-token') || ''),
-  mine: null, codeBad: false
+  mine: null, codeBad: false,
+  treeCode: LINKMODE ? '' : (sessionStore.get('lr-tree-code') || ''), treeData: null, treeCodeBad: false
 };
 
 /* ---------- API ---------- */
@@ -125,6 +130,7 @@ $$('.subnav button').forEach(b => b.addEventListener('click', () => {
 
 /* ---------- family-code gate ---------- */
 const hasFamily = () => !!S.family;
+const hasTree = () => !!S.treeData;
 function renderGates(){
   const show = !hasFamily();
   $$('[data-gate]').forEach((g, i) => {
@@ -139,6 +145,7 @@ function renderGates(){
   $$('[data-subview]').forEach(d => { if (show) d.hidden = true; });
   if (!show){ const on = $('.subnav [aria-pressed="true"]'); $$('[data-subview]').forEach(d => d.hidden = d.dataset.subview !== (on ? on.dataset.sub : 'tree')); }
   $$('.adder').forEach(a => a.hidden = show);
+  renderTreeGate();
   renderPhotosGate();
 }
 document.addEventListener('click', e => {
@@ -147,6 +154,25 @@ document.addEventListener('click', e => {
   S.code = v; S.codeBad = false; store.set('lr-code', v); loadFamily();
 });
 document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id && e.target.id.startsWith('gate-in-')){ e.preventDefault(); $(`[data-gate-go="${e.target.id.slice(8)}"]`).click(); } });
+
+/* ---------- tree-code gate ---------- */
+function renderTreeGate(){
+  const gate = $('#treeGate');
+  if (!gate) return;
+  const show = hasFamily() && !hasTree();
+  gate.hidden = !show;
+  if (!show) return;
+  if (S.loadingTree){ gate.innerHTML = `<h3>Loading the family tree…</h3><p class="hint">One moment while we check your code.</p>`; return; }
+  gate.innerHTML = `<h3>Enter the family tree code</h3><p>${S.treeCodeBad ? 'That code did not work. ' : ''}The family tree requires a separate code. Ask the reunion committee for the tree code.</p>
+    <div class="row"><input type="text" id="tree-code-in" placeholder="Tree code" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Tree code" style="flex:1;min-width:200px;max-width:340px"><button type="button" class="btn" id="tree-code-go">View tree</button></div>`;
+}
+document.addEventListener('click', e => {
+  if (e.target.id === 'tree-code-go') {
+    const v = $('#tree-code-in').value.trim(); if (!v) return;
+    S.treeCode = v; S.treeCodeBad = false; sessionStore.set('lr-tree-code', v); loadTree();
+  }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'tree-code-in'){ e.preventDefault(); $('#tree-code-go').click(); } });
 
 /* ---------- public info ---------- */
 function fmtDate(iso){ if (!iso) return ''; const d = new Date(iso + 'T12:00:00'); return isNaN(d) ? iso : d.toLocaleDateString('en-US', {month: 'long', day: 'numeric', year: 'numeric'}); }
@@ -424,7 +450,7 @@ async function loadInfo(){
 async function loadFamily(quiet){
   if (EMB){
     S.family = EMB.family; renderGates(); renderFamily();
-    if (window.LRTree && !S.treeSig){ S.treeSig = 'embedded'; LRTree.load(S.family.tree || [], S.family.treeNotes || []); }
+    if (window.LRTree && !S.treeSig){ S.treeSig = 'embedded'; LRTree.load(EMB.family.tree || [], EMB.family.treeNotes || []); }
     return;
   }
   if (!S.code){ renderGates(); return; }
@@ -437,8 +463,22 @@ async function loadFamily(quiet){
   } catch (e) { if (!quiet) setBanner('We could not reach the reunion server just now. Some sections will appear when the connection returns.'); }
   S.loadingFamily = false;
   renderGates(); renderFamily();
-  if (S.family && window.LRTree){ const sig = (S.family.tree || []).length + ':' + JSON.stringify((S.family.tree || []).slice(-1)); if (sig !== S.treeSig){ S.treeSig = sig; LRTree.load(S.family.tree || [], S.family.treeNotes || []); } }
   if (S.family && S.token && !S.mine) loadMine();
+  if (S.family && S.treeCode) loadTree(quiet);
+}
+async function loadTree(quiet){
+  if (LINKMODE) return;
+  if (!S.treeCode){ renderTreeGate(); return; }
+  if (!API){ renderTreeGate(); return; }
+  S.loadingTree = true; renderTreeGate();
+  try {
+    const d = await api('tree', { treeCode: S.treeCode });
+    if (d.ok){ S.treeData = d; S.treeCodeBad = false; sessionStore.set('lr-tree-code', S.treeCode); }
+    else if (d.error === 'treeCode'){ S.treeData = null; S.treeCodeBad = true; sessionStore.set('lr-tree-code', null); }
+  } catch (e) { if (!quiet) setBanner('We could not reach the reunion server just now. The tree will appear when the connection returns.'); }
+  S.loadingTree = false;
+  renderTreeGate();
+  if (S.treeData && window.LRTree){ const sig = (S.treeData.tree || []).length + ':' + JSON.stringify((S.treeData.tree || []).slice(-1)); if (sig !== S.treeSig){ S.treeSig = sig; LRTree.load(S.treeData.tree || [], S.treeData.treeNotes || []); } }
 }
 async function loadMine(){
   try {
@@ -474,6 +514,6 @@ setMode(store.get('lr-theme') || 'light');
 if (LINKMODE) $('#meEmpty').innerHTML = '<h3 style="font:400 1.5rem var(--display)">Coming soon</h3><p class="hint">Checking your registration and reporting payments will open here on the full website. Until then, the committee will email you about fees and payment.</p><p class="hint" style="margin-top:14px">Not registered yet? <a href="#register">Register your household</a>.</p>';
 renderAttendees(); renderInfo(); renderMe(); renderFamily(); renderGates(); route(); setBanner(); renderPhotosGate();
 document.addEventListener('visibilitychange', () => { if (!document.hidden && currentView === 'home') drawRings(false); });
-addEventListener('lr-refresh', () => { loadFamily(true); if (S.token) loadMine(); });
+addEventListener('lr-refresh', () => { loadFamily(true); if (S.token) loadMine(); if (S.treeCode) loadTree(true); });
 loadInfo(); loadFamily();
 })();

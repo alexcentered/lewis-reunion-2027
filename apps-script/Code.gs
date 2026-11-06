@@ -81,6 +81,7 @@ function handle_(p) {
     if (!codeOk_(p.code, cfg)) return out_({ ok: false, error: 'code', message: 'That family code is not right. Please use the link the committee sent you.' });
     switch (action) {
       case 'family': return out_(familyData_(cfg));
+      case 'tree': return out_(treeData_(p, cfg));
       case 'mine': return out_(mine_(p, cfg));
       case 'register': return out_(locked_(() => register_(p, cfg)));
       case 'report': return out_(locked_(() => report_(p, cfg)));
@@ -120,9 +121,16 @@ function familyData_(cfg) {
     photo: r['Photo ID'] ? 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(r['Photo ID']) + '&sz=w1600' : ''
   })).reverse();
   return {
-    ok: true, branches, names, roll, entries, tree: tree_(), treeNotes: treeNotes_(),
+    ok: true, branches, names, roll, entries,
     pay: { zelle: String(cfg.zelle || ''), cashapp: String(cfg.cashapp || ''), venmo: String(cfg.venmo || ''), paypal: String(cfg.paypal || ''), verifier: String(cfg.verifier || '') }
   };
+}
+
+function treeData_(p, cfg) {
+  if (!treeCodeOk_(p.treeCode, cfg)) {
+    return { ok: false, error: 'treeCode', message: 'That tree code is not right.' };
+  }
+  return { ok: true, tree: tree_(), treeNotes: treeNotes_() };
 }
 
 /** The family tree (People tab): one row per person; Parents and Partners hold comma-separated person IDs. */
@@ -455,6 +463,12 @@ function photoFolder_(cfg) {
 function codeOk_(code, cfg) {
   const want = String(cfg.familyCode || '').trim().toLowerCase();
   return !!want && String(code || '').trim().toLowerCase() === want;
+}
+
+function treeCodeOk_(code, cfg) {
+  const want = String(cfg.treeCode || '').trim().toLowerCase();
+  if (!want) return false;
+  return String(code || '').trim().toLowerCase() === want;
 }
 
 function sheet_(name) {
