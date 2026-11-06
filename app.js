@@ -450,7 +450,6 @@ async function loadInfo(){
 async function loadFamily(quiet){
   if (EMB){
     S.family = EMB.family; renderGates(); renderFamily();
-    if (window.LRTree && !S.treeSig){ S.treeSig = 'embedded'; LRTree.load(EMB.family.tree || [], EMB.family.treeNotes || []); }
     return;
   }
   if (!S.code){ renderGates(); return; }
