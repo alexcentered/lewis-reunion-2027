@@ -19,6 +19,7 @@ const TAB = { reg: 'Registrations', pay: 'Payments', ent: 'Entries', cfg: 'Confi
 const MAIL_RESERVE = 5;
 const MAIL_HEADERS = ['Queued', 'To', 'Subject', 'Html', 'Text', 'Status', 'Attempts', 'Last error', 'Sent', 'Via', 'Key', 'Kind', 'Household ID'];
 const MAIL_MAX_ATTEMPTS = 20;      // a queued email that fails this often is marked Failed (never deleted)
+const MAIL_CLAIM_MINUTES = 15;     // a MailQueue row left 'Sending' this long belongs to a drain that died and is claimed again
 const BREVO_URL = 'https://api.brevo.com/v3/smtp/email';
 /* Config tab keys the mail layer reads. config_() fills these in when the row is missing or blank;
    ensureConfigKeys_() (run by setup) appends the rows so the committee can see and change them. */
@@ -429,7 +430,7 @@ function onPaymentsEdit(e) {
 function paymentReceipts_(sh, first, last) {
   const cfg = config_();
   try { recompute_(); } catch (err) { console.warn('recompute failed', err); }   // so the receipt shows fresh totals
-  ensureTab_(TAB.pay, ['Receipt sent']);
+  ensureTab_(TAB.pay, ['Payment ID', 'Receipt sent']);
   const H = headers_(sh), regs = rows_(TAB.reg);
   for (let r = first; r <= last; r++) {
     const pay = rowAt_(sh, H, r), st = String(pay.Status || '');
@@ -437,6 +438,9 @@ function paymentReceipts_(sh, first, last) {
     if (String(pay['Receipt sent'] || '').indexOf(st) === 0) continue;
     const reg = regs.find(x => x['Household ID'] && x['Household ID'] === pay['Household ID']);
     if (!reg || !reg.Email) { console.warn('Payment receipts: no registration with an email for row ' + r); continue; }
+    // A row the committee typed by hand has no Payment ID. Give it one (same shape as report_) and store it first,
+    // so the receipt key 'receipt:<Payment ID>:<Status>' is unique to this row instead of shared by every blank one.
+    if (!str_(pay['Payment ID']).trim()) { pay['Payment ID'] = 'P-' + Utilities.getUuid().slice(0, 8).toUpperCase(); sh.getRange(r, H.col['Payment ID'] + 1).setValue(pay['Payment ID']); }
     const res = sendMail_(receiptEmail_(reg, pay, cfg), cfg);
     if (res.ok) sh.getRange(r, H.col['Receipt sent'] + 1).setValue(st + ' · ' + new Date().toISOString() + ' · ' + res.via);
     else console.warn('Payment receipts: row ' + r + ' not sent: ' + res.error);
@@ -657,7 +661,8 @@ function sendReceipt_(row, cfg) {
     '<p>The committee will email you about fees and payment. To change anything, reply to this email.</p>', cfg);
   return sendMail_({
     to: String(row.Email), toName: name, subject: 'You are registered: Lewis Family Reunion 2027', html: html, text: htmlToText_(html),
-    key: 'receipt0:' + row['Household ID'], kind: 'receipt0', householdId: String(row['Household ID'] || '')
+    // The minute in the key: a double tap sends one email, but a resend asked for later the same day still goes out.
+    key: 'receipt0:' + row['Household ID'] + ':' + Utilities.formatDate(new Date(), 'UTC', 'yyyyMMddHHmm'), kind: 'receipt0', householdId: String(row['Household ID'] || '')
   }, cfg);
 }
 
@@ -674,8 +679,9 @@ function sendMail_(msg, cfg, opts) {
   const res = { ok: false, via: '', error: '' };
   if (!msg || !msg.to) { res.error = 'no recipient'; return res; }
   if (!msg.text) msg.text = htmlToText_(msg.html);
-  const cache = CacheService.getScriptCache(), cacheKey = msg.key ? 'mail:' + msg.key : '';
-  try { if (cacheKey && cache.get(cacheKey)) return { ok: true, via: 'dupe', error: '' }; } catch (err) { console.warn('mail cache: ' + (err && err.message)); }
+  const cacheKey = msg.key ? 'mail:' + msg.key : '';
+  let cache = null;
+  try { cache = CacheService.getScriptCache(); if (cacheKey && cache.get(cacheKey)) return { ok: true, via: 'dupe', error: '' }; } catch (err) { console.warn('mail cache: ' + (err && err.message)); }
   const errors = [];
   if (opts.skipBrevo) errors.push('Brevo skipped');
   else {
@@ -695,7 +701,7 @@ function sendMail_(msg, cfg, opts) {
   }
   if (res.ok) {
     try { logMail_(msg, res.via); } catch (err) { console.warn('MailQueue log: ' + (err && err.message)); }
-    try { if (cacheKey) cache.put(cacheKey, '1', 6 * 3600); } catch (err) {}
+    try { if (cacheKey && cache) cache.put(cacheKey, '1', 6 * 3600); } catch (err) {}
     return res;
   }
   res.error = errors.join('; ');
@@ -704,7 +710,7 @@ function sendMail_(msg, cfg, opts) {
   return res;
 }
 
-/** The MailApp (Gmail) send. Kept in one place so the only MailApp.sendEmail calls are here and in drain_. */
+/** The MailApp (Gmail) send. Kept in one place so the only MailApp.sendEmail calls are here and in send_. */
 function mailAppSend_(msg, cfg) {
   MailApp.sendEmail({
     to: String(msg.to), subject: String(msg.subject || ''), htmlBody: String(msg.html || ''), body: String(msg.text || ''),
@@ -713,9 +719,9 @@ function mailAppSend_(msg, cfg) {
 }
 
 /**
- * One transactional email through the Brevo API. Returns { ok, id, status, error, permanent, quota, config, retry }:
- * config = the key is missing or refused (401/403), quota = 402/429, permanent = another 4xx (bad address and the like),
- * retry = 5xx or a network error. The key and the message body are never logged.
+ * One transactional email through the Brevo API. Returns { ok, id, error, quota, config }: any 2xx is ok (Brevo
+ * answers 201 with a messageId), config = the key is missing or refused (401/403), quota = 402/429. Callers treat every
+ * other failure (4xx, 5xx, network) alike: try MailApp, else leave the row queued. The key and the message body are never logged.
  */
 function brevoSend_(msg, cfg) {
   let key = '';
@@ -732,14 +738,13 @@ function brevoSend_(msg, cfg) {
   let resp;
   try {
     resp = UrlFetchApp.fetch(BREVO_URL, { method: 'post', contentType: 'application/json', headers: { 'api-key': key }, muteHttpExceptions: true, payload: JSON.stringify(payload) });
-  } catch (err) { return { ok: false, error: 'Brevo: ' + (err && err.message), retry: true }; }
+  } catch (err) { return { ok: false, error: 'Brevo: ' + (err && err.message) }; }
   const status = resp.getResponseCode();
   let body = {};
   try { body = JSON.parse(resp.getContentText() || '{}') || {}; } catch (err) {}
-  if (status === 201) return { ok: true, id: String(body.messageId || ''), status: status };
+  if (status >= 200 && status < 300) return { ok: true, id: String(body.messageId || '') };
   const error = 'Brevo ' + status + (body.code ? ' ' + body.code : '') + (body.message ? ': ' + String(body.message).slice(0, 200) : '');
-  const config = status === 401 || status === 403, quota = status === 402 || status === 429;
-  return { ok: false, status: status, error: error, config: config, quota: quota, permanent: status >= 400 && status < 500 && !config && !quota, retry: status >= 500 || status < 400 };
+  return { ok: false, error: error, config: status === 401 || status === 403, quota: status === 402 || status === 429 };
 }
 
 /** Plain-text version of simple HTML (paragraphs, lists, line breaks, links). Used for email text parts and page_. */
@@ -759,72 +764,119 @@ function mailWrap_(bodyHtml, cfg) {
     '<p>The Lewis Family Reunion Committee<br>' + htmlEsc_(cfg.email || '') + '</p></div>';
 }
 
-/** One MailQueue row in header order (MAIL_HEADERS). */
+/** One MailQueue row as { header: value }; appendMail_ lays it out in the tab's live header order. */
 function mailRow_(msg, status, attempts, error, sent, via) {
-  return [new Date(), String(msg.to || ''), String(msg.subject || ''), String(msg.html || ''), String(msg.text || ''),
-    status, attempts, String(error || ''), sent || '', String(via || ''), String(msg.key || ''), String(msg.kind || ''), String(msg.householdId || '')];
+  return {
+    Queued: new Date(), To: String(msg.to || ''), Subject: String(msg.subject || ''), Html: String(msg.html || ''), Text: String(msg.text || ''),
+    Status: status, Attempts: attempts, 'Last error': String(error || ''), Sent: sent || '', Via: String(via || ''),
+    Key: String(msg.key || ''), Kind: String(msg.kind || ''), 'Household ID': String(msg.householdId || '')
+  };
+}
+/** Appends a MailQueue row by header name (the register_ pattern), so a moved or deleted column cannot misalign it. */
+function appendMail_(data) {
+  const sh = ensureTab_(TAB.mail, MAIL_HEADERS), H = headers_(sh);
+  sh.appendRow(H.names.map(n => data[n] !== undefined ? data[n] : ''));
 }
 /** Parks an email for drainMailQueue(). lastError says why the direct send did not happen. */
-function enqueue_(msg, lastError) { ensureTab_(TAB.mail, MAIL_HEADERS).appendRow(mailRow_(msg, 'Queued', 0, lastError, '', '')); }
+function enqueue_(msg, lastError) { appendMail_(mailRow_(msg, 'Queued', 0, lastError, '', '')); }
 /** Records an email that went out directly, so MailQueue is the full log. */
-function logMail_(msg, via) { ensureTab_(TAB.mail, MAIL_HEADERS).appendRow(mailRow_(msg, 'Sent', 1, '', new Date(), via)); }
+function logMail_(msg, via) { appendMail_(mailRow_(msg, 'Sent', 1, '', new Date(), via)); }
 
 /**
- * Hourly trigger and menu item "Send queued mail now". Sends MailQueue rows whose Status is Queued, oldest first,
- * at most 100 per run and for at most 4.5 minutes. Brevo is used until a quota or key problem closes it for the run,
- * then MailApp within today's quota; what cannot be sent stays Queued with the reason in Last error. A permanent
- * refusal (bad address) or MAIL_MAX_ATTEMPTS tries marks the row Failed; the committee retries by typing Queued.
+ * Hourly trigger and menu item "Send queued mail now". Two steps so the script lock is held for a moment, not for the
+ * whole run (registrations used to get "Lots of cousins at once!" during a drain). claim_ (under locked_) takes the
+ * Queued rows, oldest first and at most 100, marks each Status 'Sending' with 'claimed <ISO time>' in Last error, and
+ * releases the lock. send_ then works through them for at most 4.5 minutes without the lock, writing Status, Attempts,
+ * Last error, Sent and Via per row as it goes; rows it does not reach go back to Queued. A row left 'Sending' for more
+ * than MAIL_CLAIM_MINUTES (a run that died) is claimed again by the next run.
+ * Brevo is used until a quota or key problem closes it for the run (no attempt counted), then MailApp within today's
+ * quota. Any other Brevo failure (bad address, 5xx, network) falls through to MailApp the same way the live path does.
+ * A row that could not be sent gets exactly one more Attempt per run and is marked Failed at MAIL_MAX_ATTEMPTS; what
+ * was not tried (both routes closed) stays Queued with the reason. The committee retries a Failed row by typing Queued.
+ * MailQueue rows are never deleted by code, so a row number noted under the lock still points at the same row later;
+ * do not delete rows by hand while a drain is running.
  */
 function drainMailQueue() {
-  const res = locked_(drain_);
-  if (res.error === 'busy') console.log('Mail queue: the sheet is busy; try again in a minute.');
-  else console.log('Mail queue: ' + res.sent + ' sent, ' + res.failed + ' failed, ' + res.left + ' still queued.');
+  const claim = locked_(claim_);
+  if (claim.error === 'busy') { console.log('Mail queue: the sheet is busy; try again in a minute.'); return claim; }
+  const res = send_(claim);
+  console.log('Mail queue: ' + res.sent + ' sent, ' + res.failed + ' failed, ' + res.left + ' still queued.');
   return res;
 }
 
-function drain_() {
-  const start = Date.now(), out = { ok: true, sent: 0, failed: 0, left: 0 };
-  const cfg = config_(), sh = ensureTab_(TAB.mail, MAIL_HEADERS), H = headers_(sh), last = sh.getLastRow();
+/** Status cell text as the committee may have typed it ('queued ' counts as Queued). */
+function mailStatus_(v) { return String(v == null ? '' : v).trim().toLowerCase(); }
+
+/** Under the lock: pick the rows to send and mark them 'Sending'. Returns { ok, sh, H, todo: [{ row, r }], left }. */
+function claim_() {
+  const sh = ensureTab_(TAB.mail, MAIL_HEADERS), H = headers_(sh), last = sh.getLastRow(), col = n => H.col[n];
+  const out = { ok: true, sh: sh, H: H, todo: [], left: 0 };
   if (last < 2) return out;
-  const col = n => H.col[n];
-  const all = sh.getRange(2, 1, last - 1, H.names.length).getValues();
+  const all = sh.getRange(2, 1, last - 1, H.names.length).getValues(), stale = Date.now() - MAIL_CLAIM_MINUTES * 60000;
   const todo = [];
-  all.forEach((r, i) => { if (String(r[col('Status')]) === 'Queued') todo.push({ row: i + 2, r: r }); });
+  all.forEach((r, i) => {
+    const st = mailStatus_(r[col('Status')]);
+    if (st === 'queued') todo.push({ row: i + 2, r: r });
+    else if (st === 'sending') {   // a claim with no readable time, or an old one, belongs to a run that died
+      const m = /^claimed (\S+)/.exec(String(r[col('Last error')] || '')), t = m ? new Date(m[1]).getTime() : NaN;
+      if (isNaN(t) || t < stale) todo.push({ row: i + 2, r: r });
+    }
+  });
   todo.sort((a, b) => new Date(a.r[col('Queued')]) - new Date(b.r[col('Queued')]));
-  const outCols = ['Status', 'Attempts', 'Last error', 'Sent', 'Via'].map(col);
-  const contiguous = outCols.every((c, i) => c === outCols[0] + i);
-  const cache = CacheService.getScriptCache();
+  out.todo = todo.slice(0, 100);
+  out.left = todo.length - out.todo.length;   // rows the cap left for the next run
+  const now = new Date().toISOString();
+  out.todo.forEach(item => mailWrite_(sh, H, item.row, { Status: 'Sending', 'Last error': 'claimed ' + now }));
+  return out;
+}
+
+/** Writes some of Status, Attempts, Last error, Sent, Via on one MailQueue row, as one block when they sit side by side. */
+function mailWrite_(sh, H, row, vals) {
+  const names = ['Status', 'Attempts', 'Last error', 'Sent', 'Via'].filter(n => vals[n] !== undefined && H.col[n] !== undefined);
+  const cols = names.map(n => H.col[n]);
+  if (cols.length && cols.every((c, i) => c === cols[0] + i)) sh.getRange(row, cols[0] + 1, 1, cols.length).setValues([names.map(n => vals[n])]);
+  else names.forEach((n, i) => sh.getRange(row, cols[i] + 1).setValue(vals[n]));
+}
+
+/** Outside the lock: sends the claimed rows. Returns { ok, sent, failed, left }. */
+function send_(claim) {
+  const start = Date.now(), out = { ok: true, sent: 0, failed: 0, left: claim.left };
+  const sh = claim.sh, H = claim.H, col = n => H.col[n];
+  if (!claim.todo.length) return out;
+  const cfg = config_();
+  let cache = null;
+  try { cache = CacheService.getScriptCache(); } catch (err) {}
   let brevoOpen = true, budget = 0, n = 0;
   try { budget = MailApp.getRemainingDailyQuota() - MAIL_RESERVE; } catch (err) { budget = 0; }
-  for (const item of todo) {
-    if (n >= 100 || Date.now() - start > 270000) break;
+  for (const item of claim.todo) {
+    if (Date.now() - start > 270000) break;
     n++;
     const r = item.r;
     const msg = { to: r[col('To')], subject: r[col('Subject')], html: r[col('Html')], text: r[col('Text')], key: r[col('Key')] };
-    let attempts = Number(r[col('Attempts')]) || 0, status = 'Queued', via = '', error = String(r[col('Last error')] || ''), sent = '';
-    if (brevoOpen) {
-      const b = brevoSend_(msg, cfg);
-      if (b.ok) { status = 'Sent'; via = 'Brevo ' + b.id; }
-      else {
-        error = b.error;
-        if (b.quota || b.config) brevoOpen = false;          // not this message's fault: do not count an attempt
-        else { attempts++; if (b.permanent) status = 'Failed'; }
+    let attempts = Number(r[col('Attempts')]) || 0, status = 'Queued', via = '', sent = '', tried = false;
+    const errs = [];
+    try {
+      if (brevoOpen) {
+        const b = brevoSend_(msg, cfg);
+        if (b.ok) { status = 'Sent'; via = 'Brevo ' + b.id; }
+        else { errs.push(b.error); if (b.quota || b.config) brevoOpen = false; else tried = true; }   // quota/key: not this message's fault
+      } else errs.push('Brevo closed for this run');
+      if (status === 'Queued') {
+        if (budget > 0) {
+          try { mailAppSend_(msg, cfg); budget--; status = 'Sent'; via = 'MailApp'; }
+          catch (err) { tried = true; errs.push('MailApp: ' + (err && err.message)); }
+        } else errs.push('MailApp daily quota used up');
       }
-    } else if (!error) error = 'Brevo closed for this run';
-    if (status === 'Queued' && budget > 0) {
-      try { mailAppSend_(msg, cfg); budget--; status = 'Sent'; via = 'MailApp'; }
-      catch (err) { attempts++; error = 'MailApp: ' + (err && err.message); }
-    } else if (status === 'Queued' && budget <= 0) error = (error ? error + '; ' : '') + 'MailApp daily quota used up';
+    } catch (err) { tried = true; errs.push(String(err && err.message || err)); }
     if (status === 'Sent') {
-      sent = new Date(); error = ''; attempts++; out.sent++;
-      try { if (msg.key) cache.put('mail:' + msg.key, '1', 6 * 3600); } catch (err) {}
-    } else if (status === 'Queued' && attempts >= MAIL_MAX_ATTEMPTS) status = 'Failed';
+      sent = new Date(); attempts++; out.sent++;
+      try { if (msg.key && cache) cache.put('mail:' + msg.key, '1', 6 * 3600); } catch (err) {}
+    } else if (tried) { attempts++; if (attempts >= MAIL_MAX_ATTEMPTS) status = 'Failed'; }
     if (status === 'Failed') out.failed++; else if (status === 'Queued') out.left++;
-    const vals = [status, attempts, error, sent, via];
-    if (contiguous) sh.getRange(item.row, outCols[0] + 1, 1, 5).setValues([vals]);
-    else outCols.forEach((c, i) => sh.getRange(item.row, c + 1).setValue(vals[i]));
+    mailWrite_(sh, H, item.row, { Status: status, Attempts: attempts, 'Last error': status === 'Sent' ? '' : errs.join('; '), Sent: sent, Via: via });
   }
-  out.left += todo.length - n;   // rows the cap or the clock left for the next run
+  // Rows the clock left: hand them back now instead of waiting MAIL_CLAIM_MINUTES for a reclaim.
+  claim.todo.slice(n).forEach(item => { mailWrite_(sh, H, item.row, { Status: 'Queued', 'Last error': String(item.r[col('Last error')] || '') }); out.left++; });
   return out;
 }
 

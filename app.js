@@ -91,7 +91,8 @@ const S = {
   info: { agenda: DEFAULT_AGENDA, feeAdult: null, feeChild: null, childAge: 12, deadline: '', roomBlock: '' },
   family: null,            // branches, names, roll, entries, pay — only with the family code
   code: LINKMODE ? String(window.LR.code || '') : (store.get('lr-code') || ''), token: LINKMODE ? '' : (store.get('lr-token') || ''),
-  mine: null, codeBad: false, tokenBad: false,   // tokenBad: the stored registration code was refused by the server
+  mine: null, codeBad: false, tokenBad: false,   // tokenBad: a registration code the cousin just typed was refused by the server
+  tokenTyped: false,                             // true while openByCodes is checking a typed code; a stale stored token is dropped quietly
   treeData: null
 };
 
@@ -408,20 +409,22 @@ $('#lostBtn').addEventListener('click', async () => {
   try { const res = await api('resend', { email }); say(msg, res.message || 'Check your inbox.', !!res.ok); } catch (err) { say(msg, failText(err), false); }
   $('#lostBtn').disabled = false;
 });
-/* Typed codes from the email: the family code opens the family pages, the registration code opens this household. */
+/* Typed codes from the email: the family code opens the family pages, the registration code opens this household.
+   The registration code loses spaces and hyphens (the email shows it in groups of 4); the family code is only trimmed and
+   lowercased, the same as the gates and codeOk_ on the server, so a code with a hyphen in it still matches. */
 const normCode = v => String(v || '').replace(/[\s-]/g, '').toLowerCase();
 async function openByCodes(){
   const msg = $('#meMsg'), btn = $('#meGo');
-  const code = normCode($('#meCode').value) || S.code, token = normCode($('#meToken').value);
+  const code = $('#meCode').value.trim().toLowerCase() || S.code, token = normCode($('#meToken').value);
   if (!code){ say(msg, 'Enter the family code from your email.', false); $('#meCode').focus(); return; }
   if (token.length < 32 || !/^[a-f0-9]+$/.test(token)){ say(msg, 'That registration code looks incomplete. It is 32 letters and numbers, usually shown in groups of 4.', false); $('#meToken').focus(); return; }
   S.code = code; S.token = token; store.set('lr-code', code); store.set('lr-token', token);
-  S.mine = null; S.codeBad = false; S.tokenBad = false;
+  S.mine = null; S.codeBad = false; S.tokenBad = false; S.tokenTyped = true;
   btn.disabled = true; say(msg, 'Opening your registration…', true);
   try { await loadFamily(); } catch (_) {}
-  btn.disabled = false;
+  btn.disabled = false; S.tokenTyped = false;
   if (S.codeBad){ S.code = ''; renderMeEntry(); say(msg, 'That family code is not right. Check it against your email.', false); $('#meCode').focus(); return; }
-  if (S.tokenBad){ say(msg, TOKEN_BAD, false); $('#meToken').focus(); return; }
+  if (S.tokenBad){ S.tokenBad = false; say(msg, TOKEN_BAD, false); $('#meToken').focus(); return; }
   if (!S.mine){ say(msg, S.family ? 'We could not open your registration just now. Please try again.' : failText(), false); return; }
   $('#meToken').value = ''; $('#meCode').value = ''; say(msg, '', true);
 }
@@ -693,7 +696,7 @@ async function loadMine(){
   try {
     const d = await api('mine', { token: S.token });
     if (d.ok){ S.mine = d.mine; S.tokenBad = false; fillReg(S.mine.reg); renderFamily(); }
-    else if (d.error === 'token'){ S.token = ''; S.tokenBad = true; store.set('lr-token', null); }
+    else if (d.error === 'token'){ S.token = ''; S.tokenBad = S.tokenTyped; store.set('lr-token', null); }
   } catch (e) {}
   renderMe();
 }

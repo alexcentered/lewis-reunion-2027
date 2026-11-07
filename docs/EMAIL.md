@@ -82,7 +82,8 @@ Columns: `Queued` (when the row was written), `To`, `Subject`, `Html`, `Text`, `
 |---|---|
 | `Sent` | Went out. `Via` says how: `Brevo <id>` or `MailApp`. `Sent` has the time. |
 | `Queued` | Waiting. `Last error` says why it did not go straight out. The hourly job will try again. |
-| `Failed` | Given up: the address was refused, or it has been tried 20 times. Nothing is deleted. |
+| `Sending` | A run is working on it right now. If it stays `Sending` for more than 15 minutes, the next run picks it up again. |
+| `Failed` | Given up after 20 tries. Nothing is deleted. |
 
 To retry a Failed row: type `Queued` into its Status cell. To send waiting mail right now instead of waiting for the hour: Sheet menu **Reunion**, **Send queued mail now**. The log at the end of a run says how many were sent, failed, and are still queued.
 

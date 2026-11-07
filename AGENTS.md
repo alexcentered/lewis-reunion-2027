@@ -55,7 +55,7 @@ This file is for an AI agent or a committee volunteer who opens this repo cold. 
 
 **MailQueue** (created by `setup()`; every email sent or waiting). Exactly these 13 headers, in this order (`MAIL_HEADERS`):
 `Queued`, `To`, `Subject`, `Html`, `Text`, `Status`, `Attempts`, `Last error`, `Sent`, `Via`, `Key`, `Kind`, `Household ID`.
-`Status` is `Queued` (waiting), `Sent`, or `Failed` (a permanent refusal, or 20 attempts). The committee retries a Failed row by typing `Queued` into Status. `Via` reads `Brevo <messageId>`, `MailApp`, or stays blank while queued. `Kind` is one of `link`, `receipt0`, `receipt`, `committee`, `test`. `drain_` writes `Status`, `Attempts`, `Last error`, `Sent`, `Via` as one block when they are adjacent, so keep them side by side.
+`Status` is `Queued` (waiting), `Sending` (claimed by a running drain; `Last error` holds `claimed <ISO time>`), `Sent`, or `Failed` (20 attempts). A `Sending` row older than 15 minutes is reclaimed by the next drain. The committee retries a Failed row by typing `Queued` into Status (case and spaces do not matter). `Via` reads `Brevo <messageId>`, `MailApp`, or stays blank while queued. `Kind` is one of `link`, `receipt0`, `receipt`, `committee`, `test`. Rows are written by header name, so columns may be reordered; `send_` writes `Status`, `Attempts`, `Last error`, `Sent`, `Via` as one block when they are adjacent.
 
 **Dashboard** is a committee tab of plain spreadsheet formulas. The code never touches it.
 
@@ -116,18 +116,18 @@ The site calls the `/exec` URL with `POST` and a JSON body: `{ action, code, ...
 One door: `sendMail_(msg, cfg)`. `msg = { to, toName, subject, html, text, key, kind, householdId }`. It never throws and returns `{ ok, via, error }`.
 
 1. If `key` was seen in the script cache in the last 6 hours, return `via:'dupe'` and send nothing.
-2. `brevoSend_`: POST to `https://api.brevo.com/v3/smtp/email` with the `api-key` header from `BREVO_API_KEY`. 201 is success. 401/403 = key problem (`config`), 402/429 = quota, other 4xx = permanent (bad address), 5xx or network = retry.
+2. `brevoSend_`: POST to `https://api.brevo.com/v3/smtp/email` with the `api-key` header from `BREVO_API_KEY`. Any 2xx is success. 401/403 = key problem (`config`), 402/429 = quota; every other failure falls through to the next step.
 3. On any Brevo failure, `mailAppSend_` through MailApp if `getRemainingDailyQuota() > MAIL_RESERVE` (5).
 4. Otherwise `enqueue_`: a MailQueue row with Status `Queued` and the reason in `Last error`.
 5. Every direct success is also logged as a MailQueue row with Status `Sent` (`logMail_`), so MailQueue is the full mail log.
 
-`drainMailQueue()` runs hourly (installable time trigger) and from the menu "Send queued mail now". Under `locked_` it sends Queued rows oldest first, at most 100 per run and 4.5 minutes, Brevo until a quota or key error closes it for the run, then MailApp within today's quota. Permanent errors or 20 attempts mark the row Failed. Nothing is deleted.
+`drainMailQueue()` runs hourly (installable time trigger) and from the menu "Send queued mail now". `claim_` runs under `locked_` only long enough to mark up to 100 Queued rows (oldest first) as `Sending`; `send_` then works outside the lock for at most 4.5 minutes so registrations are never blocked. Brevo is tried until a quota or key error closes it for the run (no attempt counted), then MailApp within today's quota; a row that cannot go out returns to `Queued` with one attempt added. 20 attempts mark the row Failed. Nothing is deleted.
 
 Who sends what:
 - `register_` (new household) calls `sendLink_` with the fresh token, then `committeeEmail_` if `notifyCommittee` is Yes. Both inside try/catch; the row is written and `recompute_` has run before any mail.
 - `register_` (duplicate email) and `resend_` call `sendLink_(row, cfg, true)`, which rotates the token (older links stop working) and emails a fresh link. Both inside try/catch.
-- `sendLink_` sends `sendReceipt_` (kind `receipt0`, no link, no token change) when `siteLive` is not Yes.
-- `onPaymentsEdit` (installable on-edit trigger) calls `paymentReceipts_` when a Payments Status cell changes to `Confirmed` or `Not received`. It skips rows whose `Receipt sent` already starts with that Status, sends `receiptEmail_`, and writes `Receipt sent`. The `receipt:<Payment ID>:<Status>` key is the second guard.
+- `sendLink_` sends `sendReceipt_` (kind `receipt0`, no link, no token change, deduplicated per minute only) when `siteLive` is not Yes.
+- `onPaymentsEdit` (installable on-edit trigger) calls `paymentReceipts_` when a Payments Status cell changes to `Confirmed` or `Not received`. It skips rows whose `Receipt sent` already starts with that Status, gives a hand-typed row a `Payment ID` if blank, sends `receiptEmail_`, and writes `Receipt sent`. The `receipt:<Payment ID>:<Status>` key is the second guard.
 
 Which emails carry the registration token: only `linkEmail_` (new registration, duplicate, lost link), because that is the moment a plaintext token exists. Receipts carry the family code and `siteUrl?c=<code>#me` but no token: only the hash is stored, and rotating it would log the cousin's phone out.
 
