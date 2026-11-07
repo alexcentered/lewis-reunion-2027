@@ -88,5 +88,63 @@ Use Safari on an iPhone, since that's what most of the family uses. Tick each bo
 
 - Paste → Save → **Deploy → Manage deployments → Edit → New version → Deploy**. Never "New deployment", which would change the URL.
 - Run `setup` again only when a change adds new Google permissions (Google will prompt you), like this one did.
-- The **Reunion** menu in the Sheet: *Refresh balances and status*, *Sync photo privacy*, *Run setup*.
+- The **Reunion** menu in the Sheet: *Refresh balances and status*, *Send queued mail now*, *Send me a test email*, *Sync photo privacy*, *Run setup*.
 - Keep `PHOTO_MAX_BYTES` in `Code.gs` and `PHOTO.maxUpload` in `app.js` the same (6 MB).
+
+---
+
+# Email and codes
+
+Checks for the registration email, the two codes, and payment receipts. Do them after the email setup in **[docs/EMAIL.md](EMAIL.md)** is done, `BREVO_API_KEY` is in Script Properties, `setup` has been run, the deployment has a new version, and the Config tab has `siteLive` = `Yes`, `email`, `siteUrl` and (if known) the fees.
+
+Use your phone for the inbox checks and a computer for the Sheet. Use an email address you can read on the phone. Tick each box as you go.
+
+**Register a test household**
+- [ ] Open the family link on your phone → **Register**. Fill in a made-up household with your own email, two adults and one child, pick at least one day, tick the travel box → **Send**.
+- [ ] The success panel shows "You're registered. Welcome home.", your private link, and under it **Family code** and **Registration code** with Copy buttons. The registration code is 32 letters and numbers in groups of 4.
+- [ ] Within a minute an email arrives **from committee@lewisfamilyroots.com**, subject "You are registered: Lewis Family Reunion 2027". It is in the inbox, not spam. Check a Gmail, a Yahoo and an iCloud address if you can.
+- [ ] The email has a green **Open my registration** button, a grey box with the link, the website, the Family code and the Registration code, who is coming, and either "Estimated total: $…" or "Registration fees will be announced soon".
+- [ ] Tap the button. The site opens on **My Registration** with your household loaded.
+
+**Type the codes**
+- [ ] Open a **private window** (Safari: tabs button → Private) and go to `https://lewisfamilyroots.com/#me` with no `?c=` in the address.
+- [ ] You see "Find your registration" with two boxes, **Family code** and **Registration code**. Type a wrong family code and the real registration code → **Open my registration**. You see "That family code is not right. Check it against your email."
+- [ ] Type the real family code and a registration code with one character wrong. You see "That registration code did not match. Check it against your email, or use Email my link below." The Family code box disappears, because the site now knows the family code.
+- [ ] Type the real registration code (spaces and dashes do not matter, capital letters do not matter) → **Open my registration**. Your household loads.
+
+**Lost link**
+- [ ] On **My Registration**, under "Lost the email?", enter your email → **Email my link**. The site says "If that email is registered, a new private link is on its way."
+- [ ] A new email arrives, subject "Your Lewis Reunion registration link", saying older links and codes no longer work. The new registration code is different. In the private window, the old code now fails and the new one works.
+- [ ] Press **Email my link** again straight away. The site says the same thing, but no second email arrives for 10 minutes. That is on purpose.
+
+**Register twice**
+- [ ] Register again with the same email. The site says "That email is already registered. We just emailed you a private link to view and change it." An email arrives. There is no "Something went wrong" message.
+
+**Payment receipt (on a computer)**
+- [ ] On your phone, **My Registration** → report a payment of $1 by Zelle.
+- [ ] Sheet → **Payments** tab: the new row has Status `Reported`. Change it to `Confirmed`. **Confirmed on** and **Confirmed by** fill in, and within a few seconds **Receipt sent** reads `Confirmed · <time> · Brevo …` (or `MailApp`).
+- [ ] One email arrives: "Payment confirmed: Lewis Family Reunion 2027" with the amount, confirmed total, balance (or "Fees to be announced") and the Family code. It does **not** contain the Registration code.
+- [ ] Edit the same row again (add a note, or set `Confirmed` again). No second email. **Receipt sent** does not change.
+- [ ] Change Status to `Not received`. One email arrives: "We have not found your payment yet". Change it back to `Reported`. No email.
+- [ ] Paste `Confirmed` into two or three Reported rows at once. Each household gets one email.
+
+**Gmail fallback (on a computer)**
+- [ ] Apps Script → Project Settings → Script Properties → delete the `BREVO_API_KEY` row (keep a copy of the value) → Save.
+- [ ] Register another test household on your phone. It saves. The email still arrives, this time from the Gmail address that deployed the script, with the sender name "Lewis Family Reunion 2027".
+- [ ] Sheet → **MailQueue** tab: the newest row says `Sent`, Via `MailApp`. Apps Script → **Executions** shows the registration run without errors.
+- [ ] Add the property back → Save. Sheet menu **Reunion → Send me a test email**. The email arrives and the new MailQueue row says Via `Brevo …`.
+- [ ] If any row says `Queued`: **Reunion → Send queued mail now**. It changes to `Sent`.
+
+**Replies**
+- [ ] Reply to any of the test emails. It arrives in `lewisfamilyreunion2027@gmail.com`.
+- [ ] Send a message to `info@lewisfamilyroots.com`. It arrives there too.
+
+**Clean up:** delete your test rows on **Registrations** and **Payments** (or leave them and note them as tests). Leave **MailQueue** rows alone; they are the record. In the repo, `git grep -iE 'xkeysib-[0-9a-f]'` must find nothing.
+
+| What you see | What to do |
+|---|---|
+| No email at all | Sheet → **MailQueue**. No row: look at Apps Script → **Executions**. Row `Queued`: read **Last error** and run **Send queued mail now**. |
+| Email in spam | Mark it "Not spam". Then check the DNS records in [docs/EMAIL.md](EMAIL.md). |
+| "Brevo 401" or "403" in Last error | The key is missing or wrong. Fix Script Properties. Mail is using Gmail meanwhile. |
+| Receipt did not send | Apps Script → **Triggers** (clock icon): `onPaymentsEdit` must be listed. If not, run `setup`. |
+| Codes do not open the household | Check `siteLive` is `Yes` and the deployment was updated. Then use **Email my link** for fresh codes. |
