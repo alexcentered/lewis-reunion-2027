@@ -28,11 +28,13 @@ This was done once through the Brevo and Cloudflare APIs. Record the exact value
 
 | Type | Name | Value | Purpose |
 |---|---|---|---|
-| TXT | `@` or `brevo-code` as Brevo instructs | `<filled in after setup>` | Brevo domain ownership |
-| TXT (DKIM) | `mail._domainkey` (or the name Brevo gives) | `<filled in after setup>` | Brevo signs outgoing mail |
+| TXT | `@` | `brevo-code:171a641c6aeb75337da8aa9764bf4ebf` | Brevo domain ownership |
+| CNAME (DKIM) | `brevo1._domainkey` | `b1.lewisfamilyroots-com.dkim.brevo.com` (DNS only, not proxied) | Brevo signs outgoing mail |
+| CNAME (DKIM) | `brevo2._domainkey` | `b2.lewisfamilyroots-com.dkim.brevo.com` (DNS only, not proxied) | Brevo signs outgoing mail |
 | TXT (SPF) | `@` | `v=spf1 include:_spf.mx.cloudflare.net include:spf.brevo.com ~all` | One SPF record only, covering both Cloudflare Email Routing and Brevo |
-| TXT (DMARC) | `_dmarc` | `<filled in after setup>` (starts `v=DMARC1; p=none;` with Brevo's reporting address) | One DMARC record only |
-| MX | `@` | Cloudflare Email Routing servers (added automatically when routing is enabled) | Inbound mail |
+| TXT (DMARC) | `_dmarc` | `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com` | One DMARC record only. `p=none` monitors; tighten to `quarantine` later if reports look clean |
+| MX | `@` | `route1.mx.cloudflare.net` (13), `route2.mx.cloudflare.net` (11), `route3.mx.cloudflare.net` (6) | Cloudflare Email Routing inbound, added by "Add missing records" |
+| TXT (DKIM) | `cf2024-1._domainkey` | Cloudflare's own key, added with the MX records | Cloudflare Email Routing; does not conflict with Brevo's two |
 
 Rules: there must be exactly one SPF record and exactly one DMARC record on the domain. If a second one appears, merge them. The GitHub Pages `A`/`CNAME` records for the website are separate and must not be touched.
 
@@ -111,7 +113,7 @@ To type an argument in the editor, call it from a one-line wrapper or the editor
 | `Last error` says `Brevo 401` or `403` | Key missing, wrong, or revoked. | Check Script Properties `BREVO_API_KEY`. Make a new key in Brevo if needed (see Rotating the key). Mail is already falling back to MailApp meanwhile. |
 | `Last error` says `Brevo 402` or `429` | Daily quota used or plan limit. | Nothing to fix. MailApp takes over within its quota; the rest waits in the queue and goes the next day. |
 | Brevo account "under review" | New accounts can wait a few hours before sending is allowed. | Wait. MailApp covers the gap. |
-| Landed in spam | SPF, DKIM or DMARC not right, or the Brevo domain is not authenticated. | In Cloudflare, confirm one SPF record with both includes, the DKIM TXT Brevo gave, and one DMARC record. In Brevo, confirm the domain shows as authenticated. Ask the tester to mark "Not spam". |
+| Landed in spam | SPF, DKIM or DMARC not right, or the Brevo domain is not authenticated. | In Cloudflare, confirm one SPF record with both includes, the two brevo1/brevo2 DKIM CNAMEs, and one DMARC record. In Brevo, confirm the domain shows as authenticated. Ask the tester to mark "Not spam". |
 | MailQueue growing with `Queued` rows | Both routes closed, or the hourly trigger is missing. | Editor, Triggers (clock icon): `drainMailQueue` should be listed. If not, run `setup`. Then run **Send queued mail now** and read the log. |
 | Receipt sent twice | `Receipt sent` cell was cleared by hand, or two different payment rows. | Do not clear `Receipt sent`. Each Payments row sends at most one email per Status. |
 | Receipt never sent | `onPaymentsEdit` trigger missing, or the household row has no email, or `Receipt sent` already starts with that Status. | Check Triggers; run `setup` if missing. Check Executions for `Payment receipts:` warnings. |
