@@ -94,15 +94,26 @@ const S = {
 };
 
 /* ---------- API ---------- */
-async function api(action, payload){
+/* The family code always travels in the POST body, never in a URL. opt.timeout (ms) gives up on very slow connections. */
+async function api(action, payload, opt){
   if (!API) throw Object.assign(new Error('The site is not connected to its spreadsheet yet.'), { code: 'noapi' });
-  const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, code: S.code, ...payload }) });
-  if (!res.ok) throw new Error('The server answered ' + res.status + '.');
-  const data = await res.json();
-  if (data && data.error === 'code'){ S.codeBad = true; renderGates(); }
-  return data;
+  const ms = opt && opt.timeout, ctl = ms && typeof AbortController === 'function' ? new AbortController() : null;
+  const timer = ctl ? setTimeout(() => ctl.abort(), ms) : 0;
+  try {
+    let res;
+    try { res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, code: S.code, ...payload }), signal: ctl ? ctl.signal : undefined }); }
+    catch (e) { throw Object.assign(new Error('network'), { code: ctl && ctl.signal.aborted ? 'timeout' : 'network' }); }
+    if (!res.ok) throw new Error('The server answered ' + res.status + '.');
+    let data;
+    try { data = await res.json(); }
+    catch (e) { throw Object.assign(new Error('bad answer'), { code: ctl && ctl.signal.aborted ? 'timeout' : 'network' }); }
+    if (data && data.error === 'code'){ S.codeBad = true; renderGates(); }
+    return data;
+  } finally { clearTimeout(timer); }
 }
-const failText = e => (e && e.code === 'noapi') ? e.message : 'We could not reach the reunion server. Check your connection and try again.';
+const failText = e => (e && e.code === 'noapi') ? e.message
+  : (e && e.code === 'timeout') ? 'This is taking too long, which usually means a weak signal. Your post may still arrive. Press the button again when you have a better connection. It will not post twice.'
+  : 'We could not reach the reunion server. Check your connection and try again.';
 
 /* ---------- routing ---------- */
 const VIEWS = ['home','reunion','register','family','photos','market','me'];
@@ -205,7 +216,10 @@ function renderFamily(){
   });
   renderCounts(); renderInfo();
 }
-const img = (e, alt) => e.photo ? `<img src="${esc(e.photo)}" alt="${esc(alt || '')}" loading="lazy" referrerpolicy="no-referrer">` : '';
+/* Photos: a small version for cards and the strip, the large one only when someone taps to open it. data-retry covers
+   the few seconds Google Drive needs to make a preview of a brand-new upload. */
+const img = (e, alt) => e.photo ? `<img src="${esc(e.thumb || e.photo)}" alt="${esc(alt || '')}" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-retry>` : '';
+const galleryImg = e => e.photo ? `<a class="ph-open" href="${esc(e.photo)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" aria-label="Open the full-size photo">${img(e, e.title || 'Family photo')}</a>` : '';
 const by = e => `<div class="by"><span>${e.by ? 'Shared by ' + esc(e.by) : 'Shared by family'}</span><span class="num">${esc(fmtDate(e.posted))}</span></div>`;
 const CARD = {
   story: e => `<div class="entry"><div class="meta">${esc(e.subtitle || 'Family story')}</div><h3>${esc(e.title || 'A family story')}</h3><p>${esc(e.body)}</p>${by(e)}</div>`,
@@ -213,13 +227,13 @@ const CARD = {
   veteran: e => `<div class="entry">${img(e, e.title)}<div class="meta">${esc(e.meta)}</div><h3>${esc(e.title)}</h3>${e.subtitle ? `<p>${esc(e.subtitle)}</p>` : ''}<p>${esc(e.body)}</p>${by(e)}</div>`,
   directory: e => `<div class="entry">${img(e, e.title)}<div class="meta">${esc(e.meta)}</div><h3>${esc(e.title)}</h3><p><b style="color:var(--text);font-weight:500">${esc(e.subtitle)}</b></p><p>${esc(e.body)}</p>${e.contact ? `<p>${esc(e.contact)}</p>` : ''}${by(e)}</div>`,
   market: e => `<div class="entry">${img(e, e.title)}<div class="meta">${esc(e.meta)}</div><h3>${esc(e.title)}</h3>${e.subtitle ? `<p>From ${esc(e.subtitle)}</p>` : ''}<p>${esc(e.body)}</p>${e.contact ? `<p>Contact: ${esc(e.contact)}</p>` : ''}${by(e)}</div>`,
-  photo: e => `<figure class="photo">${img(e, e.title || 'Family photo')}<figcaption><b>${esc(e.title || 'Family photo')}</b>${e.meta ? ' · ' + esc(e.meta) : ''}${e.subtitle ? ' · ' + esc(e.subtitle) : ''}${e.body ? '<br>' + esc(e.body) : ''}${by(e)}</figcaption></figure>`
+  photo: e => `<figure class="photo">${galleryImg(e)}<figcaption><b>${esc(e.title || 'Family photo')}</b>${e.meta ? ' · ' + esc(e.meta) : ''}${e.subtitle ? ' · ' + esc(e.subtitle) : ''}${e.body ? '<br>' + esc(e.body) : ''}${by(e)}</figcaption></figure>`
 };
 const EMPTY = { story: 'No stories yet. Share the first one.', memoriam: 'No tributes yet.', veteran: 'No veterans added yet.', directory: 'No one has added themselves yet.', market: 'No listings yet.', photo: 'No photos yet. Add the first one below.' };
 function renderStrip(items){
   const pics = items.filter(i => i.photo).slice(0, 14);
   const words = '<span>Our roots are our ancestors.</span><span>Our branches are our children.</span><span>Our story is our legacy.</span>';
-  const inner = pics.length ? pics.map(p => `<img src="${esc(p.photo)}" alt="" referrerpolicy="no-referrer">`).join('') + words : words + words;
+  const inner = pics.length ? pics.map(p => `<img src="${esc(p.thumb || p.photo)}" alt="" decoding="async" referrerpolicy="no-referrer" data-retry>`).join('') + words : words + words;
   $('#strip').innerHTML = inner + inner;
 }
 
@@ -379,40 +393,221 @@ const FORM = {
   market:    { type: 'market',    by: 'mk-by', map: { title: 'mk-item', subtitle: 'mk-seller', meta: 'mk-price', contact: 'mk-contact', body: 'mk-body' }, need: 'mk-item', needMsg: 'Name the product or service first.', photo: 'mk-photo' },
   photos:    { type: 'photo',     by: 'ph-by', map: { title: 'ph-who', meta: 'ph-year', subtitle: 'ph-where', body: 'ph-body' }, needPhoto: true, needMsg: 'Choose a photo first.', photo: 'ph-photo' }
 };
-function shrink(file){
+/* ---------- photo uploads ----------
+   Every picture is checked, then redrawn in the browser as a JPEG of at most 1600 px before it is sent. That keeps
+   uploads small on phone data, removes hidden location data (EXIF/GPS), and turns iPhone HEIC photos into JPEG.
+   The server (Code.gs) checks the same rules again on the real bytes. */
+const PHOTO = {
+  maxInput: 30 * 1024 * 1024,   // biggest file we try to open on a phone
+  maxUpload: 6 * 1024 * 1024,   // what the server accepts: keep equal to PHOTO_MAX_BYTES in Code.gs
+  target: 1.5 * 1024 * 1024,    // aim for this so slow connections finish
+  maxSide: 1600, quality: 0.82,
+  timeout: 150000               // give up waiting after 2.5 minutes; a retry is safe
+};
+const PHOTO_TYPES = { 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/pjpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/heic': 'heic', 'image/heif': 'heic', 'image/heic-sequence': 'heic', 'image/heif-sequence': 'heic' };
+const PHOTO_EXT = { jpg: 'jpg', jpeg: 'jpg', jfif: 'jpg', png: 'png', webp: 'webp', heic: 'heic', heif: 'heic' };
+const mb = n => (n / 1048576).toFixed(n < 10485760 ? 1 : 0) + ' MB';
+const userErr = m => Object.assign(new Error(m), { user: true });
+function photoKind(file){
+  const t = String(file.type || '').toLowerCase();
+  if (PHOTO_TYPES[t]) return PHOTO_TYPES[t];
+  const ext = (String(file.name || '').toLowerCase().match(/\.([a-z0-9]+)$/) || [])[1];
+  // Some browsers leave the type blank for HEIC files; trust the file name only when the type is blank or generic.
+  return (!t || t === 'application/octet-stream') && PHOTO_EXT[ext] ? PHOTO_EXT[ext] : null;
+}
+function checkPhoto(file){
+  if (!file) return '';
+  if (!photoKind(file)) return 'That file is not a photo we can use. Please choose a JPG, PNG, HEIC or WebP picture.';
+  if (!file.size) return 'That file is empty. Please choose the photo again.';
+  if (file.size > PHOTO.maxInput) return `That photo is ${mb(file.size)}. Please choose one under ${mb(PHOTO.maxInput)}.`;
+  return '';
+}
+function openImage(file){
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file), im = new Image();
-    im.onload = () => {
-      const max = 1600, k = Math.min(1, max / Math.max(im.naturalWidth, im.naturalHeight));
-      const c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
-      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
-      resolve({ data: c.toDataURL('image/jpeg', 0.85).split(',')[1], mime: 'image/jpeg', name: file.name.replace(/\.[^.]+$/, '') + '.jpg' });
-    };
-    im.onerror = () => { URL.revokeObjectURL(url); reject(new Error('That file could not be opened as a photo.')); };
+    im.onload = () => resolve({ im, done: () => URL.revokeObjectURL(url) });
+    im.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
     im.src = url;
   });
 }
+function readB64(blob){
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).slice(String(r.result).indexOf(',') + 1));
+    r.onerror = () => reject(userErr('We could not read that photo. Please choose it again.'));
+    r.readAsDataURL(blob);
+  });
+}
+function drawJpeg(im, side, quality){
+  const w0 = im.naturalWidth || im.width, h0 = im.naturalHeight || im.height;
+  const k = Math.min(1, side / Math.max(w0, h0));
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(w0 * k)); c.height = Math.max(1, Math.round(h0 * k));
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);   // see-through PNGs get a white background, not black
+  g.imageSmoothingQuality = 'high';
+  g.drawImage(im, 0, 0, c.width, c.height);
+  const url = c.toDataURL('image/jpeg', quality);
+  c.width = c.height = 0;   // hand the memory back right away; iPhones have a tight canvas budget
+  if (url.indexOf('data:image/jpeg') !== 0) return null;
+  const data = url.slice(url.indexOf(',') + 1);
+  return { data, mime: 'image/jpeg', size: Math.floor(data.length * 3 / 4) };
+}
+async function prepPhoto(file){
+  const bad = checkPhoto(file);
+  if (bad) throw userErr(bad);
+  const kind = photoKind(file);
+  let opened;
+  try { opened = await openImage(file); }
+  catch (e) {
+    // This browser cannot open HEIC (most computers). Send the original if it is small enough; Google Drive can show it.
+    if (kind === 'heic' && file.size <= PHOTO.maxUpload) return { data: await readB64(file), mime: 'image/heic', size: file.size };
+    throw userErr(kind === 'heic'
+      ? 'This browser cannot open iPhone HEIC photos, and this one is too big to send as it is. Try sharing it from your iPhone, or save it as a JPG first.'
+      : 'That file could not be opened as a photo. Please try a different one.');
+  }
+  try {
+    let side = PHOTO.maxSide, q = PHOTO.quality, out = null;
+    for (let i = 0; i < 5; i++){
+      out = drawJpeg(opened.im, side, q);
+      if (!out) throw userErr('That photo is too large for this device to prepare. Please try a smaller one or a screenshot of it.');
+      if (out.size <= PHOTO.target) break;
+      side = Math.round(side * 0.82); q = Math.max(0.6, q - 0.06);
+    }
+    if (out.size > PHOTO.maxUpload) throw userErr('That photo is too large to send. Please try a smaller one.');
+    return out;
+  } finally { opened.done(); }
+}
+const newId = () => {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  const a = new Uint8Array(16); (window.crypto || window.msCrypto).getRandomValues(a);
+  return [...a].map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
+/* Progress bar + picked-photo preview under each photo field (built here so every form gets the same behaviour). */
+function progressFor(key){
+  let bar = $(`[data-progress="${key}"]`);
+  if (!bar){
+    const msg = $(`[data-msg="${key}"]`);
+    bar = document.createElement('div'); bar.className = 'upbar'; bar.dataset.progress = key; bar.hidden = true;
+    bar.setAttribute('role', 'progressbar'); bar.setAttribute('aria-label', 'Upload progress'); bar.innerHTML = '<i></i>';
+    msg.parentNode.insertBefore(bar, msg);
+  }
+  return bar;
+}
+function setProgress(key, stage, text){
+  const bar = progressFor(key), msg = $(`[data-msg="${key}"]`);
+  bar.hidden = stage === 'off';
+  bar.className = 'upbar ' + (stage === 'send' ? 'run' : stage);
+  bar.setAttribute('aria-valuetext', text || '');
+  if (text) say(msg, text, true);
+}
+$$('.msg[data-msg]').forEach(m => { m.setAttribute('role', 'status'); m.setAttribute('aria-live', 'polite'); });
+function pickBox(input){
+  let box = input.parentNode.querySelector('.pick');
+  if (!box){ box = document.createElement('div'); box.className = 'pick'; box.hidden = true; box.innerHTML = '<img alt="" hidden><span></span><button type="button" class="btn quiet sm">Remove</button>'; input.parentNode.appendChild(box);
+    box.querySelector('button').addEventListener('click', () => { input.value = ''; showPick(input); input.focus(); }); }
+  return box;
+}
+function showPick(input){
+  const box = pickBox(input), f = input.files && input.files[0], pic = box.querySelector('img'), label = box.querySelector('span');
+  if (box.dataset.url){ URL.revokeObjectURL(box.dataset.url); delete box.dataset.url; }
+  pic.hidden = true; pic.removeAttribute('src');
+  if (!f){ box.hidden = true; box.classList.remove('bad'); return; }
+  const bad = checkPhoto(f);
+  box.hidden = false; box.classList.toggle('bad', !!bad);
+  if (bad){ input.value = ''; label.textContent = bad; box.querySelector('button').hidden = true; return; }
+  box.querySelector('button').hidden = false;
+  label.textContent = `${f.name || 'Photo'} · ${mb(f.size)}` + (f.size > PHOTO.target ? '. We will shrink it so it sends faster.' : '');
+  const url = URL.createObjectURL(f); box.dataset.url = url;
+  pic.onload = () => { pic.hidden = false; };
+  pic.onerror = () => { pic.hidden = true; };   // e.g. HEIC on a computer: no preview, but it can still be sent
+  pic.src = url;
+}
+Object.values(FORM).forEach(F => {
+  if (!F.photo) return;
+  const input = $('#' + F.photo);
+  input.addEventListener('change', () => showPick(input));
+  const hint = document.createElement('p'); hint.className = 'hint up-hint';
+  hint.textContent = 'JPG, PNG, HEIC or WebP, up to 30 MB. Large photos are shrunk before sending, and location data is removed.';
+  input.insertAdjacentElement('afterend', hint);
+});
+/* While uploads are switched off, hide the optional photo fields too, so nobody fills in a form that cannot send. */
+function renderUploadFields(){ Object.values(FORM).forEach(F => { if (F.photo) $('#' + F.photo).closest('.upload').hidden = !PHOTOS_ENABLED; }); }
+
+/* Images from Drive can 404 for a few seconds right after an upload. Try again twice, then say so. */
+document.addEventListener('error', e => {
+  const im = e.target;
+  if (!im || im.tagName !== 'IMG' || !im.hasAttribute('data-retry')) return;
+  const n = Number(im.dataset.tries || 0);
+  if (n >= 2){
+    const box = im.closest('.photo, .entry');
+    im.hidden = true;
+    if (box && !box.querySelector('.img-wait')) im.insertAdjacentHTML('afterend', '<div class="img-wait">Photo is still processing. Refresh in a minute.</div>');
+    return;
+  }
+  im.dataset.tries = String(n + 1);
+  setTimeout(() => { im.src = im.src.replace(/([?&])r=\d+/, '$1').replace(/[?&]$/, '') + '&r=' + Date.now(); }, 4000 * (n + 1));
+}, true);
+
+/* ---------- share buttons ---------- */
+const sending = new Set();   // forms with a send in flight: a second tap does nothing
+const attempts = {};         // last attempt per form: retrying the same thing reuses its id, so the server will not post it twice
+addEventListener('beforeunload', e => { if (sending.size){ e.preventDefault(); e.returnValue = ''; } });
 $$('[data-add]').forEach(btn => btn.addEventListener('click', async () => {
   const key = btn.dataset.add, F = FORM[key], msg = $(`[data-msg="${key}"]`);
-  if (key === 'photos' && !PHOTOS_ENABLED){ say(msg, 'Photo uploads are temporarily disabled during beta.', false); return; }
+  if (sending.has(key)) return;
+  if (key === 'photos' && !PHOTOS_ENABLED){ say(msg, 'Photo sharing is not open yet. Please check back soon.', false); return; }
   if (!hasFamily()){ say(msg, 'Enter the family code first.', false); return; }
   if (F.need && !$('#' + F.need).value.trim()){ say(msg, F.needMsg, false); return; }
-  const file = F.photo && $('#' + F.photo).files[0];
-  if (F.needPhoto && !file){ say(msg, F.needMsg, false); return; }
+  const input = F.photo && PHOTOS_ENABLED ? $('#' + F.photo) : null;
+  const file = input && input.files[0];
+  if (F.needPhoto && !file){ say(msg, F.needMsg, false); input.focus(); return; }
+  const bad = file && checkPhoto(file);
+  if (bad){ say(msg, bad, false); return; }
+  if (navigator.onLine === false){ say(msg, 'You seem to be offline. Connect to Wi-Fi or mobile data, then press the button again.', false); return; }
   const fields = {};
   Object.entries(F.map).forEach(([k, id]) => { fields[k] = Array.isArray(id) ? id.map(x => $('#' + x).value.trim()).filter(Boolean).join(' · ') : $('#' + id).value.trim(); });
-  btn.disabled = true; say(msg, file ? 'Preparing photo…' : 'Saving…', true);
+  const by = $('#' + F.by).value.trim();
+  const sig = JSON.stringify([fields, by, file ? [file.name, file.size, file.lastModified] : null]);
+  if (!attempts[key] || attempts[key].sig !== sig) attempts[key] = { sig, id: newId() };
+
+  sending.add(key); btn.disabled = true; btn.setAttribute('aria-busy', 'true'); if (input) input.disabled = true;
+  let slow = 0;
   try {
-    const photo = file ? await shrink(file) : null;
-    if (photo) say(msg, 'Uploading…', true);
-    const res = await api('post', { token: S.token, type: F.type, by: $('#' + F.by).value.trim(), fields, photo });
-    if (!res.ok) say(msg, res.message || 'That did not save.', false);
-    else {
-      Object.values(F.map).flat().forEach(id => $('#' + id).value = ''); if (F.photo) $('#' + F.photo).value = '';
-      say(msg, 'Shared. Thank you.', true); loadFamily(true);
+    let photo = null;
+    if (file){ setProgress(key, 'prep', 'Getting your photo ready…'); photo = await prepPhoto(file); }
+    const sendText = photo ? `Uploading your photo (${mb(photo.size)}). Please keep this page open.` : 'Saving…';
+    setProgress(key, 'send', sendText);
+    if (photo) slow = setTimeout(() => setProgress(key, 'send', 'Still uploading. On a slow connection this can take a minute or two. Please keep this page open.'), 15000);
+    const body = { token: S.token, type: F.type, by, fields, photo, submissionId: attempts[key].id };
+    let res;
+    try { res = await api('post', body, { timeout: photo ? PHOTO.timeout : 60000 }); }
+    catch (err) {
+      if (err.code !== 'network') throw err;
+      setProgress(key, 'send', 'The connection dropped. Trying once more…');   // safe: same submission id
+      await new Promise(r => setTimeout(r, 3000));
+      res = await api('post', body, { timeout: photo ? PHOTO.timeout : 60000 });
     }
-  } catch (err) { say(msg, err.message && /photo/.test(err.message) ? err.message : failText(err), false); }
-  btn.disabled = false;
+    if (res.ok || res.error === 'duplicate'){
+      Object.values(F.map).flat().forEach(id => $('#' + id).value = '');
+      if (input){ input.value = ''; showPick(input); }
+      delete attempts[key];
+      setProgress(key, 'done');
+      say(msg, res.ok ? (photo ? 'Shared. Thank you. Your photo is in the list now.' : 'Shared. Thank you.') : res.message, true);
+      setTimeout(() => { if (!sending.has(key)) progressFor(key).hidden = true; }, 2500);
+      loadFamily(true);
+    } else {
+      setProgress(key, 'off');
+      say(msg, res.message || 'That did not save. Please try again.', false);
+    }
+  } catch (err) {
+    setProgress(key, 'off');
+    say(msg, err.user ? err.message : failText(err), false);
+  } finally {
+    clearTimeout(slow);
+    sending.delete(key); btn.disabled = false; btn.removeAttribute('aria-busy'); if (input) input.disabled = false;
+  }
 }));
 
 /* ---------- loading ---------- */
@@ -472,7 +667,7 @@ function renderPhotosGate(){
 setLook(LOOKS.includes(store.get('lr-look')) ? store.get('lr-look') : 'sequoia');
 setMode(store.get('lr-theme') || 'light');
 if (LINKMODE) $('#meEmpty').innerHTML = '<h3 style="font:400 1.5rem var(--display)">Coming soon</h3><p class="hint">Checking your registration and reporting payments will open here on the full website. Until then, the committee will email you about fees and payment.</p><p class="hint" style="margin-top:14px">Not registered yet? <a href="#register">Register your household</a>.</p>';
-renderAttendees(); renderInfo(); renderMe(); renderFamily(); renderGates(); route(); setBanner(); renderPhotosGate();
+renderAttendees(); renderInfo(); renderMe(); renderFamily(); renderGates(); route(); setBanner(); renderPhotosGate(); renderUploadFields();
 document.addEventListener('visibilitychange', () => { if (!document.hidden && currentView === 'home') drawRings(false); });
 addEventListener('lr-refresh', () => { loadFamily(true); if (S.token) loadMine(); });
 loadInfo(); loadFamily();

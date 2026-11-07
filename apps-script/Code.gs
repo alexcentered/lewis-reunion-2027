@@ -12,7 +12,12 @@
 const TAB = { reg: 'Registrations', pay: 'Payments', ent: 'Entries', cfg: 'Config', agenda: 'Agenda', branches: 'Branches', names: 'Names', people: 'People', treeNotes: 'Tree notes' };
 const TYPES = ['story', 'memoriam', 'veteran', 'directory', 'photo', 'market'];
 const DAY_LABELS = { fri: 'Fri Jul 2', sat: 'Sat Jul 3', sun: 'Sun Jul 4', mon: 'Mon Jul 5' };
-const PHOTO_MAX_BYTES = 8 * 1024 * 1024;
+/* Photo rules. The browser shrinks photos before sending, so real uploads are well under the cap.
+   Keep PHOTO_MAX_BYTES equal to PHOTO.maxUpload in app.js. */
+const PHOTO_MAX_BYTES = 6 * 1024 * 1024;
+const PHOTO_UPLOADS_PER_HOUR = 150;          // site-wide brake so a leaked code cannot fill the Drive
+const PHOTO_DUPLICATE_SECONDS = 6 * 60 * 60; // the same photo twice within 6 hours is treated as a double tap
+const HEIF_BRANDS = ['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis', 'mif1', 'msf1'];
 
 /* ---------------- entry points ---------------- */
 
@@ -22,7 +27,10 @@ function doGet(e) {
     try { return signup_(p); }
     catch (err) { console.error(err && err.stack || err); return page_('Something went wrong', '<p>Your registration may not have come through. Please email the committee.</p>'); }
   }
-  return handle_(p);
+  // Only public info is served to plain links. Anything that needs the family code must come by POST,
+  // so the code never ends up in a URL, a browser history, or a server log.
+  if (p.action === 'info') return handle_({ action: 'info' });
+  return out_({ ok: false, error: 'method', message: 'Please use the reunion website.' });
 }
 
 /* ---------------- sign-up by link ----------------
@@ -89,6 +97,7 @@ function handle_(p) {
     }
     return out_({ ok: false, error: 'unknown_action' });
   } catch (err) {
+    // Log the error only, never the request: it carries the family code and the photo.
     console.error(err && err.stack || err);
     return out_({ ok: false, error: 'server', message: 'Something went wrong on our side. Please try again in a minute.' });
   }
@@ -117,7 +126,7 @@ function familyData_(cfg) {
     id: String(r['Entry ID']), type: String(r.Type), posted: iso_(r.Posted), by: String(r['Posted by'] || ''),
     title: String(r.Title || ''), subtitle: String(r.Subtitle || ''), meta: String(r.Meta || ''),
     body: String(r.Body || ''), contact: String(r.Contact || ''),
-    photo: r['Photo ID'] ? 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(r['Photo ID']) + '&sz=w1600' : ''
+    photo: driveImage_(r['Photo ID'], 1600), thumb: driveImage_(r['Photo ID'], 640)
   })).reverse();
   return {
     ok: true, branches, names, roll, entries, tree: tree_(), treeNotes: treeNotes_(),
@@ -225,10 +234,22 @@ function report_(p, cfg) {
   return { ok: true, mine: mineData_(rowAt_(sheet_(TAB.reg), headers_(sheet_(TAB.reg)), found.index), cfg) };
 }
 
+/** Saves a story, tribute, listing or photo. Runs inside the script lock, so retries line up one at a time. */
 function post_(p, cfg) {
   const type = String(p.type || '');
   if (TYPES.indexOf(type) < 0) return { ok: false, error: 'invalid', message: 'Unknown section.' };
-  if (type === 'photo' && !yes_(cfg.photosEnabled)) return { ok: false, error: 'disabled', message: 'Photo uploads are temporarily disabled during beta.' };
+  const hasPhoto = !!(p.photo && typeof p.photo === 'object' && p.photo.data);
+  // One switch covers every upload: the photo gallery and the optional pictures on tributes, veterans, directory and market.
+  if ((type === 'photo' || hasPhoto) && !yes_(cfg.photosEnabled)) {
+    return { ok: false, error: 'disabled', message: type === 'photo' ? 'Photo sharing is not open yet. Please check back soon.' : 'Photo uploads are not open yet. Remove the photo and press the button again.' };
+  }
+  if (type === 'photo' && !hasPhoto) return { ok: false, error: 'invalid', message: 'Choose a photo first.' };
+
+  // A retry of the same submission (slow phone, double tap, lost answer) returns the first result instead of posting twice.
+  const cache = CacheService.getScriptCache();
+  const sid = /^[A-Za-z0-9-]{16,64}$/.test(String(p.submissionId || '')) ? 'post:' + p.submissionId : '';
+  if (sid) { const prev = cache.get(sid); if (prev) return { ok: true, id: prev, repeat: true }; }
+
   const f = p.fields || {};
   const data = {
     'Entry ID': 'E-' + Utilities.getUuid().slice(0, 8).toUpperCase(), 'Type': type, 'Posted': new Date(),
@@ -236,21 +257,73 @@ function post_(p, cfg) {
     'Meta': clean_(f.meta, 120), 'Body': clean_(f.body, 4000), 'Contact': clean_(f.contact, 200), 'Photo ID': '',
     'Token hash': p.token ? hash_(String(p.token)) : ''
   };
-  if (!data.Title && !data.Body && !(p.photo && p.photo.data)) return { ok: false, error: 'invalid', message: 'Add a name or some words first.' };
-  if (p.photo && p.photo.data) {
-    const bytes = Utilities.base64Decode(String(p.photo.data));
-    const mime = String(p.photo.mime || 'image/jpeg');
-    if (!/^image\/(jpeg|png|webp|gif)$/.test(mime)) return { ok: false, error: 'invalid', message: 'Photos must be JPEG, PNG, WebP or GIF.' };
-    if (bytes.length > PHOTO_MAX_BYTES) return { ok: false, error: 'invalid', message: 'That photo is too large. Try a smaller one.' };
-    const file = photoFolder_(cfg).createFile(Utilities.newBlob(bytes, mime, data['Entry ID'] + '-' + clean_(p.photo.name, 60)));
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  if (!data.Title && !data.Body && !hasPhoto) return { ok: false, error: 'invalid', message: 'Add a name or some words first.' };
+
+  let photo = null, file = null, dupKey = '', hourKey = '';
+  if (hasPhoto) {
+    photo = readPhoto_(p.photo);
+    if (!photo.ok) return photo;
+    dupKey = 'photo:' + type + ':' + photo.hash;
+    if (cache.get(dupKey)) return { ok: false, error: 'duplicate', message: 'That photo was already shared. It is in the list now.' };
+    hourKey = 'photos:' + Utilities.formatDate(new Date(), 'UTC', 'yyyyMMddHH');
+    if (Number(cache.get(hourKey) || 0) >= PHOTO_UPLOADS_PER_HOUR) return { ok: false, error: 'busy', message: 'Lots of photos are coming in right now. Please try again in an hour.' };
+    try {
+      file = photoFolder_(cfg).createFile(Utilities.newBlob(photo.bytes, photo.mime, data['Entry ID'] + '.' + photo.ext));
+      // Link-only viewing is what the gallery needs to show the picture. The folder stays private, so nobody can list it.
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (err) {
+      console.error('Photo save failed: ' + (err && err.message));
+      if (file) { try { file.setTrashed(true); } catch (e2) {} }
+      return { ok: false, error: 'server', message: 'We could not save that photo. Please try again in a minute.' };
+    }
     data['Photo ID'] = file.getId();
-  } else if (type === 'photo') {
-    return { ok: false, error: 'invalid', message: 'Choose a photo first.' };
   }
-  const sh = sheet_(TAB.ent), H = headers_(sh);
-  sh.appendRow(H.names.map(n => data[n] !== undefined ? data[n] : ''));
+
+  try {
+    const sh = sheet_(TAB.ent), H = headers_(sh);
+    sh.appendRow(H.names.map(n => data[n] !== undefined ? data[n] : ''));
+  } catch (err) {
+    if (file) { try { file.setTrashed(true); } catch (e2) {} }   // no orphan files in Drive
+    throw err;
+  }
+  if (sid) cache.put(sid, data['Entry ID'], PHOTO_DUPLICATE_SECONDS);
+  if (dupKey) cache.put(dupKey, data['Entry ID'], PHOTO_DUPLICATE_SECONDS);
+  if (hourKey) cache.put(hourKey, String(Number(cache.get(hourKey) || 0) + 1), 3700);
   return { ok: true, id: data['Entry ID'] };
+}
+
+/** Checks an uploaded photo by its actual bytes, not by what the browser claims it is. */
+function readPhoto_(ph) {
+  const tooBig = { ok: false, error: 'too_big', message: 'That photo is too large. Please choose a smaller one (under ' + Math.round(PHOTO_MAX_BYTES / 1048576) + ' MB).' };
+  const bad = { ok: false, error: 'invalid', message: 'That file is not a photo we can use. Please choose a JPG, PNG, HEIC or WebP picture.' };
+  const b64 = String(ph.data || '');
+  if (b64.length > Math.ceil(PHOTO_MAX_BYTES / 3) * 4 + 4) return tooBig;   // check before decoding anything
+  if (b64.length < 64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b64)) return bad;
+  let bytes;
+  try { bytes = Utilities.base64Decode(b64); } catch (err) { return bad; }
+  if (bytes.length > PHOTO_MAX_BYTES) return tooBig;
+  const kind = sniffImage_(bytes);
+  if (!kind) return bad;
+  const hash = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, bytes).map(b => ('0' + (b & 255).toString(16)).slice(-2)).join('');
+  return { ok: true, bytes: bytes, mime: kind.mime, ext: kind.ext, hash: hash };
+}
+
+/** Recognises JPEG, PNG, WebP and HEIC/HEIF from the first bytes of the file. Anything else is refused. */
+function sniffImage_(bytes) {
+  const b = i => i < bytes.length ? bytes[i] & 255 : -1;
+  const ascii = (from, n) => { let s = ''; for (let i = from; i < from + n; i++) s += String.fromCharCode(b(i)); return s; };
+  if (b(0) === 0xFF && b(1) === 0xD8 && b(2) === 0xFF) return { mime: 'image/jpeg', ext: 'jpg' };
+  if (b(0) === 0x89 && ascii(1, 3) === 'PNG' && b(4) === 0x0D && b(5) === 0x0A && b(6) === 0x1A && b(7) === 0x0A) return { mime: 'image/png', ext: 'png' };
+  if (ascii(0, 4) === 'RIFF' && ascii(8, 4) === 'WEBP') return { mime: 'image/webp', ext: 'webp' };
+  if (ascii(4, 4) === 'ftyp' && HEIF_BRANDS.indexOf(ascii(8, 4)) >= 0) return /^(mif1|msf1)$/.test(ascii(8, 4)) ? { mime: 'image/heif', ext: 'heif' } : { mime: 'image/heic', ext: 'heic' };
+  return null;
+}
+
+/** Gallery link for a Drive photo. Handed out only to people with the family code (see familyData_). */
+function driveImage_(id, width) {
+  id = String(id || '').trim();
+  if (!/^[A-Za-z0-9_-]{10,}$/.test(id)) return '';
+  return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w' + width;
 }
 
 function resend_(p, cfg) {
@@ -296,8 +369,79 @@ function onEdit(e) {
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Reunion')
     .addItem('Refresh balances and status', 'recompute_')
+    .addItem('Sync photo privacy', 'syncPhotoSharing')
     .addItem('Run setup', 'setup')
     .addToUi();
+}
+
+/**
+ * Installed by setup() as an "on edit" trigger (simple onEdit cannot touch Drive).
+ * Unticking Visible on the Entries tab makes that photo private in Drive; ticking it again re-opens the link.
+ */
+function onEntriesEdit(e) {
+  try {
+    if (!e || !e.range) return;
+    const sh = e.range.getSheet();
+    if (sh.getName() !== TAB.ent) return;
+    const H = headers_(sh);
+    if (H.col.Visible === undefined || H.col['Photo ID'] === undefined) return;
+    const vc = H.col.Visible + 1, pc = H.col['Photo ID'] + 1;
+    const hits = c => e.range.getColumn() <= c && e.range.getLastColumn() >= c;
+    if (!hits(vc) && !hits(pc)) return;
+    const folder = existingPhotoFolder_(config_());
+    if (!folder) return;
+    const first = Math.max(2, e.range.getRow()), last = e.range.getLastRow();
+    if (last < first) return;
+    const vals = sh.getRange(first, 1, last - first + 1, H.names.length).getValues();
+    vals.forEach(r => { const id = String(r[pc - 1] || '').trim(); if (id) setPhotoSharing_(id, yes_(r[vc - 1]), folder); });
+  } catch (err) { console.warn('Photo privacy sync: ' + (err && err.message)); }
+}
+
+/**
+ * Menu: Reunion → Sync photo privacy. Visible photos can be opened by link (the gallery needs that);
+ * hidden photos are private; the photo folder itself is never shared, so its contents cannot be listed.
+ * Only files inside the photo folder are touched.
+ */
+function syncPhotoSharing() {
+  const folder = existingPhotoFolder_(config_());
+  if (!folder) { console.log('No photo folder yet. Run setup first.'); return; }
+  lockFolder_(folder);
+  let open = 0, closed = 0, skipped = 0;
+  rows_(TAB.ent).forEach(r => {
+    const id = String(r['Photo ID'] || '').trim();
+    if (!id) return;
+    const visible = yes_(r.Visible);
+    if (setPhotoSharing_(id, visible, folder)) { if (visible) open++; else closed++; } else skipped++;
+  });
+  console.log('Photo privacy synced. Viewable by link: ' + open + '. Private (hidden): ' + closed + '. Skipped (not in the photo folder or missing): ' + skipped + '.');
+}
+
+function setPhotoSharing_(id, visible, folder) {
+  try {
+    const file = DriveApp.getFileById(id);
+    let inFolder = false;
+    const parents = file.getParents();
+    while (parents.hasNext()) if (parents.next().getId() === folder.getId()) { inFolder = true; break; }
+    if (!inFolder) return false;   // never change sharing on a file that is not a reunion upload
+    const access = file.getSharingAccess();
+    if (visible && access !== DriveApp.Access.ANYONE_WITH_LINK) file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    if (!visible && access !== DriveApp.Access.PRIVATE) file.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.NONE);
+    return true;
+  } catch (err) { return false; }
+}
+
+/** The photo folder must never be shared by link or publicly: that would let anyone list every upload. */
+function lockFolder_(folder) {
+  const access = folder.getSharingAccess();
+  if (access !== DriveApp.Access.PRIVATE) {
+    folder.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.NONE);
+    console.warn('The photo folder was shared (' + access + '). It is private again; people you added by name keep their access.');
+  }
+}
+
+function installPhotoTrigger_() {
+  const have = ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'onEntriesEdit');
+  if (!have) ScriptApp.newTrigger('onEntriesEdit').forSpreadsheet(SpreadsheetApp.getActive()).onEdit().create();
 }
 
 /** Recalculates Due, Confirmed, Awaiting, Balance and Status for every household. */
@@ -331,12 +475,18 @@ function recompute_() {
   sh.getRange(2, H.col.Due + 1, outRows.length, 5).setValues(outRows);
 }
 
-/** Run once from the editor: creates the private photo folder and asks Google for permissions. */
+/**
+ * Run from the editor (safe to run again): creates the private photo folder if needed, keeps it private,
+ * installs the photo-privacy trigger, syncs photo sharing with the Visible boxes, and asks Google for permissions.
+ */
 function setup() {
   const cfg = config_();
   const folder = photoFolder_(cfg);
+  lockFolder_(folder);
+  installPhotoTrigger_();
+  syncPhotoSharing();
   recompute_();
-  console.log('Setup complete. Photo folder: ' + folder.getUrl());
+  console.log('Setup complete. Photo folder: ' + folder.getUrl() + '. Photo uploads are ' + (yes_(cfg.photosEnabled) ? 'ON' : 'OFF') + ' (Config tab: photosEnabled).');
 }
 
 /* ---------------- helpers ---------------- */
@@ -450,6 +600,13 @@ function photoFolder_(cfg) {
   for (let i = 1; i < all.length; i++) if (all[i][0] === 'photoFolderId') { sh.getRange(i + 1, 2).setValue(folder.getId()); return folder; }
   sh.appendRow(['photoFolderId', folder.getId(), 'Filled in automatically by setup()']);
   return folder;
+}
+
+/** The photo folder if setup has made one; never creates anything. */
+function existingPhotoFolder_(cfg) {
+  const id = String(cfg.photoFolderId || '').trim();
+  if (!id) return null;
+  try { return DriveApp.getFolderById(id); } catch (err) { return null; }
 }
 
 function codeOk_(code, cfg) {
