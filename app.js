@@ -20,9 +20,10 @@ if (LINKMODE) document.documentElement.classList.add('linkmode');
 /* ---------- link parameters: ?c=<family code>&t=<private registration token> ---------- */
 (function readLink(){
   const q = new URLSearchParams(location.search);
-  if (q.get('c')) store.set('lr-code', q.get('c').trim());
+  const c = q.get('c') || q.get('code');   // ?code= is accepted as an alias of ?c=
+  if (c && c.trim()) store.set('lr-code', c.trim());
   if (q.get('t')) store.set('lr-token', q.get('t').trim());
-  if (q.has('c') || q.has('t')) history.replaceState(null, '', location.pathname + location.hash);
+  if (q.has('c') || q.has('code') || q.has('t')) history.replaceState(null, '', location.pathname + location.hash);
 })();
 
 /* ---------- look + mode ---------- */
@@ -90,7 +91,7 @@ const S = {
   info: { agenda: DEFAULT_AGENDA, feeAdult: null, feeChild: null, childAge: 12, deadline: '', roomBlock: '' },
   family: null,            // branches, names, roll, entries, pay — only with the family code
   code: LINKMODE ? String(window.LR.code || '') : (store.get('lr-code') || ''), token: LINKMODE ? '' : (store.get('lr-token') || ''),
-  mine: null, codeBad: false,
+  mine: null, codeBad: false, tokenBad: false,   // tokenBad: the stored registration code was refused by the server
   treeData: null
 };
 
@@ -144,7 +145,8 @@ function renderGates(){
     if (!show) return;
     if (S.loadingFamily){ g.innerHTML = `<h3>Opening the family pages…</h3><p class="hint">One moment while we check your family code.</p>`; return; }
     g.innerHTML = `<h3>Family members only</h3><p>${S.codeBad ? 'That family code did not work. ' : ''}This part of the site is for Lewis and Antone family. Open the link the reunion committee sent you, or enter the family code from it.</p>
-      <div class="row"><input type="text" id="gate-in-${i}" placeholder="Family code" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Family code" style="flex:1;min-width:200px;max-width:340px"><button type="button" class="btn" data-gate-go="${i}">Continue</button></div>`;
+      <div class="row"><input type="text" id="gate-in-${i}" placeholder="Family code" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Family code" style="flex:1;min-width:200px;max-width:340px"><button type="button" class="btn" data-gate-go="${i}">Continue</button></div>
+      <p class="hint" style="margin:12px 0 0">Have a registration code too? Enter it on <a href="#me">My Registration</a>.</p>`;
   });
   $('#regForm').hidden = show;
   $('.subnav').hidden = show;
@@ -286,6 +288,12 @@ function fillReg(r){
 }
 function say(el, text, ok){ el.className = 'msg ' + (ok ? 'ok' : 'err'); el.textContent = text; }
 function privateLink(){ return location.origin + location.pathname + '?c=' + encodeURIComponent(S.code) + '&t=' + encodeURIComponent(S.token) + '#me'; }
+/* The registration code is printed in groups of 4, the same way the email shows it. */
+function groupCode(t){ return String(t || '').replace(/(.{4})/g, '$1 ').trim(); }
+/* Copy to the clipboard from a button; the clipboard can be unavailable (http, old browsers), so say what to do instead. */
+function copyBtn(btn, text, fallback){
+  btn.addEventListener('click', async () => { try { await navigator.clipboard.writeText(text); btn.textContent = 'Copied'; } catch (_) { btn.textContent = fallback; } });
+}
 
 $('#regForm').addEventListener('submit', async e => {
   e.preventDefault();
@@ -313,8 +321,13 @@ $('#regForm').addEventListener('submit', async e => {
     say(msg, was ? 'Saved.' : 'You are registered.', true);
     if (!was){
       const d = $('#regDone'); d.hidden = false;
-      d.innerHTML = `<h3>You're registered. Welcome home.</h3><p class="hint">We emailed your private link to ${esc(r.email)}. Use it to come back, change your registration and report payments. This device will remember you too.</p><div class="linkbox">${esc(privateLink())}</div><div class="row"><button type="button" class="btn quiet sm" id="copyLink">Copy my link</button><a class="btn sm" href="#me">Go to My Registration</a></div>`;
-      $('#copyLink').addEventListener('click', async ev => { try { await navigator.clipboard.writeText(privateLink()); ev.target.textContent = 'Copied'; } catch (_) { ev.target.textContent = 'Select the link above to copy it'; } });
+      d.innerHTML = `<h3>You're registered. Welcome home.</h3><p class="hint">We emailed your private link to ${esc(r.email)}. Use it to come back, change your registration and report payments. This device will remember you too.</p><div class="linkbox">${esc(privateLink())}</div><div class="row"><button type="button" class="btn quiet sm" id="copyLink">Copy my link</button><a class="btn sm" href="#me">Go to My Registration</a></div>
+        <p class="hint" style="margin-top:18px">If the link does not open, type these two codes on <a href="#me">My Registration</a>. They are in your email too.</p>
+        <div class="row" style="margin-top:8px"><span class="hint" style="min-width:140px">Family code</span><b class="num" style="font-weight:500">${esc(S.code)}</b><button type="button" class="btn quiet sm" id="copyCode">Copy</button></div>
+        <div class="row" style="margin-top:8px"><span class="hint" style="min-width:140px">Registration code</span><b class="num" style="font-weight:500;word-break:break-all">${esc(groupCode(S.token))}</b><button type="button" class="btn quiet sm" id="copyToken">Copy</button></div>`;
+      copyBtn($('#copyLink'), privateLink(), 'Select the link above to copy it');
+      copyBtn($('#copyCode'), S.code, 'Select the text to copy it');
+      copyBtn($('#copyToken'), groupCode(S.token), 'Select the text to copy it');
       d.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
     }
     loadFamily(true);
@@ -346,10 +359,22 @@ function linkOutSubmit(r){
 }
 
 /* ---------- my registration ---------- */
+const TOKEN_BAD = 'That registration code did not match. Check it against your email, or use Email my link below.';
+/* The "codes from your email" form on the empty My Registration page. The family-code field only shows when the site
+   does not know the family code yet (no link opened, nothing typed at a gate). */
+function renderMeEntry(){
+  const wrap = $('#meCodeWrap');
+  if (wrap) wrap.hidden = !!S.code;
+}
 function renderMe(){
   const m = S.mine;
   $('#meEmpty').hidden = !!m; $('#meBody').hidden = !m;
-  if (!m){ $('#meStatus').innerHTML = ''; $('#meTitle').textContent = 'Your household'; return; }
+  renderMeEntry();
+  if (!m){
+    $('#meStatus').innerHTML = ''; $('#meTitle').textContent = 'Your household';
+    if (S.tokenBad && $('#meMsg')) say($('#meMsg'), TOKEN_BAD, false);
+    return;
+  }
   const r = m.reg, s = m.summary;
   const tone = /Paid in full/.test(s.status) ? 'ok' : /awaiting|announced/.test(s.status) ? 'info' : /Partially|pending/.test(s.status) ? 'warn' : '';
   $('#meTitle').textContent = (r.preferred || r.first) + ' ' + r.last + ' household';
@@ -383,6 +408,27 @@ $('#lostBtn').addEventListener('click', async () => {
   try { const res = await api('resend', { email }); say(msg, res.message || 'Check your inbox.', !!res.ok); } catch (err) { say(msg, failText(err), false); }
   $('#lostBtn').disabled = false;
 });
+/* Typed codes from the email: the family code opens the family pages, the registration code opens this household. */
+const normCode = v => String(v || '').replace(/[\s-]/g, '').toLowerCase();
+async function openByCodes(){
+  const msg = $('#meMsg'), btn = $('#meGo');
+  const code = normCode($('#meCode').value) || S.code, token = normCode($('#meToken').value);
+  if (!code){ say(msg, 'Enter the family code from your email.', false); $('#meCode').focus(); return; }
+  if (token.length < 32 || !/^[a-f0-9]+$/.test(token)){ say(msg, 'That registration code looks incomplete. It is 32 letters and numbers, usually shown in groups of 4.', false); $('#meToken').focus(); return; }
+  S.code = code; S.token = token; store.set('lr-code', code); store.set('lr-token', token);
+  S.mine = null; S.codeBad = false; S.tokenBad = false;
+  btn.disabled = true; say(msg, 'Opening your registration…', true);
+  try { await loadFamily(); } catch (_) {}
+  btn.disabled = false;
+  if (S.codeBad){ S.code = ''; renderMeEntry(); say(msg, 'That family code is not right. Check it against your email.', false); $('#meCode').focus(); return; }
+  if (S.tokenBad){ say(msg, TOKEN_BAD, false); $('#meToken').focus(); return; }
+  if (!S.mine){ say(msg, S.family ? 'We could not open your registration just now. Please try again.' : failText(), false); return; }
+  $('#meToken').value = ''; $('#meCode').value = ''; say(msg, '', true);
+}
+if ($('#meGo')){
+  $('#meGo').addEventListener('click', openByCodes);
+  ['#meCode', '#meToken'].forEach(sel => $(sel).addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); openByCodes(); } }));
+}
 
 /* ---------- sharing stories, tributes, photos ---------- */
 const FORM = {
@@ -631,8 +677,9 @@ async function loadFamily(quiet){
   } catch (e) { if (!quiet) setBanner('We could not reach the reunion server just now. Some sections will appear when the connection returns.'); }
   S.loadingFamily = false;
   renderGates(); renderFamily();
-  if (S.family && S.token && !S.mine) loadMine();
+  const mine = (S.family && S.token && !S.mine) ? loadMine() : null;   // awaited by callers that need the household (openByCodes)
   if (S.family) loadTree(quiet);
+  return mine;
 }
 async function loadTree(quiet){
   if (LINKMODE || !API) return;
@@ -645,8 +692,8 @@ async function loadTree(quiet){
 async function loadMine(){
   try {
     const d = await api('mine', { token: S.token });
-    if (d.ok){ S.mine = d.mine; fillReg(S.mine.reg); renderFamily(); }
-    else if (d.error === 'token'){ S.token = ''; store.set('lr-token', null); }
+    if (d.ok){ S.mine = d.mine; S.tokenBad = false; fillReg(S.mine.reg); renderFamily(); }
+    else if (d.error === 'token'){ S.token = ''; S.tokenBad = true; store.set('lr-token', null); }
   } catch (e) {}
   renderMe();
 }

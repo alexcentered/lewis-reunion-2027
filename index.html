@@ -829,8 +829,17 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
       <div class="section-head"><div><div class="kicker">My registration</div><h2 id="meTitle">Your household</h2></div><span id="meStatus"></span></div>
       <div id="meEmpty" class="card" style="max-width:640px">
         <h3 style="font:600 1.5rem var(--display)">Find your registration</h3>
-        <p class="hint">Open the private link we emailed you when you registered. Lost it? Enter your email and we'll send a new one.</p>
-        <div class="row" style="margin-top:12px"><input id="lostEmail" type="email" placeholder="you@example.com" autocomplete="email" aria-label="Your email" style="flex:1;min-width:220px"><button type="button" class="btn" id="lostBtn">Email my link</button></div>
+        <p class="hint">Open the private link we emailed you when you registered. If the link will not open, type the two codes from that email below.</p>
+        <p style="margin:18px 0 0;font-weight:600">Have the codes from your email?</p>
+        <div class="fields" style="margin-top:10px">
+          <div id="meCodeWrap"><label for="meCode">Family code</label><input id="meCode" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+          <div><label for="meToken">Registration code</label><input id="meToken" class="num" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="xxxx xxxx xxxx xxxx …"></div>
+        </div>
+        <button type="button" class="btn" id="meGo" style="margin-top:14px">Open my registration</button>
+        <div class="msg" id="meMsg" aria-live="polite"></div>
+        <p style="margin:18px 0 0;font-weight:600">Lost the email?</p>
+        <p class="hint" style="margin-top:4px">Enter the email you registered with and we'll send a new one.</p>
+        <div class="row" style="margin-top:10px"><input id="lostEmail" type="email" placeholder="you@example.com" autocomplete="email" aria-label="Your email" style="flex:1;min-width:220px"><button type="button" class="btn" id="lostBtn">Email my link</button></div>
         <div class="msg" id="lostMsg" aria-live="polite"></div>
         <p class="hint" style="margin-top:14px">Not registered yet? <a href="#register">Register your household</a>.</p>
       </div>
