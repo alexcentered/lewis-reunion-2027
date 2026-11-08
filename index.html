@@ -171,7 +171,9 @@ details p{color:var(--muted);max-width:68ch}
 .step{padding:26px}
 .step h3{font:600 1.55rem/1.15 var(--display);margin-bottom:4px}
 .step .sub{color:var(--muted);font-size:.92rem;margin:0 0 18px}
-.att{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:10px;align-items:end;padding:14px 0;border-top:1px solid var(--line)}
+.att{display:grid;grid-template-columns:minmax(0,2fr) minmax(6.5rem,1fr) minmax(3.5rem,1fr) minmax(5.5rem,1fr) auto;gap:10px;align-items:end;padding:14px 0;border-top:1px solid var(--line)}
+.att label{white-space:nowrap}
+.att input,.att select{min-width:0}
 .att:first-child{border-top:0;padding-top:0}
 @media(max-width:720px){.att{grid-template-columns:1fr 1fr}.att .nm{grid-column:1/-1}}
 .summary{position:sticky;top:80px}
