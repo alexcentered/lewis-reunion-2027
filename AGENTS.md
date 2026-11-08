@@ -178,7 +178,7 @@ The result written into `Draft` is the joined `text` blocks, or a line starting 
 
 ## How to change the site
 
-Commit to `main`. GitHub Pages redeploys in about a minute. Tell testers to close the tab and reopen the family link, since the browser caches `app.js`.
+Commit to `main`. GitHub Pages redeploys in about a minute. The four `<script src>` tags at the end of `index.html` carry a `?v=YYYYMMDD` query so phones fetch fresh copies: bump it to the day's date whenever `app.js`, `tree.js`, `tree-engine.js` or `config.js` changes (an `index.html`-only change needs no bump, because the page itself is not cached long).
 
 ## Conventions
 
