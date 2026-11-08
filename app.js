@@ -315,6 +315,7 @@ $('#regForm').addEventListener('submit', async e => {
   const need = (bad, label, sel) => { if (bad){ miss.push(label); at.push(sel); } };
   need(!r.first, 'first name', '#fFirst'); need(!r.last, 'last name', '#fLast');
   need(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email), 'a valid email', '#fEmail');
+  need(r.phone.replace(/\D/g, '').length < 10, 'a cell phone number', '#fPhone');   // at least 10 digits; the server checks the same
   need(!r.city || !r.state, 'city and state', r.city ? '#fState' : '#fCity'); need(!r.branch, 'branch', '#fBranch');
   need(!r.attendees.length, 'at least one person attending', '#attendees input');
   need(!r.days.length, 'at least one day', '#regForm input[name="day"], #regForm [data-day]'); need(!r.travelAck, 'the travel box', '#fTravel');

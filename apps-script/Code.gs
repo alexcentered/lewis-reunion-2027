@@ -207,6 +207,7 @@ function register_(p, cfg) {
   const miss = [];
   if (!v.first) miss.push('first name'); if (!v.last) miss.push('last name');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) miss.push('a valid email');
+  if (v.phone.replace(/\D/g, '').length < 10) miss.push('a cell phone number');   // required since Nov 2026; the site checks the same
   if (!v.city || !v.state) miss.push('city and state'); if (!v.branch) miss.push('branch');
   if (!att.length) miss.push('at least one person attending'); if (!days.length) miss.push('at least one day');
   if (miss.length) return { ok: false, error: 'invalid', message: 'Still needed: ' + miss.join(', ') + '.' };
