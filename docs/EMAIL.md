@@ -85,7 +85,7 @@ Columns: `Queued` (when the row was written), `To`, `Subject`, `Html`, `Text`, `
 
 | Status | Meaning |
 |---|---|
-| `Sent` | Went out. `Via` says how: `Brevo <id>` or `MailApp`. `Sent` has the time. |
+| `Sent` | Went out. `Via` says how: `Brevo <id>` or `MailApp`. `dupe` means the same email had already gone out in the last 6 hours, so it was not sent twice. `Sent` has the time. |
 | `Queued` | Waiting. `Last error` says why it did not go straight out. The hourly job will try again. |
 | `Sending` | A run is working on it right now. If it stays `Sending` for more than 15 minutes, the next run picks it up again. |
 | `Failed` | Given up after 20 tries. Nothing is deleted. |
@@ -152,7 +152,7 @@ A committee update is one email to every registered household (or to a slice of 
 1. **Open the Updates tab** and start a new row. Leave `ID`, `Created`, `Sent at`, `Sent`, `Failed` and `Skipped` blank; the script fills them.
 2. **Write the Subject.** This is the email subject line, for example `Fees are set: $120 per adult`.
 3. **Write the body.** Two ways:
-   - Type the email yourself into `Draft`. Plain paragraphs separated by a blank line are fine; simple HTML (`<p>`, `<br>`, `<b>`, `<a>`) also works. Start with `Hi,` or `Hello,` and the script will put each household's name in (`Hi Denise,`). If you leave the greeting out, the script adds one. Do not add the sign-off line or your name at the bottom; the email frame adds "Somehow, some way, your foundation is Lewis — and you belong here." and the committee address itself. If you type the sign-off anyway, it is removed so it does not appear twice.
+   - Type the email yourself into `Draft`. Plain paragraphs separated by a blank line are fine; simple HTML (`<p>`, `<br>`, `<b>`, `<a>`) also works. Start with a greeting line such as `Hi,`, `Hello,`, `Hi everyone,` or `Dear family,` and the script will put each household's name in (`Hi Denise,`). If you leave the greeting out, the script adds one. Do not add the sign-off line or your name at the bottom; the email frame adds "Somehow, some way, your foundation is Lewis — and you belong here." and the committee address itself. If you type the sign-off anyway, it is removed so it does not appear twice.
    - Or put bullet points in `Notes` and choose **Reunion, Draft update with AI** from the Sheet menu. The script sends your notes to Claude and writes the result into `Draft`. Read it. Change anything you like. It is a draft, not the email. (Setup for this is below.)
 4. **Set the Audience.** One word from the table below, or a Branch name exactly as it appears on the Registrations tab.
 5. **Test it first.** Set Audience to `test`, tick **Approved**, and choose **Reunion, Send approved updates now**. Within a minute the email arrives at the Config `email` address with the greeting `Hi committee,`. Read it on a phone. If you want to change it, make a new row (a sent row is finished).
@@ -181,10 +181,10 @@ Case does not matter for the keywords either. Whatever the audience, a household
 
 ### What Sent, Failed and Skipped mean
 
-- **Sent at**: when the run happened. The script writes `sending…` here first, while it is working, then the time. Blank means not sent yet. A row with anything in `Sent at` is never sent again, even if `Approved` stays ticked.
+- **Sent at**: when the run finished. The script writes `sending…` here while it is working, then the time. Blank means not sent yet. A row that still says `sending…` is picked up again by the next run (menu or 9 am) and continues where it left off; households already queued are never queued twice. A row with a time in `Sent at` is never sent again, even if `Approved` stays ticked.
 - **Sent**: how many emails were queued. Not how many have arrived yet; that is in MailQueue.
 - **Skipped**: households left out for `Mail opt-out` = `Yes` or a blank email.
-- **Failed**: normally `0`. A number means that many MailQueue rows could not be written (rare; see Executions). Text means the run stopped before queueing anything, and says why: `Draft is blank; nothing was sent`, `No households matched audience "Melvn"`, `Config "email" is blank, so a test has nowhere to go`, or `ERROR: ...`. Fix the row, clear `Sent at`, and run again. Nothing was queued, so nobody gets a duplicate.
+- **Failed**: blank when everything went well. `In progress: N of M queued; the next run continues` means a big list ran out of time this run and will finish on the next one. Text that starts with `ERROR:` means the run hit a problem and will retry next run. Other text means nothing was queued and says why: `Draft is blank; nothing was sent`, `No households matched audience "Melvn"`, `Config "email" is blank, so a test has nowhere to go`. Fix the row, clear `Sent at`, and run again; nothing was queued, so nobody gets a duplicate.
 
 Delivery problems after queueing (Brevo down, quota used) do not show up in `Failed`. They show in MailQueue as `Queued` rows with a `Last error`, and are retried every hour as usual.
 
@@ -202,7 +202,7 @@ When someone replies STOP:
 ### Testing with Audience `test`
 
 - From the Sheet: a row with Audience `test` and **Approved** ticked, then **Reunion, Send approved updates now**. One MailQueue row, To = Config `email`, Kind `update`, Household ID `COMMITTEE`. The Updates row shows `Sent` = 1, `Skipped` = 0.
-- From the Apps Script editor: run `testUpdate()`. It appends a test row (Subject `Test update`, Audience `test`, Approved ticked) and runs `sendUpdates()`, then logs the last MailQueue row. Delete or keep the row; it is finished either way.
+- From the Apps Script editor: run `testUpdate()`. It appends a test row (ID `U-TEST-…`, Subject `Test update`, Audience `test`, Approved ticked) and sends only that row, so other approved updates wait for their normal run. It logs the last MailQueue row. Delete or keep the row; it is finished either way.
 - Run **Send approved updates now** a second time. The log says `Updates: nothing approved and unsent.` and no new MailQueue row appears.
 
 ### AI drafting (optional)
@@ -221,10 +221,10 @@ Cost: pennies per draft. The model is `claude-opus-5-5` and the request is a few
 | What you see | Likely cause | What to do |
 |---|---|---|
 | Nothing was sent; `Sent at` still blank | `Approved` is not ticked, or the daily run has not happened yet, or the trigger is missing. | Tick the box. Choose **Reunion, Send approved updates now**. Editor, Triggers (clock icon): `sendUpdates` should be listed as daily; if not, run `setup`. |
-| `Sent at` says `sending…` and stays that way | A run died halfway (timeout, script error). | Open Executions and read the error. Look in MailQueue for rows with Key `update:<ID>:...` to see how far it got. If none, clear `Sent at` and run again. If some were queued, make a note of which households got it before resending; a resend inside 6 hours skips addresses already sent (`via dupe`), after that it would send twice. |
+| `Sent at` says `sending…` and stays that way | The list is large and needs more than one run, or a run died halfway. | Read `Failed`: `In progress` means wait for the next run or use **Send approved updates now** again; `ERROR:` tells you what broke (Executions has the detail). Running again is safe: households already queued are skipped by their MailQueue key. |
 | `Failed` has text | Blank `Draft`, misspelt Audience, blank Config `email` for a test, or an error. | Fix what it says, clear `Sent at`, run again. Nothing was queued. |
 | `Draft` starts with `ERROR:` | The AI call failed: `HTTP 401` means the key is wrong or missing; `HTTP 429` or `402` means the account is out of credit or rate-limited; `the AI declined` means Claude refused the request; anything else is network or a malformed reply. | Fix the key or the credit, clear `Draft`, run **Draft update with AI** again. Or just write the email yourself. |
-| Someone got the update twice | Two Registrations rows with different spellings of the same email (dedupe compares exact lowercase addresses), or `Sent at` was cleared on a sent row and run again after 6 hours. | Merge the duplicate household rows. Never clear `Sent at` on a row whose MailQueue rows exist. |
+| Someone got the update twice | Two Registrations rows with different spellings of the same email (dedupe compares exact lowercase addresses), or the MailQueue rows for that update were deleted and the row re-run. | Merge the duplicate household rows. Leave MailQueue rows alone; they are the record of who was sent what. |
 | Someone who asked STOP still got one | `Mail opt-out` was not set, or set to something other than `Yes` (the script accepts `Yes`, `Y`, `True`, `1`), or set on a different household row than the one with that email. | Search Registrations by email, set `Mail opt-out` to `Yes` on every row with that address. Apologise. |
 | The update arrived with `Hi cousin,` | The household has no `Preferred` and no `First` name. | Fill in the Registrations row. |
 | Only about 100 went out right away | By design. The run queues everything and drains one batch at once (up to 100 rows). | Wait. The hourly drain sends the rest. |

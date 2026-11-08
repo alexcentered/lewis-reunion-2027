@@ -157,7 +157,7 @@ Checks for a committee update to every household. Do them after `setup` has been
 
 **Test audience run**
 - [ ] Sheet → **Updates** tab. In a new row type Subject `Test update from the committee`, Draft `Hi,` on the first line, a blank line, then two short paragraphs. Set Audience to `test`. Tick **Approved**.
-- [ ] Menu **Reunion → Send approved updates now**. Within a few seconds the row's **Sent at** changes to `sending…` and then to the time. **Sent** reads `1`, **Failed** `0`, **Skipped** `0`. **ID** reads `U-` and 8 characters.
+- [ ] Menu **Reunion → Send approved updates now**. Within a few seconds the row's **Sent at** changes to `sending…` and then to the time. **Sent** reads `1`, **Failed** is blank, **Skipped** `0`. **ID** reads `U-` and 8 characters.
 - [ ] Apps Script → **Executions**: the `sendUpdates` run ends with `1 queued; Brevo allows about 300 a day, and the hourly drain carries the rest.`
 
 **Check the committee inbox**
@@ -190,7 +190,7 @@ Checks for a committee update to every household. Do them after `setup` has been
 | What you see | What to do |
 |---|---|
 | **Sent at** stays blank after the menu item | Approved is not ticked, or the Sheet was busy. Tick it and run again. Check Executions. |
-| **Sent at** stuck on `sending…` | The run died. Executions has the error. If MailQueue has no `update:` rows for that ID, clear **Sent at** and run again. |
+| **Sent at** stuck on `sending…` | A big list needs another run, or the run died. **Failed** says which. Run **Send approved updates now** again; households already queued are skipped. |
 | **Failed** has words in it | Read them: blank Draft, misspelt Audience, or blank Config `email`. Fix, clear **Sent at**, run again. |
 | Email says `Hi cousin,` | The household has no Preferred or First name on Registrations. |
 | **Draft** starts with `ERROR:` | The AI call failed; the text says why. Fix the key or credit, clear the cell, try again, or write the email by hand. |
