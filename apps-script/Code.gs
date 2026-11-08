@@ -11,16 +11,33 @@
  * Mail: every email goes through sendMail_ (section "mail"): Brevo API first (sender from Config mailFrom), the
  * deployer's Gmail (MailApp) second, and the MailQueue tab third, which drainMailQueue() empties every hour.
  * Script Properties (Project Settings → Script Properties): BREVO_API_KEY. Without it, MailApp is used.
- * Tabs this file writes to: Registrations, Payments, Entries, Config, MailQueue (created by setup()).
+ * ANTHROPIC_API_KEY is optional: the menu item "Draft update with AI" (draftUpdate) uses it to turn committee notes into a draft.
+ * Committee Updates (section "committee updates"): the Updates tab holds one broadcast email per row; sendUpdates() (menu
+ * "Send approved updates now" and a daily trigger) queues an Approved row to every registered household in its Audience.
+ * Tabs this file writes to: Registrations, Payments, Entries, Config, MailQueue and Updates (both created by setup()).
  */
 
-const TAB = { reg: 'Registrations', pay: 'Payments', ent: 'Entries', cfg: 'Config', agenda: 'Agenda', branches: 'Branches', names: 'Names', people: 'People', treeNotes: 'Tree notes', mail: 'MailQueue' };
+const TAB = { reg: 'Registrations', pay: 'Payments', ent: 'Entries', cfg: 'Config', agenda: 'Agenda', branches: 'Branches', names: 'Names', people: 'People', treeNotes: 'Tree notes', mail: 'MailQueue', updates: 'Updates' };
 /* Mail layer constants. MAIL_RESERVE keeps a few MailApp sends back so the committee's own scripts never hit zero. */
 const MAIL_RESERVE = 5;
 const MAIL_HEADERS = ['Queued', 'To', 'Subject', 'Html', 'Text', 'Status', 'Attempts', 'Last error', 'Sent', 'Via', 'Key', 'Kind', 'Household ID'];
 const MAIL_MAX_ATTEMPTS = 20;      // a queued email that fails this often is marked Failed (never deleted)
 const MAIL_CLAIM_MINUTES = 15;     // a MailQueue row left 'Sending' this long belongs to a drain that died and is claimed again
 const BREVO_URL = 'https://api.brevo.com/v3/smtp/email';
+/* Committee Updates (section "committee updates"). One Updates row per broadcast email. Approved (a checkbox) with a
+   blank "Sent at" means sendUpdates() will send it; Sent, Failed and Skipped are the counts it writes back. Skipped =
+   households left out for Mail opt-out = Yes or a blank email, so the committee can see why Sent differs from the roll. */
+const UPDATE_HEADERS = ['ID', 'Created', 'Subject', 'Notes', 'Draft', 'Approved', 'Audience', 'Sent at', 'Sent', 'Failed', 'Skipped'];
+const UPDATE_AUDIENCES = ['all', 'unpaid', 'paid', 'test'];   // any other Audience value is matched against the Registrations Branch column
+const REG_OPTOUT = 'Mail opt-out';                            // Registrations column; the committee types Yes when a household replies STOP
+const UPDATE_SENDING = 'sending…';                            // "Sent at" while a run holds the row or has not finished it; the next run resumes it
+const UPDATE_QUEUE_MS = 4 * 60000;                            // sendUpdates stops queueing after this and leaves the rest to the next run
+const RUN_MS = 6 * 60000;                                     // Apps Script stops any run at six minutes; the drain after queueing gets what is left
+const UPDATE_FOOTER = 'You are getting this because your household is registered for the Lewis Family Reunion. To stop these updates, reply with the word STOP.';
+const SIGNOFF = 'Somehow, some way, your foundation is Lewis — and you belong here.';
+/* Claude API for draftUpdate(). Raw HTTP: Apps Script has no SDK. Key = Script Property ANTHROPIC_API_KEY (never logged). */
+const CLAUDE_URL = 'https://api.anthropic.com/v1/messages';
+const CLAUDE_MODEL = 'claude-opus-5-5';
 /* Config tab keys the mail layer reads. config_() fills these in when the row is missing or blank;
    ensureConfigKeys_() (run by setup) appends the rows so the committee can see and change them. */
 const CONFIG_DEFAULTS = {
@@ -398,6 +415,8 @@ function onOpen() {
     .addItem('Refresh balances and status', 'recompute_')
     .addItem('Send queued mail now', 'drainMailQueue')
     .addItem('Send me a test email', 'testSendMail')
+    .addItem('Send approved updates now', 'sendUpdates')
+    .addItem('Draft update with AI', 'draftUpdate')
     .addItem('Sync photo privacy', 'syncPhotoSharing')
     .addItem('Run setup', 'setup')
     .addToUi();
@@ -518,12 +537,13 @@ function ensureTrigger_(fn, build) {
   if (!have) build(ScriptApp.newTrigger(fn)).create();
 }
 
-/** Installable triggers: photo privacy and payment receipts on edit, the mail queue every hour. Safe to run again. */
+/** Installable triggers: photo privacy and payment receipts on edit, the mail queue every hour, approved updates daily at 9. Safe to run again. */
 function installTriggers_() {
   const ss = SpreadsheetApp.getActive();
   ensureTrigger_('onEntriesEdit', b => b.forSpreadsheet(ss).onEdit());
   ensureTrigger_('onPaymentsEdit', b => b.forSpreadsheet(ss).onEdit());
   ensureTrigger_('drainMailQueue', b => b.timeBased().everyHours(1));
+  ensureTrigger_('sendUpdates', b => b.timeBased().everyDays(1).atHour(9));
 }
 
 /** Creates the tab with these headers if it is missing; otherwise appends any header not yet present (never reorders). */
@@ -581,14 +601,17 @@ function recompute_() {
 }
 
 /**
- * Run from the editor (safe to run again): creates the MailQueue tab and the mail Config rows, adds the
- * "Receipt sent" column to Payments, creates the private photo folder if needed and keeps it private, installs
- * the triggers, syncs photo sharing with the Visible boxes, and asks Google for permissions.
+ * Run from the editor (safe to run again): creates the MailQueue and Updates tabs and the mail Config rows, adds the
+ * "Receipt sent" column to Payments and "Mail opt-out" to Registrations, creates the private photo folder if needed and
+ * keeps it private, installs the triggers, syncs photo sharing with the Visible boxes, and asks Google for permissions.
  */
 function setup() {
   ensureTab_(TAB.mail, MAIL_HEADERS);
   sheet_(TAB.pay);                              // a clear "Missing tab" error beats creating a one-column Payments tab
   ensureTab_(TAB.pay, ['Receipt sent']);
+  sheet_(TAB.reg);
+  ensureTab_(TAB.reg, [REG_OPTOUT]);            // appends the column; existing columns keep their places
+  updatesSheet_();
   ensureConfigKeys_();
   const cfg = config_();
   const folder = photoFolder_(cfg);
@@ -596,9 +619,12 @@ function setup() {
   installTriggers_();
   syncPhotoSharing();
   recompute_();
-  let hasKey = false;
+  let hasKey = false, hasClaude = false;
   try { hasKey = !!PropertiesService.getScriptProperties().getProperty('BREVO_API_KEY'); } catch (err) {}
+  try { hasClaude = !!PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY'); } catch (err) {}
   console.log('Setup complete. Photo folder: ' + folder.getUrl() + '. Photo uploads are ' + (yes_(cfg.photosEnabled) ? 'ON' : 'OFF') + ' (Config tab: photosEnabled).');
+  console.log('Updates tab is ready (tick Approved to send at 9 am, or use the Reunion menu). ' +
+    (hasClaude ? 'ANTHROPIC_API_KEY is set, so "Draft update with AI" works.' : 'ANTHROPIC_API_KEY is not set (Project Settings → Script Properties), so "Draft update with AI" will ask for it; sending works without it.'));
   console.log('Mail: from ' + cfg.mailFromName + ' <' + cfg.mailFrom + '>, reply-to ' + (cfg.mailReplyTo || cfg.email || '(none)') + '. ' +
     (hasKey ? 'BREVO_API_KEY is set, so Brevo is tried first.' : 'BREVO_API_KEY is not set (Project Settings → Script Properties), so only MailApp is used.') +
     ' MailApp sends left today: ' + MailApp.getRemainingDailyQuota() + '.');
@@ -760,7 +786,7 @@ function htmlToText_(html) {
 /** The shared email frame: Georgia body plus the committee sign-off. bodyHtml is already escaped HTML. */
 function mailWrap_(bodyHtml, cfg) {
   return '<div style="font-family:Georgia,serif;font-size:16px;line-height:1.6;color:#1b1b18;max-width:560px">' + bodyHtml +
-    '<p>Somehow, some way, your foundation is Lewis — and you belong here.</p>' +
+    '<p>' + SIGNOFF + '</p>' +
     '<p>The Lewis Family Reunion Committee<br>' + htmlEsc_(cfg.email || '') + '</p></div>';
 }
 
@@ -796,11 +822,11 @@ function logMail_(msg, via) { appendMail_(mailRow_(msg, 'Sent', 1, '', new Date(
  * MailQueue rows are never deleted by code, so a row number noted under the lock still points at the same row later;
  * do not delete rows by hand while a drain is running.
  */
-function drainMailQueue() {
+function drainMailQueue(maxMs) {
   const claim = locked_(claim_);
   if (claim.error === 'busy') { console.log('Mail queue: the sheet is busy; try again in a minute.'); return claim; }
-  const res = send_(claim);
-  console.log('Mail queue: ' + res.sent + ' sent, ' + res.failed + ' failed, ' + res.left + ' still queued.');
+  const res = send_(claim, maxMs);   // the trigger passes an event object here, which send_ ignores
+  console.log('Mail queue: ' + res.sent + ' sent, ' + res.failed + ' failed, ' + res.left + ' still queued' + (res.dupes ? ', ' + res.dupes + ' already sent (dupe)' : '') + '.');
   return res;
 }
 
@@ -827,20 +853,28 @@ function claim_() {
   out.left = todo.length - out.todo.length;   // rows the cap left for the next run
   const now = new Date().toISOString();
   out.todo.forEach(item => mailWrite_(sh, H, item.row, { Status: 'Sending', 'Last error': 'claimed ' + now }));
+  SpreadsheetApp.flush();   // the 'Sending' marks must be on the sheet before locked_ releases the lock, or a parallel run claims the same rows
   return out;
 }
 
 /** Writes some of Status, Attempts, Last error, Sent, Via on one MailQueue row, as one block when they sit side by side. */
-function mailWrite_(sh, H, row, vals) {
-  const names = ['Status', 'Attempts', 'Last error', 'Sent', 'Via'].filter(n => vals[n] !== undefined && H.col[n] !== undefined);
+function mailWrite_(sh, H, row, vals) { cells_(sh, H, row, ['Status', 'Attempts', 'Last error', 'Sent', 'Via'], vals); }
+/** Writes vals[name] for each header in order that vals has and the tab knows, as one block when the columns sit side by side. */
+function cells_(sh, H, row, order, vals) {
+  const names = order.filter(n => vals[n] !== undefined && H.col[n] !== undefined);
   const cols = names.map(n => H.col[n]);
   if (cols.length && cols.every((c, i) => c === cols[0] + i)) sh.getRange(row, cols[0] + 1, 1, cols.length).setValues([names.map(n => vals[n])]);
   else names.forEach((n, i) => sh.getRange(row, cols[i] + 1).setValue(vals[n]));
 }
 
-/** Outside the lock: sends the claimed rows. Returns { ok, sent, failed, left }. */
-function send_(claim) {
-  const start = Date.now(), out = { ok: true, sent: 0, failed: 0, left: claim.left };
+/**
+ * Outside the lock: sends the claimed rows for at most maxMs (default and cap 4.5 minutes; sendUpdates passes what is left of
+ * its own run). A row whose key the script cache saw go out in the last 6 hours (sendMail_'s guard, now applied to queued rows
+ * too) is marked Sent with Via 'dupe' and not sent again. Returns { ok, sent, failed, left, dupes }.
+ */
+function send_(claim, maxMs) {
+  const start = Date.now(), limit = typeof maxMs === 'number' && maxMs > 0 ? Math.min(maxMs, 270000) : 270000;
+  const out = { ok: true, sent: 0, failed: 0, left: claim.left, dupes: 0 };
   const sh = claim.sh, H = claim.H, col = n => H.col[n];
   if (!claim.todo.length) return out;
   const cfg = config_();
@@ -849,13 +883,15 @@ function send_(claim) {
   let brevoOpen = true, budget = 0, n = 0;
   try { budget = MailApp.getRemainingDailyQuota() - MAIL_RESERVE; } catch (err) { budget = 0; }
   for (const item of claim.todo) {
-    if (Date.now() - start > 270000) break;
+    if (Date.now() - start > limit) break;
     n++;
     const r = item.r;
     const msg = { to: r[col('To')], subject: r[col('Subject')], html: r[col('Html')], text: r[col('Text')], key: r[col('Key')] };
-    let attempts = Number(r[col('Attempts')]) || 0, status = 'Queued', via = '', sent = '', tried = false;
+    let attempts = Number(r[col('Attempts')]) || 0, status = 'Queued', via = '', sent = '', tried = false, seen = false;
     const errs = [];
-    try {
+    try { seen = !!(msg.key && cache && cache.get('mail:' + msg.key)); } catch (err) {}
+    if (seen) { status = 'Sent'; via = 'dupe'; out.dupes++; }   // a second copy of an email that already went out
+    else try {
       if (brevoOpen) {
         const b = brevoSend_(msg, cfg);
         if (b.ok) { status = 'Sent'; via = 'Brevo ' + b.id; }
@@ -869,7 +905,7 @@ function send_(claim) {
       }
     } catch (err) { tried = true; errs.push(String(err && err.message || err)); }
     if (status === 'Sent') {
-      sent = new Date(); attempts++; out.sent++;
+      sent = new Date(); attempts++; if (!seen) out.sent++;
       try { if (msg.key && cache) cache.put('mail:' + msg.key, '1', 6 * 3600); } catch (err) {}
     } else if (tried) { attempts++; if (attempts >= MAIL_MAX_ATTEMPTS) status = 'Failed'; }
     if (status === 'Failed') out.failed++; else if (status === 'Queued') out.left++;
@@ -878,6 +914,254 @@ function send_(claim) {
   // Rows the clock left: hand them back now instead of waiting MAIL_CLAIM_MINUTES for a reclaim.
   claim.todo.slice(n).forEach(item => { mailWrite_(sh, H, item.row, { Status: 'Queued', 'Last error': String(item.r[col('Last error')] || '') }); out.left++; });
   return out;
+}
+
+/* ---------------- committee updates ----------------
+   The Updates tab is the committee's broadcast tool. They write a Subject and either a Draft (plain text or simple HTML)
+   or bullet Notes for draftUpdate() to turn into a Draft, choose an Audience, read the Draft, and tick Approved. sendUpdates()
+   (daily trigger at 9, or menu "Send approved updates now") takes every Approved row whose "Sent at" is blank or still
+   'sending…' (a run that stopped or died), queues one MailQueue row per household through enqueue_ (never a direct send:
+   Brevo allows about 300 a day and drainMailQueue() paces the rest over the following hours), and writes Sent at, Sent,
+   Failed and Skipped back. The MailQueue key update:<ID>:<email> is the record of who has been queued: a recipient whose
+   key is already there is never queued twice, so a run can stop, die or be repeated safely. Opt-out is by a STOP reply:
+   the committee types Yes in the Registrations column "Mail opt-out" by hand. */
+
+/**
+ * Menu "Send approved updates now" and the daily trigger. onlyId (tests) limits the run to one Updates row; the trigger
+ * passes an event object, which is ignored. The script lock is held only for claimUpdates_, which marks the rows it takes
+ * with Sent at = 'sending…' so an overlapping run or a second click takes nothing twice. Recipients are then built and
+ * queued outside the lock, skipping keys already in MailQueue. Queueing stops after UPDATE_QUEUE_MS: the row then keeps
+ * 'sending…' with an "In progress" note in Failed and the next run (menu, or the trigger next morning) carries on from
+ * there. Sent = recipients present in MailQueue for this update; Sent at becomes a date only when all of them are. An
+ * error leaves 'sending…' and an "ERROR:" note so the next run retries. drainMailQueue() runs once at the end, with what
+ * is left of the six-minute run, so the first batch leaves at once; otherwise the hourly drain sends.
+ */
+function sendUpdates(onlyId) {
+  if (typeof onlyId !== 'string') onlyId = undefined;
+  const start = Date.now();
+  const claim = locked_(() => claimUpdates_(onlyId));
+  if (claim.error === 'busy') { console.log('Updates: the sheet is busy; try again in a minute.'); return claim; }
+  const out = { ok: true, updates: claim.todo.length, queued: 0, pending: 0 };
+  if (!claim.todo.length) { console.log('Updates: nothing approved and unsent.'); return out; }
+  const cfg = config_(), regs = rows_(TAB.reg), sh = claim.sh, H = claim.H, keys = updateKeys_();
+  claim.todo.forEach(item => {
+    const upd = item.upd, res = { 'Sent at': new Date(), Sent: 0, Failed: '', Skipped: 0 };
+    try {
+      const aud = audience_(upd.Audience, regs, cfg);
+      res.Skipped = aud.skipped;
+      if (!String(upd.Draft == null ? '' : upd.Draft).trim()) res.Failed = 'Draft is blank; nothing was sent';
+      else if (!aud.rows.length) res.Failed = aud.known ? (aud.why || 'No households matched') : 'No households matched audience "' + str_(upd.Audience).trim() + '"';
+      else {
+        let stopped = false;
+        for (const row of aud.rows) {
+          const msg = updateEmail_(row, upd, cfg);
+          if (keys.has(msg.key)) { res.Sent++; continue; }   // queued by an earlier run
+          if (Date.now() - start > UPDATE_QUEUE_MS) { stopped = true; break; }
+          enqueue_(msg, 'update ' + upd.ID); keys.add(msg.key); res.Sent++; out.queued++;
+        }
+        if (stopped) { res['Sent at'] = UPDATE_SENDING; res.Failed = 'In progress: ' + res.Sent + ' of ' + aud.rows.length + ' queued; the next run continues'; out.pending++; }
+      }
+    } catch (err) {
+      res['Sent at'] = UPDATE_SENDING; res.Failed = 'ERROR: ' + (err && err.message || err) + '; the next run retries'; out.pending++;
+      console.error('Update ' + upd.ID + ': ' + (err && err.stack || err));
+    }
+    cells_(sh, H, item.row, ['Sent at', 'Sent', 'Failed', 'Skipped'], res);
+    console.log('Update ' + upd.ID + ' (' + str_(upd.Audience) + '): ' + res.Sent + ' queued, ' + res.Skipped + ' skipped' + (res.Failed ? ', ' + res.Failed : '') + '.');
+  });
+  if (out.queued) {
+    const left = RUN_MS - (Date.now() - start);
+    if (left > 60000) { try { drainMailQueue(left - 30000); } catch (err) { console.warn('Updates: drain after queueing: ' + (err && err.message)); } }
+    else console.log('Updates: no time left in this run to send; the hourly drain will.');
+  }
+  console.log('Updates: ' + out.queued + ' queued' + (out.pending ? ', ' + out.pending + ' update(s) still in progress' : '') + '; Brevo allows about 300 a day, and the hourly drain carries the rest.');
+  return out;
+}
+
+/**
+ * Under the lock, briefly: the Approved rows whose "Sent at" is blank or 'sending…' (a run that stopped or died, resumed now)
+ * get an ID (and Created) if blank and Sent at = 'sending…'. onlyId limits the claim to that one ID. Returns { ok, sh, H, todo: [{ row, upd }] }.
+ */
+function claimUpdates_(onlyId) {
+  const sh = updatesSheet_(), H = headers_(sh), last = sh.getLastRow(), out = { ok: true, sh: sh, H: H, todo: [] };
+  if (last < 2 || H.col.Approved === undefined || H.col['Sent at'] === undefined) return out;
+  const all = sh.getRange(2, 1, last - 1, H.names.length).getValues();
+  all.forEach((r, i) => {
+    const upd = {}; H.names.forEach((n, j) => { if (n) upd[n] = r[j]; });
+    const at = String(upd['Sent at'] == null ? '' : upd['Sent at']).trim().toLowerCase();
+    if (!yes_(upd.Approved) || (at && at !== UPDATE_SENDING)) return;
+    if (onlyId && str_(upd.ID).trim() !== onlyId) return;
+    const row = i + 2;
+    if (!str_(upd.ID).trim()) { upd.ID = 'U-' + Utilities.getUuid().slice(0, 8).toUpperCase(); if (H.col.ID !== undefined) sh.getRange(row, H.col.ID + 1).setValue(upd.ID); }
+    if (H.col.Created !== undefined && !upd.Created) sh.getRange(row, H.col.Created + 1).setValue(new Date());
+    sh.getRange(row, H.col['Sent at'] + 1).setValue(UPDATE_SENDING);
+    out.todo.push({ row: row, upd: upd });
+  });
+  SpreadsheetApp.flush();   // the marks must be on the sheet before locked_ releases the lock, or a parallel run claims the same rows
+  return out;
+}
+
+/** Every update:<ID>:<email> key already in MailQueue, read once per run: who has been queued for which update. */
+function updateKeys_() {
+  const sh = ensureTab_(TAB.mail, MAIL_HEADERS), H = headers_(sh), last = sh.getLastRow(), keys = new Set();
+  if (last < 2 || H.col.Key === undefined) return keys;
+  sh.getRange(2, H.col.Key + 1, last - 1, 1).getValues().forEach(r => { const k = String(r[0] || ''); if (k.indexOf('update:') === 0) keys.add(k); });
+  return keys;
+}
+
+/** The Updates tab, created with its headers and an Approved checkbox column (rows 2 to 200) when missing. An existing tab is left as it is. */
+function updatesSheet_() {
+  const had = !!SpreadsheetApp.getActive().getSheetByName(TAB.updates), sh = ensureTab_(TAB.updates, UPDATE_HEADERS);
+  if (!had) {
+    const c = headers_(sh).col.Approved;
+    if (c !== undefined) sh.getRange(2, c + 1, 199, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().build());
+  }
+  return sh;
+}
+
+/**
+ * Who gets an update. value is the Audience cell: all (every household), unpaid (Balance > 0), paid (Status "Paid in full"),
+ * test (only the committee address from Config), or a Branch name (case does not matter). Households with Mail opt-out = Yes
+ * or a blank email are counted in skipped; one row per email. Returns { rows, skipped, known, why }: known = the value is a
+ * keyword or matched at least one Branch, so an empty list with known false means a misspelt audience.
+ */
+function audience_(value, regs, cfg) {
+  const a = String(value == null ? '' : value).trim().toLowerCase(), out = { rows: [], skipped: 0, known: UPDATE_AUDIENCES.indexOf(a) >= 0, why: '' };
+  if (a === 'test') {
+    const to = String(cfg.email || '').trim();
+    if (to) out.rows.push({ 'Household ID': 'COMMITTEE', Email: to, Preferred: 'committee' }); else out.why = 'Config "email" is blank, so a test has nowhere to go';
+    return out;
+  }
+  let pick;
+  if (a === 'all') pick = () => true;
+  else if (a === 'unpaid') pick = r => (num_(r.Balance) || 0) > 0;
+  else if (a === 'paid') pick = r => str_(r.Status).trim() === 'Paid in full';
+  else pick = r => str_(r.Branch).trim().toLowerCase() === a && !!a;
+  const seen = {};
+  regs.forEach(r => {
+    if (!pick(r)) return;
+    out.known = true;
+    const email = str_(r.Email).trim().toLowerCase();
+    if (!email || yes_(r[REG_OPTOUT])) { out.skipped++; return; }
+    if (seen[email]) return;   // two households sharing an address get one copy
+    seen[email] = true;
+    out.rows.push(r);
+  });
+  return out;
+}
+
+/** One MailQueue message for a household: the Draft as HTML with "Hi <name>," on top and the STOP footer, inside the usual frame. */
+function updateEmail_(row, upd, cfg) {
+  const name = str_(row.Preferred).trim() || str_(row.First).trim() || 'cousin', email = str_(row.Email).trim();
+  const body = greet_(draftHtml_(upd.Draft), name) + '<p style="font-size:14px;color:#555">' + htmlEsc_(UPDATE_FOOTER) + '</p>';
+  const html = mailWrap_(body, cfg);
+  return {
+    to: email, toName: name, subject: str_(upd.Subject).trim() || 'An update from the Lewis Family Reunion committee', html: html, text: htmlToText_(html),
+    key: 'update:' + upd.ID + ':' + email.toLowerCase(), kind: 'update', householdId: String(row['Household ID'] || '')
+  };
+}
+
+/**
+ * The Draft cell as HTML. Anything with <p> or <br> is trusted as written by the committee. Plain text is split into paragraphs
+ * at blank lines, escaped, with single line breaks kept as <br>. A closing sign-off line is dropped because mailWrap_ adds it:
+ * in plain text before the split (so a paragraph it ended is still closed), in HTML with the <br> before it, and an emptied <p> goes too.
+ */
+function draftHtml_(draft) {
+  const s = String(draft == null ? '' : draft).replace(/\r\n?/g, '\n').trim();
+  if (/<p[\s>]|<br/i.test(s)) {
+    return s.replace(/\s*(?:<br\s*\/?>)?\s*Somehow, some way, your foundation is Lewis[^<\n]*belong here\.?\s*(?=(?:<\/p>)?\s*$)/i, '').replace(/<p[^>]*>\s*<\/p>\s*$/i, '');
+  }
+  return s.replace(/\s*Somehow, some way, your foundation is Lewis[^<\n]*belong here\.?\s*$/i, '')
+    .split(/\n\s*\n/).map(p => p.trim()).filter(String).map(p => '<p>' + htmlEsc_(p).replace(/\n/g, '<br>') + '</p>').join('');
+}
+
+/**
+ * Puts "Hi <name>," first. If the first line (up to a tag or line break, optionally opening the first <p>) is a greeting such as
+ * "Hi,", "Hello everyone," or "Dear family," it is replaced; otherwise a greeting paragraph is added in front.
+ */
+function greet_(html, name) {
+  const hi = 'Hi ' + htmlEsc_(name) + ',', m = /^(\s*(?:<p[^>]*>)?\s*)([^<\n]*)/.exec(html);
+  if (m && /^(hi|hello|hey|dear|greetings)\b[^\n<]{0,40},\s*$/i.test(m[2])) return m[1] + hi + html.slice(m[0].length);
+  return '<p>' + hi + '</p>' + html;
+}
+
+/**
+ * Menu "Draft update with AI". Takes the first Updates row with Notes and an empty Draft (or a Draft that says just "redo"),
+ * asks Claude for the email body, and writes it into Draft with Approved unticked so a person reads it before anything is sent.
+ * Needs the Script Property ANTHROPIC_API_KEY; costs pennies per draft. Problems are written into Draft starting "ERROR:".
+ */
+function draftUpdate() {
+  const sh = updatesSheet_(), H = headers_(sh), last = sh.getLastRow();
+  if (H.col.Notes === undefined || H.col.Draft === undefined) { alert_('The Updates tab needs Notes and Draft columns.'); return; }
+  let target = null;
+  for (let r = 2; r <= last && !target; r++) {
+    const row = rowAt_(sh, H, r), draft = str_(row.Draft).trim();
+    if (str_(row.Notes).trim() && (!draft || draft.toLowerCase() === 'redo')) target = { r: r, row: row };
+  }
+  if (!target) { alert_('Nothing to draft. Put bullet notes in the Notes column of a row with an empty Draft.'); return; }
+  let key = '';
+  try { key = PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY') || ''; } catch (err) {}
+  if (!key) { alert_('No ANTHROPIC_API_KEY yet. In the Apps Script editor open Project Settings, then Script Properties, and add ANTHROPIC_API_KEY with a key from the Anthropic Console. Sending updates works without it.'); return; }
+  const cfg = config_(), text = clean_(claudeDraft_(key, updatePrompt_(), updateContext_(target.row, cfg)), 20000);
+  sh.getRange(target.r, H.col.Draft + 1).setValue(text);
+  if (H.col.Approved !== undefined) sh.getRange(target.r, H.col.Approved + 1).setValue(false);
+  const ok = !/^ERROR:/.test(text);
+  console.log('Draft update: row ' + target.r + (ok ? ' drafted (' + text.length + ' characters).' : ' ' + text.slice(0, 200)));
+  alert_(ok ? 'Draft written to row ' + target.r + '. Read it, edit it, set the Audience, then tick Approved.' : 'The draft did not come back. Row ' + target.r + ' says: ' + text.slice(0, 300));
+}
+
+/** The voice the drafts are written in. The greeting is left out because updateEmail_ adds "Hi <name>," per household. */
+function updatePrompt_() {
+  return 'You write email updates from the Lewis Family Reunion 2027 committee to the registered families. ' +
+    'Voice: a warm cousin on the committee writing to family. Plain English, short sentences, short paragraphs. No emojis. ' +
+    'No subject line. Do not open with a greeting or a name; the script adds the greeting itself, so start directly with the news. ' +
+    'Use only the facts in the notes and the context; do not invent dates, prices, places or deadlines. ' +
+    'End with this exact line on its own: ' + SIGNOFF + ' ' +
+    'Output only the email body as plain text with a blank line between paragraphs.';
+}
+
+/** The notes plus the facts Claude may use: dates and city, fees and deadline when Config has them, payment handles, the website. */
+function updateContext_(upd, cfg) {
+  const facts = ['Lewis Family Reunion, July 2-5, 2027, Fresno, California.'];
+  const fa = num_(cfg.feeAdult), fc = num_(cfg.feeChild);
+  if (fa !== null && fc !== null) facts.push('Fees: ' + money_(fa) + ' per adult, ' + money_(fc) + ' per child (age ' + (num_(cfg.childAge) !== null ? num_(cfg.childAge) : 12) + ' and under).');
+  if (cfg.deadline) facts.push('Payment deadline: ' + iso_(cfg.deadline) + '.');
+  const pay = payLine_(cfg); if (pay) facts.push(pay);
+  const site = siteBase_(cfg); if (site) facts.push('Website: ' + site);
+  return 'Subject the committee chose (do not repeat it as a heading): ' + (str_(upd.Subject).trim() || '(none yet)') + '\n\n' +
+    'Notes from the committee:\n' + str_(upd.Notes).trim() + '\n\n' +
+    'Facts you may use when the notes call for them:\n' + facts.join('\n');
+}
+
+/**
+ * One Claude API call (POST /v1/messages). Returns the drafted text, or a line starting "ERROR:" for the committee to read:
+ * a refusal (HTTP 200 with stop_reason "refusal"), a draft cut off at max_tokens (stop_reason "max_tokens"; a whole email
+ * is a few hundred tokens, so 16000 only runs out on runaway output), a non-2xx status with the first 200 characters of the
+ * body, or a network error.
+ * fallbacks: "default" lets Anthropic retry a declined request on another model inside the same call. No thinking, temperature or
+ * tool settings are sent. The key and the request are never logged.
+ */
+function claudeDraft_(key, system, user) {
+  const body = { model: CLAUDE_MODEL, max_tokens: 16000, fallbacks: 'default', system: system, messages: [{ role: 'user', content: user }] };
+  let resp;
+  try {
+    resp = UrlFetchApp.fetch(CLAUDE_URL, {
+      method: 'post', contentType: 'application/json', muteHttpExceptions: true, payload: JSON.stringify(body),
+      headers: { 'x-api-key': key, 'anthropic-version': '2026-10-21', 'anthropic-beta': 'server-side-fallback-2026-07-01' }
+    });
+  } catch (err) { return 'ERROR: ' + (err && err.message || err); }
+  const status = resp.getResponseCode(), raw = String(resp.getContentText() || '');
+  if (status < 200 || status >= 300) return 'ERROR: HTTP ' + status + ' ' + raw.slice(0, 200);
+  let data = {};
+  try { data = JSON.parse(raw) || {}; } catch (err) { return 'ERROR: the reply was not JSON. ' + raw.slice(0, 200); }
+  if (data.stop_reason === 'refusal') return 'ERROR: the AI declined to draft this one. ' + (data.stop_details && data.stop_details.explanation || '');
+  if (data.stop_reason === 'max_tokens') return 'ERROR: the draft was cut off. Shorten the notes and try again.';
+  const text = (data.content || []).filter(b => b && b.type === 'text').map(b => String(b.text || '')).join('').trim();
+  return text || 'ERROR: the reply had no text.';
+}
+
+/** A dialog when run from the menu, a log line when run from the editor (where there is no UI). */
+function alert_(msg) {
+  try { SpreadsheetApp.getUi().alert(msg); } catch (err) { console.log(msg); }
 }
 
 /* ---------------- email templates ----------------
@@ -1017,6 +1301,20 @@ function testEnqueue() {
   console.log('After drain: ' + (a ? a.Status + (a.Via ? ' via ' + a.Via : '') + (a['Last error'] ? ' (' + a['Last error'] + ')' : '') : 'row missing'));
 }
 
+/**
+ * Appends an approved Updates row with its own ID and Audience "test" (goes only to the Config email), runs sendUpdates() for
+ * that row alone (other Approved rows wait for the trigger or the menu), and logs its MailQueue row.
+ */
+function testUpdate() {
+  const sh = updatesSheet_(), H = headers_(sh), id = 'U-TEST-' + Utilities.getUuid().replace(/-/g, '').slice(0, 6).toUpperCase();
+  const data = { ID: id, Created: new Date(), Subject: 'Test update', Notes: 'test', Draft: 'This is a test update from the committee.\n\nNothing to do.', Approved: true, Audience: 'test' };
+  // The checkbox validation makes Sheets treat rows 2-200 as used, so appendRow would land at row 201. Use the first empty row.
+  writeRow_(sh, H, firstEmptyRow_(sh, H), data);
+  sendUpdates(id);
+  const row = rows_(TAB.mail).filter(r => String(r.Key).indexOf('update:' + id + ':') === 0).slice(-1)[0];
+  console.log('Test update ' + id + ': MailQueue row is ' + (row ? row.To + ' | ' + row.Subject + ' | ' + row.Status : 'missing') + '. The Updates row shows Sent at, Sent 1.');
+}
+
 function findByToken_(token) {
   token = String(token || '');
   if (token.length < 32) return null;
@@ -1092,6 +1390,15 @@ function rowAt_(sh, H, index) {
   const vals = sh.getRange(index, 1, 1, H.names.length).getValues()[0], o = {};
   H.names.forEach((n, i) => { if (n) o[n] = vals[i]; });
   return o;
+}
+/** First row below the header whose ID and Subject (or the first two columns) are blank; the row after the last one when none. */
+function firstEmptyRow_(sh, H) {
+  const last = sh.getLastRow();
+  if (last < 2) return 2;
+  const a = H.col.ID !== undefined ? H.col.ID : 0, b = H.col.Subject !== undefined ? H.col.Subject : 1;
+  const vals = sh.getRange(2, 1, last - 1, H.names.length).getValues();
+  for (let i = 0; i < vals.length; i++) if (String(vals[i][a] || '') === '' && String(vals[i][b] || '') === '') return i + 2;
+  return last + 1;
 }
 function writeRow_(sh, H, index, obj) {
   sh.getRange(index, 1, 1, H.names.length).setValues([H.names.map(n => obj[n] !== undefined ? obj[n] : '')]);

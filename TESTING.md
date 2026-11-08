@@ -88,7 +88,7 @@ Use Safari on an iPhone, since that's what most of the family uses. Tick each bo
 
 - Paste → Save → **Deploy → Manage deployments → Edit → New version → Deploy**. Never "New deployment", which would change the URL.
 - Run `setup` again only when a change adds new Google permissions (Google will prompt you), like this one did.
-- The **Reunion** menu in the Sheet: *Refresh balances and status*, *Send queued mail now*, *Send me a test email*, *Sync photo privacy*, *Run setup*.
+- The **Reunion** menu in the Sheet: *Refresh balances and status*, *Send queued mail now*, *Send me a test email*, *Send approved updates now*, *Draft update with AI*, *Sync photo privacy*, *Run setup*.
 - Keep `PHOTO_MAX_BYTES` in `Code.gs` and `PHOTO.maxUpload` in `app.js` the same (6 MB).
 
 ---
@@ -148,3 +148,51 @@ Use your phone for the inbox checks and a computer for the Sheet. Use an email a
 | "Brevo 401" or "403" in Last error | The key is missing or wrong. Fix Script Properties. Mail is using Gmail meanwhile. |
 | Receipt did not send | Apps Script → **Triggers** (clock icon): `onPaymentsEdit` must be listed. If not, run `setup`. |
 | Codes do not open the household | Check `siteLive` is `Yes` and the deployment was updated. Then use **Email my link** for fresh codes. |
+
+---
+
+# Sending an update
+
+Checks for a committee update to every household. Do them after `setup` has been run on the new code (it adds the **Updates** tab, the **Mail opt-out** column on Registrations and the daily `sendUpdates` trigger) and the deployment has a new version. Use a computer for the Sheet and your phone for the inbox. The Config `email` address must be one you can read.
+
+**Test audience run**
+- [ ] Sheet → **Updates** tab. In a new row type Subject `Test update from the committee`, Draft `Hi,` on the first line, a blank line, then two short paragraphs. Set Audience to `test`. Tick **Approved**.
+- [ ] Menu **Reunion → Send approved updates now**. Within a few seconds the row's **Sent at** changes to `sending…` and then to the time. **Sent** reads `1`, **Failed** is blank, **Skipped** `0`. **ID** reads `U-` and 8 characters.
+- [ ] Apps Script → **Executions**: the `sendUpdates` run ends with `1 queued; Brevo allows about 300 a day, and the hourly drain carries the rest.`
+
+**Check the committee inbox**
+- [ ] Within a minute an email arrives at the Config `email` address from `committee@lewisfamilyroots.com` with your subject. It opens `Hi committee,`, shows your two paragraphs, then "Somehow, some way, your foundation is Lewis — and you belong here.", the committee address, and in small grey text "You are getting this because your household is registered for the Lewis Family Reunion. To stop these updates, reply with the word STOP."
+- [ ] The sign-off appears once, not twice. There is no link, no Family code and no Registration code in the email.
+
+**Check MailQueue**
+- [ ] Sheet → **MailQueue** tab: one new row. **To** is the Config `email`, **Kind** `update`, **Key** `update:U-…:<that email>`, **Household ID** `COMMITTEE`, **Status** `Sent`, **Via** `Brevo …` (or `MailApp`).
+- [ ] If the row says `Queued`: read **Last error**, then **Reunion → Send queued mail now**.
+
+**A second run sends nothing**
+- [ ] Leave **Approved** ticked. Menu **Reunion → Send approved updates now** again. **Sent at** does not change, no new MailQueue row appears, and Executions says `Updates: nothing approved and unsent.`
+- [ ] Untick and re-tick **Approved**. Still nothing. (A row with anything in **Sent at** is finished. To send again, make a new row.)
+
+**Opt-out check with a test household**
+- [ ] Sheet → **Registrations**: find a test household with your own email (register one from the phone if there is none) and note its **Branch**. Type `Yes` in its **Mail opt-out** column (the last column; run `setup` if it is missing).
+- [ ] Updates tab, new row: any Subject and Draft, Audience = that household's Branch name, **Approved** ticked. **Reunion → Send approved updates now**.
+- [ ] The row shows **Skipped** `1` (plus any other opted-out rows in that branch) and **Sent** counts the rest of the branch. No email arrives at your address. If the branch has other real households, they will get this test email, so use a branch that holds only test rows or clear the row's Approved box first and skip this check.
+- [ ] Clear **Mail opt-out** on your test household. New row, same Branch, **Approved** ticked, run again. **Sent** goes up by one and the email arrives, opening with that household's first name.
+- [ ] Misspell the Audience on a new row (for example `Melvn`), tick **Approved**, run. **Sent** `0`, **Failed** reads `No households matched audience "Melvn"`, nothing in MailQueue. Fix the spelling, clear **Sent at**, run again if you want it to go.
+
+**AI draft check (only if `ANTHROPIC_API_KEY` is set)**
+- [ ] Updates tab, new row: Subject `Hotel block`, Notes `hotel block open, code LEWIS27, closes June 1`, Draft empty. Menu **Reunion → Draft update with AI**.
+- [ ] A dialog says `Draft written to row N. Read it, edit it, set the Audience, then tick Approved.` The **Draft** cell holds short paragraphs mentioning the code and the date, no greeting at the top, and **Approved** is unticked.
+- [ ] Type `redo` into that Draft cell and run the menu item again. A new draft replaces it.
+- [ ] Without the key (or with a wrong one): the menu item shows a dialog about `ANTHROPIC_API_KEY` and Project Settings, or writes `ERROR: HTTP 401 …` into Draft. Nothing is sent either way.
+
+**Clean up:** leave the Updates rows; they are the record of what went out. Leave MailQueue alone. Clear `Mail opt-out` on your test household if you set it.
+
+| What you see | What to do |
+|---|---|
+| **Sent at** stays blank after the menu item | Approved is not ticked, or the Sheet was busy. Tick it and run again. Check Executions. |
+| **Sent at** stuck on `sending…` | A big list needs another run, or the run died. **Failed** says which. Run **Send approved updates now** again; households already queued are skipped. |
+| **Failed** has words in it | Read them: blank Draft, misspelt Audience, or blank Config `email`. Fix, clear **Sent at**, run again. |
+| Email says `Hi cousin,` | The household has no Preferred or First name on Registrations. |
+| **Draft** starts with `ERROR:` | The AI call failed; the text says why. Fix the key or credit, clear the cell, try again, or write the email by hand. |
+| Only some households got it today | Normal for a big list. Brevo allows about 300 a day; the hourly drain sends the rest tomorrow. |
+
