@@ -158,7 +158,7 @@ function renderGates(){
     g.hidden = !show;
     if (!show) return;
     if (S.loadingFamily){ g.innerHTML = `<h3>Opening the family pages…</h3><p class="hint">One moment while we check your family code.</p>`; return; }
-    g.innerHTML = `<h3>Family members only</h3><p>${S.codeBad ? 'That family code did not work. ' : ''}This part of the site is for Lewis and Antone family. Open the link the reunion committee sent you, or enter the family code from it.</p>
+    g.innerHTML = `<h3>Family members only</h3><p>${S.codeBad ? 'That family code did not work. ' : ''}This part of the site is for Lewis family. Open the link the reunion committee sent you, or enter the family code from it.</p>
       <div class="row"><input type="text" id="gate-in-${i}" placeholder="Family code" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Family code" style="flex:1;min-width:200px;max-width:340px"><button type="button" class="btn" data-gate-go="${i}">Continue</button></div>
       <p class="hint" style="margin:12px 0 0">Have a registration code too? Enter it on <a href="#me">My Registration</a>.</p>`;
   });
