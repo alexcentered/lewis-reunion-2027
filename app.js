@@ -14,6 +14,8 @@ const PHOTOS_ENABLED = (window.LR && window.LR.photosEnabled) !== false;
    and its hash falls back to #home. No list means every section is live. Home is always live. */
 const SECTIONS = (window.LR && Array.isArray(window.LR.sections)) ? window.LR.sections.map(String) : null;
 const live = v => v === 'home' || !SECTIONS || SECTIONS.includes(v);
+/* config.js may limit which founding lines the Register branch list offers. No list means every line. */
+const REG_LINES = (window.LR && Array.isArray(window.LR.registerLines)) ? window.LR.registerLines.map(String) : null;
 /* Link mode: on a Claude page, which cannot call the backend in the background. Family data is built into the page,
    and the Register button opens the backend's sign-up URL in a new tab, which records the row and confirms it. */
 const EMB = (window.LR && window.LR.embedded) || null;
@@ -214,8 +216,9 @@ function renderFamily(){
   const L = linesFrom(F.branches || []);
   $('#lines').innerHTML = L.map(x => `<div class="card line"><div class="kicker">${esc(x.line)} line</div><h3>The ${esc(x.line === 'Lewis' ? 'Lewises' : x.line + 's')}</h3><p class="f">Descended from ${esc(x.founders)} and their children:</p><ol class="kids">${x.kids.map((k, i) => `<li><span class="num">${String(i + 1).padStart(2, '0')}</span><span>${esc(k)}</span></li>`).join('')}</ol></div>`).join('');
   const sel = $('#fBranch'), cur = sel.value;
-  sel.innerHTML = '<option value="">Choose your branch</option>' + L.map(x => `<optgroup label="${esc(x.line)} line: children of ${esc(x.founders)}">${x.kids.map(k => `<option value="${esc(x.line + ': ' + k)}">${esc(k)}</option>`).join('')}</optgroup>`).join('') +
-    '<optgroup label="Other"><option value="Both lines">Both lines</option><option value="Married into the family">Married into the family</option><option value="Not sure yet">Not sure yet</option></optgroup>';
+  const offered = REG_LINES ? L.filter(x => REG_LINES.includes(x.line)) : L;   // the Register list; the cards above show every line
+  sel.innerHTML = '<option value="">Choose your branch</option>' + offered.map(x => `<optgroup label="${esc(x.line)} line: children of ${esc(x.founders)}">${x.kids.map(k => `<option value="${esc(x.line + ': ' + k)}">${esc(k)}</option>`).join('')}</optgroup>`).join('') +
+    '<optgroup label="Other">' + (offered.length > 1 ? '<option value="Both lines">Both lines</option>' : '') + '<option value="Married into the family">Married into the family</option><option value="Not sure yet">Not sure yet</option></optgroup>';
   if (cur) sel.value = cur; else if (S.mine) sel.value = S.mine.reg.branch || '';
   const MEET = 'Where the two lines meet';
   const meet = (F.names || []).find(n => n.name === MEET);

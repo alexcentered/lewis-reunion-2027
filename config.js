@@ -4,5 +4,8 @@ window.LR = {
   photosEnabled: false,  // Set to true when ready to enable photo uploads
   /* Which tabs are live. Home is always on. Add 'family', 'photos' or 'market' here to turn that tab on;
      remove it to hide the tab, its section and its Home tile again. Remove the whole line to show everything. */
-  sections: ['home', 'reunion', 'register', 'me']
+  sections: ['home', 'reunion', 'register', 'me'],
+  /* Which founding lines the Register branch list offers. The Our Family cards still show every line in the Branches tab.
+     Delete this line to offer every line again. */
+  registerLines: ['Lewis']
 };
