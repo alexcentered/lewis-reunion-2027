@@ -8,7 +8,7 @@ This file is for an AI agent or a committee volunteer who opens this repo cold. 
 
 - **Website.** Static HTML, CSS and JavaScript in this repo, served by GitHub Pages at `https://lewisfamilyroots.com` (the `CNAME` file holds the domain). DNS for the domain is on Cloudflare. The old `alexcentered.github.io/lewis-reunion-2027` address redirects to the custom domain.
 - **Backend.** One Google Apps Script project, `apps-script/Code.gs`, bound to the committee's Google Sheet named "Lewis Reunion 2027 — Site Data". It is deployed as a web app with **Execute as: Me** and **Who has access: Anyone**. The site calls its `/exec` URL.
-- **Glue.** `config.js` holds only that `/exec` URL and the `photosEnabled` switch. Nothing else in the repo points at Google.
+- **Glue.** `config.js` holds only that `/exec` URL, the `photosEnabled` switch and the `sections` list (which tabs are live during the phased rollout). Nothing else in the repo points at Google.
 - **Email.** Sent by the backend through the Brevo API from `committee@lewisfamilyroots.com`, with the deployer's Gmail (MailApp) as a fallback and a MailQueue tab in the Sheet as the last resort. Replies to `committee@` and mail to `info@` are forwarded by Cloudflare Email Routing to `lewisfamilyreunion2027@gmail.com`.
 - **No family data in the repo.** The repo is public. Names, registrations, payments and photos live only in the Sheet and a private Drive folder.
 
@@ -19,7 +19,7 @@ This file is for an AI agent or a committee volunteer who opens this repo cold. 
 | `index.html` | The whole site in one page: markup, CSS, and section containers. Sections switch on the URL hash (`#me`, `#register`, and so on). |
 | `app.js` | Site logic: reads `?c=` and `?t=` from the link, talks to the backend, renders every section, the registration form, My Registration, the code-entry form, photo upload. |
 | `tree-engine.js`, `tree.js` | The interactive family tree (layout engine and page glue). Fed by the People and Tree notes tabs. |
-| `config.js` | `window.LR = { apiUrl, photosEnabled }`. The only file that changes when the backend URL changes. |
+| `config.js` | `window.LR = { apiUrl, photosEnabled, sections }`. The only file that changes when the backend URL changes. `sections` lists the live tabs (`home`, `reunion`, `register`, `family`, `photos`, `market`, `me`); a tab not listed has its nav link, section and Home tile hidden by `applySections()` in `app.js`, and its hash falls back to `#home`. Home is always live. Delete the key to show everything. |
 | `apps-script/Code.gs` | The backend. Pasted by hand into the Apps Script editor. Not deployed by git. |
 | `CNAME`, `.nojekyll` | GitHub Pages settings: custom domain, and "serve files as they are". |
 | `README.md` | Overview and committee guide. |

@@ -48,6 +48,8 @@ When you change `Code.gs` later:
 
 This keeps the same `/exec` URL while deploying the updated code.
 
+**Turning tabs on.** The site opens with only Home, The Reunion, Register and My Registration. To turn on Our Family, Photos or Marketplace, add `'family'`, `'photos'` or `'market'` to the `sections` line in `config.js` and commit; remove the word to hide the tab again.
+
 Photo sharing has an on/off switch in two places (Config tab `photosEnabled` and `config.js`). See **[TESTING.md](TESTING.md)** for how to turn it on and check it, for the email and codes checklist, and for checking a committee update.
 
 ## Committee guide

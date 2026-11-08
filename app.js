@@ -10,6 +10,10 @@ const store = {
 };
 const API = (window.LR && window.LR.apiUrl) || '';
 const PHOTOS_ENABLED = (window.LR && window.LR.photosEnabled) !== false;
+/* Phased rollout: config.js may list the live sections. Anything not listed is hidden (nav link, section, Home tile)
+   and its hash falls back to #home. No list means every section is live. Home is always live. */
+const SECTIONS = (window.LR && Array.isArray(window.LR.sections)) ? window.LR.sections.map(String) : null;
+const live = v => v === 'home' || !SECTIONS || SECTIONS.includes(v);
 /* Link mode: on a Claude page, which cannot call the backend in the background. Family data is built into the page,
    and the Register button opens the backend's sign-up URL in a new tab, which records the row and confirms it. */
 const EMB = (window.LR && window.LR.embedded) || null;
@@ -122,7 +126,10 @@ const failText = e => (e && e.code === 'noapi') ? e.message
 const VIEWS = ['home','reunion','register','family','photos','market','me'];
 function route(){
   let v = location.hash.replace('#', '');
-  if (!VIEWS.includes(v)) v = 'home';
+  if (!VIEWS.includes(v) || !live(v)){
+    if (v && VIEWS.includes(v)) history.replaceState(null, '', location.pathname + '#home');
+    v = 'home';
+  }
   currentView = v;
   $$('[data-view]').forEach(s => s.classList.toggle('on', s.dataset.view === v));
   $$('.nav a').forEach(a => { if (a.getAttribute('href') === '#' + v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
@@ -131,6 +138,12 @@ function route(){
   if (v === 'family' && window.LRTree) LRTree.refit();
 }
 addEventListener('hashchange', route);
+/* Hide everything that belongs to a section that is not live. Nothing is removed, so turning a tab back on is a config.js edit. */
+function applySections(){
+  VIEWS.filter(v => !live(v)).forEach(v => {
+    $$('.nav a[href="#' + v + '"], .tile[href="#' + v + '"], [data-view="' + v + '"]').forEach(el => { el.hidden = true; el.style.display = 'none'; el.setAttribute('aria-hidden', 'true'); });
+  });
+}
 $$('.subnav button').forEach(b => b.addEventListener('click', () => {
   $$('.subnav button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
   $$('[data-subview]').forEach(d => d.hidden = d.dataset.subview !== b.dataset.sub);
@@ -681,7 +694,7 @@ async function loadFamily(quiet){
   S.loadingFamily = false;
   renderGates(); renderFamily();
   const mine = (S.family && S.token && !S.mine) ? loadMine() : null;   // awaited by callers that need the household (openByCodes)
-  if (S.family) loadTree(quiet);
+  if (S.family && live('family')) loadTree(quiet);
   return mine;
 }
 async function loadTree(quiet){
@@ -724,7 +737,7 @@ function renderPhotosGate(){
 setLook(LOOKS.includes(store.get('lr-look')) ? store.get('lr-look') : 'sequoia');
 setMode(store.get('lr-theme') || 'light');
 if (LINKMODE) $('#meEmpty').innerHTML = '<h3 style="font:400 1.5rem var(--display)">Coming soon</h3><p class="hint">Checking your registration and reporting payments will open here on the full website. Until then, the committee will email you about fees and payment.</p><p class="hint" style="margin-top:14px">Not registered yet? <a href="#register">Register your household</a>.</p>';
-renderAttendees(); renderInfo(); renderMe(); renderFamily(); renderGates(); route(); setBanner(); renderPhotosGate(); renderUploadFields();
+applySections(); renderAttendees(); renderInfo(); renderMe(); renderFamily(); renderGates(); route(); setBanner(); renderPhotosGate(); renderUploadFields();
 document.addEventListener('visibilitychange', () => { if (!document.hidden && currentView === 'home') drawRings(false); });
 addEventListener('lr-refresh', () => { loadFamily(true); if (S.token) loadMine(); });
 loadInfo(); loadFamily();
