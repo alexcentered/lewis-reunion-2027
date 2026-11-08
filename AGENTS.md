@@ -2,7 +2,7 @@
 
 ## Purpose and audience
 
-This file is for an AI agent or a committee volunteer who opens this repo cold. It says how the Lewis Family Reunion 2027 site is built, where the data lives, what the backend expects, and how to change things without breaking them. Read it before touching `app.js`, `index.html` or `apps-script/Code.gs`. The email runbook is in `docs/EMAIL.md`. Hands-on test scripts are in `TESTING.md`. The committee-facing summary is `README.md`.
+This file is for an AI agent or a committee volunteer who opens this repo cold. It says how the Lewis Family Reunion 2027 site is built, where the data lives, what the backend expects, and how to change things without breaking them. Read it before touching `app.js`, `index.html` or `apps-script/Code.gs`. The email runbook, including Committee Updates, is in `docs/EMAIL.md`. Hands-on test scripts are in `TESTING.md`. The committee-facing summary is `README.md`.
 
 ## Architecture
 
@@ -25,14 +25,14 @@ This file is for an AI agent or a committee volunteer who opens this repo cold. 
 | `README.md` | Overview and committee guide. |
 | `TESTING.md` | Hands-on checklists (photos, email and codes). |
 | `AGENTS.md` | This file. |
-| `docs/EMAIL.md` | Email runbook: Brevo, DNS, routing, queue, troubleshooting, future Updates tab. |
+| `docs/EMAIL.md` | Email runbook: Brevo, DNS, routing, queue, troubleshooting, Committee Updates (how to send one, AI drafting). |
 
 ## Data model: the Sheet tabs
 
 `Code.gs` reads headers by name, not by position (`headers_`, `rows_`, `rowAt_`, `writeRow_`). Columns may be reordered or added, but a renamed header breaks the code that uses it. Tab names are in the `TAB` constant.
 
 **Registrations** (one row per household)
-`Household ID`, `Registered`, `Updated`, `First`, `Middle`, `Last`, `Birth surname`, `Preferred`, `Email`, `Phone`, `City`, `State`, `Branch`, `Parents`, `Grandparent`, `Spouse`, `Adults`, `Children`, `Attendees` (one line per person: `name · Adult|Child · age · shirt`), `Shirt sizes`, `Days`, `Arrive`, `Depart`, `Nights`, `Lodging`, `Diet`, `Needs`, `Show on list`, `Token hash`, then five columns that `recompute_` writes as one block and so must sit side by side in this order: `Due`, `Confirmed`, `Awaiting`, `Balance`, `Status`.
+`Household ID`, `Registered`, `Updated`, `First`, `Middle`, `Last`, `Birth surname`, `Preferred`, `Email`, `Phone`, `City`, `State`, `Branch`, `Parents`, `Grandparent`, `Spouse`, `Adults`, `Children`, `Attendees` (one line per person: `name · Adult|Child · age · shirt`), `Shirt sizes`, `Days`, `Arrive`, `Depart`, `Nights`, `Lodging`, `Diet`, `Needs`, `Show on list`, `Token hash`, then five columns that `recompute_` writes as one block and so must sit side by side in this order: `Due`, `Confirmed`, `Awaiting`, `Balance`, `Status`. Then `Mail opt-out` (`REG_OPTOUT`, appended by `setup()`): `Yes` leaves the household out of committee updates only; link emails and receipts still go. The committee types it by hand when a household replies STOP.
 
 **Payments** (one row per reported payment)
 `Payment ID`, `Household ID`, `Household`, `Reported`, `Amount`, `Method`, `Date sent`, `Reference`, `Note`, `Status` (`Reported`, `Confirmed`, `Not received`), `Confirmed on`, `Confirmed by`, `Receipt sent`. `Receipt sent` is appended by `setup()` if missing and holds `<Status> · <ISO time> · <route>` once a receipt email has gone out.
@@ -56,6 +56,10 @@ This file is for an AI agent or a committee volunteer who opens this repo cold. 
 **MailQueue** (created by `setup()`; every email sent or waiting). Exactly these 13 headers, in this order (`MAIL_HEADERS`):
 `Queued`, `To`, `Subject`, `Html`, `Text`, `Status`, `Attempts`, `Last error`, `Sent`, `Via`, `Key`, `Kind`, `Household ID`.
 `Status` is `Queued` (waiting), `Sending` (claimed by a running drain; `Last error` holds `claimed <ISO time>`), `Sent`, or `Failed` (20 attempts). A `Sending` row older than 15 minutes is reclaimed by the next drain. The committee retries a Failed row by typing `Queued` into Status (case and spaces do not matter). `Via` reads `Brevo <messageId>`, `MailApp`, or stays blank while queued. `Kind` is one of `link`, `receipt0`, `receipt`, `committee`, `test`. Rows are written by header name, so columns may be reordered; `send_` writes `Status`, `Attempts`, `Last error`, `Sent`, `Via` as one block when they are adjacent.
+
+**Updates** (created by `setup()` through `updatesSheet_`; one row per broadcast email). Exactly these 11 headers (`UPDATE_HEADERS`):
+`ID`, `Created`, `Subject`, `Notes`, `Draft`, `Approved`, `Audience`, `Sent at`, `Sent`, `Failed`, `Skipped`.
+`ID` is `U-` plus 8 uppercase hex characters, written by `claimUpdates_` when blank, as is `Created`. `Approved` is a checkbox (data validation on rows 2 to 200 when the tab is first created; `yes_` also accepts the text `Yes`). `Audience` is one of `UPDATE_AUDIENCES` (`all`, `unpaid`, `paid`, `test`) or a Branch name, case-insensitive. `Sent at` is the idempotency gate: blank means unsent, `sending…` (`UPDATE_SENDING`) means a run holds the row, a date means done; a non-blank row is never sent again. `Sent`, `Failed`, `Skipped` are written back by `sendUpdates` as one block through `cells_` (adjacent columns are written in one call; otherwise cell by cell). `Failed` is a count of `enqueue_` exceptions, or a text reason when nothing was queued (blank Draft, unknown audience, blank Config `email` for a test, `ERROR: ...`). `Skipped` counts households dropped for `Mail opt-out` = Yes or a blank email. `Notes` is only read by `draftUpdate`.
 
 **Dashboard** is a committee tab of plain spreadsheet formulas. The code never touches it.
 
@@ -87,8 +91,9 @@ The last four come from `CONFIG_DEFAULTS`. `config_()` fills them in when the ro
 Apps Script editor, Project Settings, Script Properties:
 
 - `BREVO_API_KEY`: the Brevo transactional API key. Without it, `brevoSend_` reports a config error and mail falls through to MailApp.
+- `ANTHROPIC_API_KEY`: optional. Read only by `draftUpdate` for the menu item "Draft update with AI". Without it, that menu item shows a dialog saying where to add the key; sending updates does not need it.
 
-This is the only secret. It is never in the repo, never in `config.js`, never logged. The repo is public; `git grep -iE 'xkeysib-[0-9a-f]'` must return nothing.
+These are the only secrets. Neither is ever in the repo, in `config.js`, or logged. The repo is public; `git grep -iE 'xkeysib-[0-9a-f]'` and `git grep -E 'sk-ant-api[0-9]'` must return nothing.
 
 ## Request flow
 
@@ -110,6 +115,7 @@ The site calls the `/exec` URL with `POST` and a JSON body: `{ action, code, ...
 - Public without a code: dates, agenda, hotel, FAQ, fees. Family code: tree, roll call, stories, photos, marketplace, registration form. Token: that household's contact details, attendees and payments.
 - Photos: the Drive folder is private (cannot be listed); each visible photo is "anyone with the link"; hidden photos are made private by `onEntriesEdit`. Uploads are checked by bytes (`sniffImage_`), capped at `PHOTO_MAX_BYTES`, and rate-limited site-wide (`PHOTO_UPLOADS_PER_HOUR`).
 - `handle_` logs only the error, never the request body, because the body carries the code and the photo.
+- Committee updates go only to addresses already on the Registrations tab, carry no code or token, and are gated by a checkbox a committee member ticks in the Sheet. Opt-out is a hand-set column, not a link, so there is no unsubscribe endpoint to abuse.
 
 ## Email flow
 
@@ -129,7 +135,14 @@ Who sends what:
 - `sendLink_` sends `sendReceipt_` (kind `receipt0`, no link, no token change, deduplicated per minute only) when `siteLive` is not Yes.
 - `onPaymentsEdit` (installable on-edit trigger) calls `paymentReceipts_` when a Payments Status cell changes to `Confirmed` or `Not received`. It skips rows whose `Receipt sent` already starts with that Status, gives a hand-typed row a `Payment ID` if blank, sends `receiptEmail_`, and writes `Receipt sent`. The `receipt:<Payment ID>:<Status>` key is the second guard.
 
-Which emails carry the registration token: only `linkEmail_` (new registration, duplicate, lost link), because that is the moment a plaintext token exists. Receipts carry the family code and `siteUrl?c=<code>#me` but no token: only the hash is stored, and rotating it would log the cousin's phone out.
+Which emails carry the registration token: only `linkEmail_` (new registration, duplicate, lost link), because that is the moment a plaintext token exists. Receipts carry the family code and `siteUrl?c=<code>#me` but no token: only the hash is stored, and rotating it would log the cousin's phone out. Committee updates carry neither code.
+
+**Committee updates** (`sendUpdates`, daily trigger at 9 and menu "Send approved updates now") take a different path: they never call `sendMail_` directly.
+1. `claimUpdates_` runs under `locked_` only long enough to find Updates rows with `Approved` true and `Sent at` blank, give each an `ID` and `Created` if blank, and write `Sent at` = `sending…`. A second run, or an overlapping trigger, finds nothing blank and sends nothing. If the lock is busy the run logs and returns.
+2. Outside the lock, per claimed row: `audience_(upd.Audience, regs, cfg)` picks Registrations rows (`all` = any row with an email; `unpaid` = `Balance` > 0; `paid` = `Status` is `Paid in full`; `test` = a synthetic row `{ 'Household ID':'COMMITTEE', Email: cfg.email, Preferred:'committee' }`; anything else = `Branch` equals the value, case-insensitive), drops `Mail opt-out` = Yes and blank emails into `skipped`, and de-duplicates by lowercase email. `known` is false when the value is not a keyword and matched no Branch, which makes `Failed` read `No households matched audience "<value>"`.
+3. For each recipient `enqueue_(updateEmail_(row, upd, cfg), 'update <ID>')` writes one MailQueue row with Status `Queued`, kind `update`, key `update:<ID>:<email>`, `Household ID`. `updateEmail_` builds `mailWrap_(greet_(draftHtml_(Draft), name) + footer)`: `draftHtml_` uses the Draft as is when it contains `<p` or `<br`, else splits on blank lines into escaped `<p>` with `<br>` for single newlines, and strips a trailing `SIGNOFF` line because `mailWrap_` adds it; `greet_` replaces a leading `Hi,` or `Hello,` with `Hi <Preferred or First or cousin>,` or prepends one. The footer is `UPDATE_FOOTER` (reply STOP).
+4. `cells_` writes `Sent at` = now, `Sent`, `Failed`, `Skipped`. Then `drainMailQueue()` runs once (up to 100 rows per claim), and the hourly drain carries the rest. The log ends `N queued; Brevo allows about 300 a day, and the hourly drain carries the rest.`
+Delivery failures live in MailQueue, not in `Failed`. The `sendMail_` 6-hour key cache is the second guard against a duplicate.
 
 ## Triggers and menu items
 
@@ -137,10 +150,23 @@ Installed by `setup()` through `installTriggers_` and `ensureTrigger_` (one per 
 - `onEntriesEdit`: on edit, photo privacy sync.
 - `onPaymentsEdit`: on edit, payment receipt emails.
 - `drainMailQueue`: time-based, every hour.
+- `sendUpdates`: time-based, every day at hour 9 (`everyDays(1).atHour(9)`, in the script's time zone).
 
 The simple `onEdit(e)` (no install needed) stamps `Confirmed on` and `Confirmed by` on Payments and runs `recompute_` after Payments, Config or Registrations edits. It cannot call the network, which is why receipts need the installable trigger.
 
-The **Reunion** menu (`onOpen`): "Refresh balances and status" (`recompute_`), "Send queued mail now" (`drainMailQueue`), "Send me a test email" (`testSendMail`), "Sync photo privacy" (`syncPhotoSharing`), "Run setup" (`setup`).
+The **Reunion** menu (`onOpen`), in this order: "Refresh balances and status" (`recompute_`), "Send queued mail now" (`drainMailQueue`), "Send me a test email" (`testSendMail`), "Send approved updates now" (`sendUpdates`), "Draft update with AI" (`draftUpdate`), "Sync photo privacy" (`syncPhotoSharing`), "Run setup" (`setup`).
+
+## Claude API call
+
+`draftUpdate` (menu "Draft update with AI") picks the first Updates row whose `Notes` is non-blank and whose `Draft` is blank or exactly `redo`. With no `ANTHROPIC_API_KEY` it calls `alert_` (a dialog from the menu, a log line from the editor) and stops. Otherwise `claudeDraft_(key, updatePrompt_(), updateContext_(row, cfg))` makes one `UrlFetchApp.fetch` to `CLAUDE_URL` = `https://api.anthropic.com/v1/messages`:
+
+- method `post`, `contentType: 'application/json'`, `muteHttpExceptions: true`
+- headers `x-api-key: <key>`, `anthropic-version: 2026-10-21`, `anthropic-beta: server-side-fallback-2026-07-01`
+- body `{ model: 'claude-opus-5-5' (CLAUDE_MODEL), max_tokens: 4000, fallbacks: 'default', system: <updatePrompt_>, messages: [{ role: 'user', content: <updateContext_> }] }`. No thinking, temperature or tools are sent.
+
+`updatePrompt_` sets the voice (warm committee cousin, plain English, no emojis, no subject, no greeting because `greet_` adds it, invent nothing, end with `SIGNOFF`, plain text with blank lines between paragraphs). `updateContext_` passes the Subject, the Notes, and facts from Config: dates and city, fees and `childAge` when both fees are numbers, `deadline`, `payLine_`, `siteBase_`.
+
+The result written into `Draft` is the joined `text` blocks, or a line starting `ERROR:` for: a thrown fetch (`ERROR: <message>`), a non-2xx status (`ERROR: HTTP <status> <first 200 chars>`), a body that is not JSON, `stop_reason === 'refusal'` (`ERROR: the AI declined to draft this one. <stop_details.explanation>`), or no text blocks. `Approved` is set to false either way. The key and the request body are never logged; the log line holds the row number and the character count or the first 200 characters of the error. There is no SDK in Apps Script, so this is the only place that speaks to Anthropic.
 
 ## How to change the backend
 
@@ -170,12 +196,12 @@ Commit to `main`. GitHub Pages redeploys in about a minute. Tell testers to clos
 
 - Syntax: `node --check app.js` and `node --check apps-script/Code.gs`.
 - Browser smoke: Playwright against `index.html` served locally, with `page.route()` stubbing the `/exec` URL so no real backend is touched. Typical stub: answer `info` with fees, `family` with `{ ok:true, branches:[], names:[], roll:[], entries:[], pay:{} }`, `mine` with a household or `{ ok:false, error:'token' }`. Use it to exercise the code-entry form on `#me`, the gates and the registration success panel.
-- Operator tests in the Apps Script editor: `testSendMail()` (full chain to the deployer's own address, logs the route), `testSendMail('mailapp')` (skips Brevo), `testEnqueue()` (forces a MailQueue row, then drains it). See `docs/EMAIL.md`.
+- Operator tests in the Apps Script editor: `testSendMail()` (full chain to the deployer's own address, logs the route), `testSendMail('mailapp')` (skips Brevo), `testEnqueue()` (forces a MailQueue row, then drains it), `testUpdate()` (appends an Updates row with Subject `Test update`, Audience `test` and Approved ticked, runs `sendUpdates()`, logs the last MailQueue row; the email goes to Config `email`). See `docs/EMAIL.md`.
+- Node simulation of the backend: a scratch harness (`sim2.js` in the agent's scratchpad, not committed) stubs `SpreadsheetApp`, `UrlFetchApp`, `LockService`, `CacheService`, `PropertiesService`, `MailApp` and `Utilities`, loads `Code.gs` with `eval` after turning its top-level `const` and `function` declarations into globals, and asserts: Updates tab creation with the checkbox validation; `ensureTab_` appending `Mail opt-out`; `audience_` for each keyword, a Branch, opt-out, blank email and de-dup; `draftHtml_` and `greet_`; `updateEmail_` key and kind; `sendUpdates` end to end for `all`, `paid`, a Branch, `test`, an unknown audience and a blank Draft; the second run sending nothing; a filled `Sent at` being skipped; `Approved` as the text `Yes`; `testUpdate()`; `draftUpdate` success, each `ERROR:` path (HTTP 401, refusal, non-JSON, no key), `redo`, and the no-fees context; `installTriggers_` asking for `sendUpdates` daily; the `onOpen` menu labels. Rebuild it from that list when the backend changes; it is the only way to run the Sheet code outside Google.
 - Hands-on checks for volunteers: `TESTING.md`.
 - Secret scan before pushing: `git grep -iE 'xkeysib-[0-9a-f]'` must be empty.
 
 ## Open missions
 
-- **Committee Updates.** A tab for broadcast emails to every registered household, gated by an Approved tick. Designed in `docs/EMAIL.md` under "Future: Committee Updates". Not built.
 - **Supabase auth and an admin page.** Later. The minimum access when that mission starts: a free Supabase project created by the committee; project URL and anon key (public, repo-safe); the service role key only in Script Properties, entered by the committee; a Google OAuth client ID and secret from Google Cloud Console; Brevo SMTP login as Supabase custom SMTP; a weekly keep-alive ping so the free project does not pause. No Supabase access is needed for anything described in this file.
 - **Cloudflare Pages hosting** instead of GitHub Pages. Optional; DNS is already on Cloudflare.

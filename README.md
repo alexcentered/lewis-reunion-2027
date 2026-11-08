@@ -33,7 +33,7 @@ The registration email carries a button with the private link, and under it two 
 
 1. Open the **Lewis Reunion 2027 — Site Data** spreadsheet.
 2. Go to **Extensions → Apps Script**. Delete the sample code and paste in all of `apps-script/Code.gs`. Save.
-3. In the editor, open **Project Settings** (gear icon) → **Script Properties** → **Add script property**. Name `BREVO_API_KEY`, value = the Brevo API key. Save. Without it, email still goes out, but only through Gmail (about 100 a day).
+3. In the editor, open **Project Settings** (gear icon) → **Script Properties** → **Add script property**. Name `BREVO_API_KEY`, value = the Brevo API key. Save. Without it, email still goes out, but only through Gmail (about 100 a day). Optional: a second property `ANTHROPIC_API_KEY` (from console.anthropic.com) turns on **Draft update with AI**; updates can be sent without it.
 4. Choose `setup` in the function menu and click **Run**. Google asks for permission (Sheets, Drive, send email, connect to an external service, run triggers). Approve it. If you see "Google hasn't verified this app", choose **Advanced → Go to project**. This is your own script. The log at the bottom says whether the Brevo key was found.
 5. Click **Deploy → New deployment → Web app**. Set **Execute as: Me** and **Who has access: Anyone**. Click **Deploy** and copy the URL that ends in `/exec`.
 6. Paste that URL into `config.js` (`apiUrl: "…/exec"`) and commit.
@@ -48,7 +48,7 @@ When you change `Code.gs` later:
 
 This keeps the same `/exec` URL while deploying the updated code.
 
-Photo sharing has an on/off switch in two places (Config tab `photosEnabled` and `config.js`). See **[TESTING.md](TESTING.md)** for how to turn it on and check it, and for the email and codes checklist.
+Photo sharing has an on/off switch in two places (Config tab `photosEnabled` and `config.js`). See **[TESTING.md](TESTING.md)** for how to turn it on and check it, for the email and codes checklist, and for checking a committee update.
 
 ## Committee guide
 
@@ -57,8 +57,9 @@ Photo sharing has an on/off switch in two places (Config tab `photosEnabled` and
 - **Config tab:** fees per adult and child, payment handles, the verifier's name, the room-block note, the family code (`familyCode`), and the email rows (`mailFrom`, `mailFromName`, `mailReplyTo`, `notifyCommittee`). Set `notifyCommittee` to `Yes` to get an email about each new registration.
 - **Agenda tab:** one row per schedule item. The website groups them by day.
 - **Entries tab:** untick **Visible** to hide a story, photo or listing. A hidden photo is also made private in Drive.
+- **Sending an update to everyone:** the **Updates** tab holds one row per committee email. Write the **Subject** and the **Draft** (plain paragraphs are fine; start with `Hi,` and each household gets its own name), set **Audience** to `all`, `unpaid`, `paid`, `test` (only the committee address) or a branch name, and tick the **Approved** box. The script sends it at 9 the next morning, or right away from **Reunion → Send approved updates now**, one MailQueue row per household; **Sent**, **Failed** and **Skipped** fill in. Proof it with Audience `test` first. Every update ends "To stop these updates, reply with the word STOP"; when someone does, type `Yes` in their **Mail opt-out** column on **Registrations** and they are left out of future updates (receipts and links still go). If you would rather not write it yourself, put bullet points in **Notes** and choose **Reunion → Draft update with AI**; read and edit the draft before approving. Full steps in [docs/EMAIL.md](docs/EMAIL.md).
 - **MailQueue tab:** one row per email, sent or waiting. `Status` is `Sent`, `Queued` or `Failed`; `Last error` says why. To retry a Failed row, type `Queued` in its Status cell. See [docs/EMAIL.md](docs/EMAIL.md).
-- **Reunion menu** (in the Sheet's menu bar): **Refresh balances and status**, **Send queued mail now** (sends waiting MailQueue rows without waiting for the hourly run), **Send me a test email** (a sample registration email to you, so you can see the route and the wording), **Sync photo privacy** (re-match every photo's Drive sharing to its Visible box), **Run setup**.
+- **Reunion menu** (in the Sheet's menu bar): **Refresh balances and status**, **Send queued mail now** (sends waiting MailQueue rows without waiting for the hourly run), **Send me a test email** (a sample registration email to you, so you can see the route and the wording), **Send approved updates now** (sends ticked Updates rows without waiting for 9 am), **Draft update with AI** (turns Notes into a Draft; needs the optional key), **Sync photo privacy** (re-match every photo's Drive sharing to its Visible box), **Run setup**.
 
 ## Sharing link
 
