@@ -90,7 +90,7 @@ function signup_(p) {
   }
   if (!res.ok) return page_('A few things are missing', '<p>' + htmlEsc_(res.message || 'Please check the form.') + '</p><p>Go back to the registration page, fill them in, and press Send again.</p>');
   const r = res.mine.reg, s = res.mine.summary;
-  const people = (r.attendees || []).map(a => '<li>' + htmlEsc_(a.name) + (a.band === 'child' ? ' <span>(child' + (a.age ? ', ' + htmlEsc_(a.age) : '') + ')</span>' : '') + '</li>').join('');
+  const people = (r.attendees || []).map(a => '<li>' + htmlEsc_(a.name) + (a.band === 'child' ? ' <span>(child' + (a.age ? ', ' + htmlEsc_(a.age) : '') + ')</span>' : '') + (a.diet ? ' <span>' + htmlEsc_(a.diet) + '</span>' : '') + '</li>').join('');
   const due = s.due == null ? 'The committee will post fees soon.' : 'Total due: $' + s.due + '.';
   return page_('You’re registered!',
     '<p>Thank you, ' + htmlEsc_(r.preferred || r.first) + '. The ' + htmlEsc_(r.last) + ' household is on the list for the Lewis Family Reunion, July 2–5, 2027 in Fresno.</p>' +
@@ -201,7 +201,8 @@ function register_(p, cfg) {
     diet: clean_(r.diet, 80), needs: clean_(r.needs, 1000), arrive: clean_(r.arrive, 10), depart: clean_(r.depart, 10)
   };
   const att = (Array.isArray(r.attendees) ? r.attendees : []).slice(0, 30).map(a => ({
-    name: clean_(a.name, 80), band: a.band === 'child' ? 'child' : 'adult', age: clean_(a.age, 10), shirt: clean_(a.shirt, 12)
+    name: clean_(a.name, 80), band: a.band === 'child' ? 'child' : 'adult', age: clean_(a.age, 10), shirt: clean_(a.shirt, 12),
+    diet: /^none$/i.test(clean_(a.diet, 40)) ? '' : clean_(a.diet, 40)
   })).filter(a => a.name);
   const days = (Array.isArray(r.days) ? r.days : []).filter(d => DAY_LABELS[d]);
   const miss = [];
@@ -230,9 +231,9 @@ function register_(p, cfg) {
     'Email': v.email, 'Phone': v.phone, 'City': v.city, 'State': v.state, 'Branch': v.branch, 'Parents': v.parents,
     'Grandparent': v.grandparent, 'Spouse': v.spouse,
     'Adults': att.filter(a => a.band === 'adult').length, 'Children': att.filter(a => a.band === 'child').length,
-    'Attendees': att.map(a => [a.name, a.band === 'child' ? 'Child' : 'Adult', a.age, a.shirt].join(' · ')).join('\n'),
+    'Attendees': att.map(a => [a.name, a.band === 'child' ? 'Child' : 'Adult', a.age, a.shirt, a.diet].join(' · ')).join('\n'),
     'Shirt sizes': shirtSummary_(att), 'Days': days.map(d => DAY_LABELS[d]).join(', '),
-    'Arrive': v.arrive, 'Depart': v.depart, 'Nights': nights, 'Lodging': v.lodging, 'Diet': v.diet, 'Needs': v.needs,
+    'Arrive': v.arrive, 'Depart': v.depart, 'Nights': nights, 'Lodging': v.lodging, 'Diet': dietSummary_(att) || v.diet, 'Needs': v.needs,
     'Show on list': r.showOnList === false ? 'No' : 'Yes'
   };
   if (existing) {
@@ -639,8 +640,8 @@ function mineData_(row, cfg) {
     status: String(p.Status || 'Reported'), confirmedOn: iso_(p['Confirmed on'])
   }));
   const att = String(row.Attendees || '').split('\n').filter(String).map(l => {
-    const [name, band, age, shirt] = l.split(' · ');
-    return { name: name || '', band: /child/i.test(band || '') ? 'child' : 'adult', age: age || '', shirt: shirt || '' };
+    const [name, band, age, shirt, diet] = l.split(' · ');
+    return { name: name || '', band: /child/i.test(band || '') ? 'child' : 'adult', age: age || '', shirt: shirt || '', diet: diet || '' };
   });
   const dayKeys = Object.keys(DAY_LABELS).filter(k => String(row.Days || '').indexOf(DAY_LABELS[k]) >= 0);
   return {
@@ -1172,7 +1173,7 @@ function alert_(msg) {
 /** Website address without query or hash, from Config siteUrl. */
 function siteBase_(cfg) { return String(cfg.siteUrl || '').replace(/[?#].*$/, ''); }
 /** Attendee names from the Registrations "Attendees" cell (one "name · band · age · shirt" line per person). */
-function attendeeNames_(row) { return String(row.Attendees || '').split('\n').filter(String).map(l => l.split(' · ')[0]); }
+function attendeeNames_(row) { return String(row.Attendees || '').split('\n').filter(String).map(l => { const f = l.split(' · '); return f[0] + (f[4] ? ' (' + f[4] + ')' : ''); }); }
 /** "abcd1234..." as "abcd 1234 ..." so a code can be read aloud or typed from paper. */
 function groups_(s) { return (String(s || '').match(/.{1,4}/g) || []).join(' '); }
 /** $25 or $12.50. */
@@ -1263,7 +1264,7 @@ function committeeEmail_(row, cfg) {
   const who = ((row.Preferred || row.First || '') + ' ' + (row.Last || '')).trim(), id = String(row['Household ID'] || '');
   const lines = [
     ['Household', who + (id ? ' (' + id + ')' : '')], ['Branch', row.Branch], ['Adults', row.Adults], ['Children', row.Children], ['Days', row.Days],
-    ['From', [row.City, row.State].filter(String).join(', ')], ['Email', row.Email], ['Phone', row.Phone]
+    ['From', [row.City, row.State].filter(String).join(', ')], ['Email', row.Email], ['Phone', row.Phone], ['Dietary needs', row.Diet]
   ].filter(l => String(l[1] == null ? '' : l[1]).trim()).map(l => '<b>' + l[0] + ':</b> ' + htmlEsc_(str_(l[1])));
   const html = mailWrap_('<p>A new household registered on the website.</p><p>' + lines.join('<br>') + '</p><p>Details are in the Registrations tab.</p>', cfg);
   return {
@@ -1428,6 +1429,8 @@ function nights_(a, d) {
   const x = new Date(a + 'T12:00:00'), y = new Date(d + 'T12:00:00'), n = Math.round((y - x) / 864e5);
   return isNaN(n) || n < 0 ? 0 : n;
 }
+/** "Name: Vegan; Name: Gluten-free" for the Diet column, from the per-person choices. Blank when nobody needs anything. */
+function dietSummary_(att) { return att.filter(a => a.diet).map(a => a.name + ': ' + a.diet).join('; '); }
 function shirtSummary_(att) {
   const c = {}; att.forEach(a => { if (a.shirt && a.shirt !== 'No shirt') c[a.shirt] = (c[a.shirt] || 0) + 1; });
   return Object.keys(c).map(k => c[k] + '×' + k).join(', ');
