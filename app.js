@@ -254,20 +254,23 @@ function renderStrip(items){
 }
 
 /* ---------- registration form ---------- */
-let attendees = [{ name: '', band: 'adult', age: '', shirt: '' }];
+let attendees = [{ name: '', band: 'adult', age: '', shirt: '', diet: '' }];
 const SHIRTS = ['Youth S','Youth M','Youth L','XS','S','M','L','XL','2XL','3XL','4XL','No shirt'];
+/* Dietary needs are asked per person so the caterer knows who needs what. 'None' is stored as blank. */
+const DIETS = ['Vegetarian','Vegan','Kosher','Halal','Gluten-free','Diabetic-friendly','Other (tell us below)'];
 function renderAttendees(){
   $('#attendees').innerHTML = attendees.map((a, i) => `<div class="att">
     <div class="nm"><label for="a-n${i}">Full name</label><input id="a-n${i}" data-i="${i}" data-k="name" value="${esc(a.name)}"></div>
     <div><label for="a-b${i}">Adult or child</label><select id="a-b${i}" data-i="${i}" data-k="band"><option value="adult" ${a.band === 'adult' ? 'selected' : ''}>Adult</option><option value="child" ${a.band === 'child' ? 'selected' : ''}>Child</option></select></div>
     <div><label for="a-a${i}">Age</label><input id="a-a${i}" data-i="${i}" data-k="age" inputmode="numeric" value="${esc(a.age)}"></div>
     <div><label for="a-s${i}">T-shirt</label><select id="a-s${i}" data-i="${i}" data-k="shirt"><option value="">Size</option>${SHIRTS.map(s => `<option ${a.shirt === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
-    <div>${i ? `<button type="button" class="btn quiet sm" data-rm="${i}" aria-label="Remove person ${i + 1}">Remove</button>` : ''}</div></div>`).join('');
+    <div>${i ? `<button type="button" class="btn quiet sm" data-rm="${i}" aria-label="Remove person ${i + 1}">Remove</button>` : ''}</div>
+    <div class="diet"><label for="a-d${i}">Dietary needs</label><select id="a-d${i}" data-i="${i}" data-k="diet"><option value="">None</option>${DIETS.map(d => `<option ${a.diet === d ? 'selected' : ''}>${d}</option>`).join('')}</select></div></div>`).join('');
   updateSummary();
 }
 ['input', 'change'].forEach(ev => $('#attendees').addEventListener(ev, e => { const t = e.target; if (t.dataset.i != null){ attendees[+t.dataset.i][t.dataset.k] = t.value; updateSummary(); } }));
 $('#attendees').addEventListener('click', e => { const r = e.target.dataset && e.target.dataset.rm; if (r != null){ attendees.splice(+r, 1); renderAttendees(); } });
-$('#addAtt').addEventListener('click', () => { attendees.push({ name: '', band: 'adult', age: '', shirt: '' }); renderAttendees(); $('#a-n' + (attendees.length - 1)).focus(); });
+$('#addAtt').addEventListener('click', () => { attendees.push({ name: '', band: 'adult', age: '', shirt: '', diet: '' }); renderAttendees(); $('#a-n' + (attendees.length - 1)).focus(); });
 $('#dayChecks').innerHTML = DAYS.map(d => `<label class="check"><input type="checkbox" name="day" value="${d.key}" checked> <span><b style="font-weight:600">${d.label}</b><br><span class="hint">${d.long}</span></span></label>`).join('');
 ['#fArrive', '#fDepart'].forEach(s => $(s).addEventListener('change', updateSummary));
 function nights(a, d){ const n = Math.round((new Date(d + 'T12:00:00') - new Date(a + 'T12:00:00')) / 864e5); return isNaN(n) || n < 0 ? 0 : n; }
@@ -283,19 +286,19 @@ function collectReg(){
   return { first: v('#fFirst'), middle: v('#fMiddle'), last: v('#fLast'), birthSurname: v('#fBirth'), preferred: v('#fPreferred'),
     email: v('#fEmail'), phone: v('#fPhone'), city: v('#fCity'), state: v('#fState'),
     branch: $('#fBranch').value, parents: v('#fParents'), grandparent: v('#fGrand'), spouse: v('#fSpouse'),
-    attendees: attendees.filter(a => a.name.trim()).map(a => ({ name: a.name.trim(), band: a.band, age: String(a.age || '').trim(), shirt: a.shirt })),
+    attendees: attendees.filter(a => a.name.trim()).map(a => ({ name: a.name.trim(), band: a.band, age: String(a.age || '').trim(), shirt: a.shirt, diet: a.diet || '' })),
     days: $$('input[name="day"]:checked').map(x => x.value), arrive: $('#fArrive').value, depart: $('#fDepart').value,
-    lodging: $('#fLodging').value, diet: $('#fDiet').value, needs: v('#fNeeds'), travelAck: $('#fTravel').checked, showOnList: $('#fShow').checked };
+    lodging: $('#fLodging').value, needs: v('#fNeeds'), travelAck: $('#fTravel').checked, showOnList: $('#fShow').checked };
 }
 function fillReg(r){
   const set = (s, v) => { if (v != null && v !== '') $(s).value = v; };
   set('#fFirst', r.first); set('#fMiddle', r.middle); set('#fLast', r.last); set('#fBirth', r.birthSurname); set('#fPreferred', r.preferred);
   set('#fEmail', r.email); set('#fPhone', r.phone); set('#fCity', r.city); set('#fState', r.state);
   set('#fBranch', r.branch); set('#fParents', r.parents); set('#fGrand', r.grandparent); set('#fSpouse', r.spouse);
-  set('#fArrive', r.arrive); set('#fDepart', r.depart); set('#fLodging', r.lodging); set('#fDiet', r.diet); set('#fNeeds', r.needs);
+  set('#fArrive', r.arrive); set('#fDepart', r.depart); set('#fLodging', r.lodging); set('#fNeeds', r.needs);
   $('#fTravel').checked = true; $('#fShow').checked = r.showOnList !== false;
   $$('input[name="day"]').forEach(x => x.checked = (r.days || []).includes(x.value));
-  attendees = (r.attendees && r.attendees.length) ? r.attendees.map(a => ({ ...a })) : [{ name: '', band: 'adult', age: '', shirt: '' }];
+  attendees = (r.attendees && r.attendees.length) ? r.attendees.map(a => ({ diet: '', ...a })) : [{ name: '', band: 'adult', age: '', shirt: '', diet: '' }];
   renderAttendees();
   $('#regTitle').textContent = 'Update your registration';
   $('#regSubmit').textContent = 'Save changes';
