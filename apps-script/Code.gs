@@ -1308,7 +1308,8 @@ function testEnqueue() {
 function testUpdate() {
   const sh = updatesSheet_(), H = headers_(sh), id = 'U-TEST-' + Utilities.getUuid().replace(/-/g, '').slice(0, 6).toUpperCase();
   const data = { ID: id, Created: new Date(), Subject: 'Test update', Notes: 'test', Draft: 'This is a test update from the committee.\n\nNothing to do.', Approved: true, Audience: 'test' };
-  sh.appendRow(H.names.map(n => data[n] !== undefined ? data[n] : ''));
+  // The checkbox validation makes Sheets treat rows 2-200 as used, so appendRow would land at row 201. Use the first empty row.
+  writeRow_(sh, H, firstEmptyRow_(sh, H), data);
   sendUpdates(id);
   const row = rows_(TAB.mail).filter(r => String(r.Key).indexOf('update:' + id + ':') === 0).slice(-1)[0];
   console.log('Test update ' + id + ': MailQueue row is ' + (row ? row.To + ' | ' + row.Subject + ' | ' + row.Status : 'missing') + '. The Updates row shows Sent at, Sent 1.');
@@ -1389,6 +1390,15 @@ function rowAt_(sh, H, index) {
   const vals = sh.getRange(index, 1, 1, H.names.length).getValues()[0], o = {};
   H.names.forEach((n, i) => { if (n) o[n] = vals[i]; });
   return o;
+}
+/** First row below the header whose ID and Subject (or the first two columns) are blank; the row after the last one when none. */
+function firstEmptyRow_(sh, H) {
+  const last = sh.getLastRow();
+  if (last < 2) return 2;
+  const a = H.col.ID !== undefined ? H.col.ID : 0, b = H.col.Subject !== undefined ? H.col.Subject : 1;
+  const vals = sh.getRange(2, 1, last - 1, H.names.length).getValues();
+  for (let i = 0; i < vals.length; i++) if (String(vals[i][a] || '') === '' && String(vals[i][b] || '') === '') return i + 2;
+  return last + 1;
 }
 function writeRow_(sh, H, index, obj) {
   sh.getRange(index, 1, 1, H.names.length).setValues([H.names.map(n => obj[n] !== undefined ? obj[n] : '')]);
