@@ -62,13 +62,18 @@ All emails share the frame in `mailWrap_`: Georgia body, the sign-off "Somehow, 
 
 **Registration link email** (`linkEmail_`, kind `link`)
 Subject: `You are registered: Lewis Family Reunion 2027` on first registration, or `Your Lewis Reunion registration link` when it is a fresh link (duplicate registration, lost link).
-Contains: a button "Open my registration" to `siteUrl?c=<familyCode>&t=<token>#me`; a grey box with the same link spelled out, the website address, **Family code**, **Registration code** (32 characters in groups of 4), and "If the link does not open, go to the website, open My Registration, and type the family code and the registration code"; who is coming; the estimated total (`dueLine_`: adults times fee plus children times fee, with the deadline) or "Registration fees will be announced soon; nothing is due yet."; payment handles if any are set (`payLine_`); a reminder that anyone with the link or codes can change the registration.
+Contains: a button "Open my registration" to `siteUrl?c=<familyCode>&t=<token>#me`; a grey box with the same link spelled out, the website address, **Family code**, **Registration code** (32 characters in groups of 4), and "If the link does not open, go to the website, open My Registration, and type the family code and the registration code"; then the shared details block (`regDetails_`, below); a reminder that anyone with the link or codes can change the registration; and "Questions? Reply to this email. It reaches the committee."
 When sent as a fresh link, the first line says older links and codes no longer work, because the token was rotated.
 
 **Lost link** is the same email with `rotate = true`, sent by `resend_` from the "Email my link" button. The site always answers "If that email is registered, a new private link is on its way", whether or not the address was found, and ignores repeat requests for 10 minutes.
 
 **Pre-launch receipt** (`sendReceipt_`, kind `receipt0`)
-Sent instead of the link email while Config `siteLive` is not `Yes`. Subject: `You are registered: Lewis Family Reunion 2027`. Lists who is coming and says the committee will email about fees. No link, no codes, and the token is left alone.
+Sent instead of the link email while Config `siteLive` is not `Yes`. Subject: `You are registered: Lewis Family Reunion 2027`. Carries the same details block (`regDetails_`) and says to reply to this email to change anything or ask a question. No link, no codes, and the token is left alone.
+
+**The details block** (`regDetails_(row, cfg, live)`, in both registration emails)
+- **Your registration:** Household ID, who is coming (with dietary needs), days, arrive and leave dates, where they are staying.
+- **What happens next:** before fees are set, "Registration fees will be announced soon" and "keep your household ID". Once `feeAdult` and `feeChild` are numbers: the estimated total and deadline (`dueLine_`), the ways to pay (`payLine_`), how to report the payment (My Registration when `live`, otherwise reply with amount, method and date), "put your household ID in the payment note", and that the committee confirms each payment with a receipt. Always: updates about the schedule and venues will follow by email.
+- **Reunion hotel:** name, address, phone, and the group rate (group code 501, hotel code FATNOHT) from the `HOTEL` constant, then Config `roomBlock` if it is set. The hotel card in `index.html` shows the same facts; change both together.
 
 **Payment receipt** (`receiptEmail_`, kind `receipt`)
 Sent once when a Payments row is set to `Confirmed` or `Not received`. Subject: `Payment confirmed: Lewis Family Reunion 2027` or `We have not found your payment yet: Lewis Family Reunion 2027`. Contains: amount, method, date sent, reference; confirmed so far; remaining balance or "Fees to be announced"; a button to `siteUrl?c=<familyCode>#me`; the Family code; and "use the private link from your registration email, or choose Email my link on the My Registration page". It never carries the Registration code: only its hash is stored, and making a new one would log the cousin's phone out.

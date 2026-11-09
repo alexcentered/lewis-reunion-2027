@@ -403,6 +403,8 @@ function renderMe(){
   const att = r.attendees || [];
   $('#meStats').innerHTML = [['Adults', att.filter(a => a.band !== 'child').length], ['Children', att.filter(a => a.band === 'child').length], ['Nights', r.nights], ['Total due', money(s.due)], ['Confirmed', money(s.confirmed)], ['Balance', money(s.balance)]]
     .map(([k, v]) => `<div class="stat"><b class="num">${esc(v)}</b><span>${k}</span></div>`).join('');
+  $('#meId').hidden = !m.householdId;
+  $('#meId').innerHTML = m.householdId ? `Household ID: <b class="num">${esc(m.householdId)}</b>. Put it in the note when you pay, so the committee can match your payment.` : '';
   $('#meReports').innerHTML = (m.payments || []).length ? m.payments.slice().reverse().map(p => {
     const pill = p.status === 'Confirmed' ? `<span class="pill ok">Confirmed${p.confirmedOn ? ' ' + esc(fmtDate(p.confirmedOn)) : ''}</span>` : p.status === 'Not received' ? '<span class="pill bad">Not received yet. Contact the committee</span>' : '<span class="pill info">Awaiting confirmation</span>';
     return `<div class="pay-line"><div><b class="num">${money(p.amount)}</b> <span class="hint">${esc(p.method)}${p.date ? ' · sent ' + esc(fmtDate(p.date)) : ''}${p.ref ? ' · #' + esc(p.ref) : ''}</span></div>${pill}</div>`;
