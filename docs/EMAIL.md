@@ -84,6 +84,9 @@ Sent to Config `email` on each new registration when `notifyCommittee` is `Yes`.
 **Committee update** (`updateEmail_`, kind `update`)
 One per household when an Updates row is approved and sent. Subject: the row's `Subject` (or `An update from the Lewis Family Reunion committee` if blank). Contains: `Hi <Preferred or First>,` (or `Hi cousin,`), the `Draft` as paragraphs, and the footer "You are getting this because your household is registered for the Lewis Family Reunion. To stop these updates, reply with the word STOP." No link and no codes. Always queued, never sent directly. Key `update:<ID>:<email>`. See "Committee Updates: how to send one".
 
+**Money report** (`moneyEmail_`, kind `money`)
+To Config `treasurerEmail` only, Mondays at 8 (`moneyReport`) or from the menu **Reunion → Send the money report now** (`moneyReportNow`). Subject: `Reunion money report: $N on hand`. Contains the Money tab in short form: cash on hand; money in; who holds what; money out against the budget; payments still waiting for confirmation after 3 days and paid expenses with no receipt link; a link to the Sheet. It names households and amounts, so it never goes to the family, and it carries no codes. Key `money:<date>` for the weekly run (one a day); the menu run adds a unique suffix so it always sends.
+
 ## MailQueue tab: how-to for the committee
 
 Columns: `Queued` (when the row was written), `To`, `Subject`, `Html`, `Text`, `Status`, `Attempts`, `Last error`, `Sent`, `Via`, `Key`, `Kind`, `Household ID`.
