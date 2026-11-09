@@ -74,7 +74,7 @@ This file is for an AI agent or a committee volunteer who opens this repo cold. 
 | `feeAdult`, `feeChild` | Dollar amounts. Both must be numbers for Due and Balance to be computed. | blank = fees not announced |
 | `childAge` | Age cutoff for the child fee. | 12 |
 | `deadline` | Payment due date, shown on the site and in the registration email. | none |
-| `roomBlock` | Hotel room-block note shown on the site. | none |
+| `roomBlock` | Hotel room-block note shown on the site under the group-rate codes, and in the registration email under the hotel. | none |
 | `zelle`, `cashapp`, `venmo`, `paypal` | Payment handles shown on the site and in the registration email. | none |
 | `verifier` | Name of the person who confirms payments, shown on the site. | none |
 | `photosEnabled` | `Yes` allows photo uploads (also the optional photos on tributes, veterans, directory, marketplace). | treated as No |
@@ -134,6 +134,8 @@ Who sends what:
 - `register_` (duplicate email) and `resend_` call `sendLink_(row, cfg, true)`, which rotates the token (older links stop working) and emails a fresh link. Both inside try/catch.
 - `sendLink_` sends `sendReceipt_` (kind `receipt0`, no link, no token change, deduplicated per minute only) when `siteLive` is not Yes.
 - `onPaymentsEdit` (installable on-edit trigger) calls `paymentReceipts_` when a Payments Status cell changes to `Confirmed` or `Not received`. It skips rows whose `Receipt sent` already starts with that Status, gives a hand-typed row a `Payment ID` if blank, sends `receiptEmail_`, and writes `Receipt sent`. The `receipt:<Payment ID>:<Status>` key is the second guard.
+
+Both registration emails (`linkEmail_` and the pre-launch `sendReceipt_`) share one details block, `regDetails_`: Household ID, who is coming, days, travel dates and lodging; what happens next (fees and how to pay, or that fees are coming); and the reunion hotel with its group rate from the `HOTEL` constant. The hotel card in `index.html` holds the same name, address, phone, group code (501) and hotel code (FATNOHT): change both together. My Registration shows the Household ID under the totals, with "put it in the note when you pay".
 
 Which emails carry the registration token: only `linkEmail_` (new registration, duplicate, lost link), because that is the moment a plaintext token exists. Receipts carry the family code and `siteUrl?c=<code>#me` but no token: only the hash is stored, and rotating it would log the cousin's phone out. Committee updates carry neither code.
 

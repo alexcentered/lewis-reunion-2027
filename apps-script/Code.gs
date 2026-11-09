@@ -50,7 +50,13 @@ const CONFIG_NOTES = {
   mailFrom: 'Sender address for emails sent through Brevo', mailFromName: 'Sender name on every email',
   mailReplyTo: 'Reply-to address; blank means the "email" row', notifyCommittee: 'Yes = email the committee about each new registration'
 };
-const TYPES = ['story', 'memoriam', 'veteran', 'directory', 'photo', 'market'];
+/* The reunion hotel, as printed in the registration email (regDetails_). The hotel card in index.html shows the same
+   facts; change both together. Config roomBlock adds a note under them (a booking cutoff, for example). */
+const HOTEL = {
+  name: 'Home2 Suites by Hilton Fresno Northwest', address: '6965 W. Farrington Avenue, Fresno, CA 93722', phone: '(559) 512-8410',
+  groupCode: '501', hotelCode: 'FATNOHT'
+};
+const TYPES = ['story','memoriam', 'veteran', 'directory', 'photo', 'market'];
 const DAY_LABELS = { fri: 'Fri Jul 2', sat: 'Sat Jul 3', sun: 'Sun Jul 4', mon: 'Mon Jul 5' };
 /* Photo rules. The browser shrinks photos before sending, so real uploads are well under the cap.
    Keep PHOTO_MAX_BYTES equal to PHOTO.maxUpload in app.js. */
@@ -681,12 +687,11 @@ function sendLink_(row, cfg, rotate, token) {
 /** Until the full site is live, registrants get a plain receipt instead of a private edit link. */
 function sendReceipt_(row, cfg) {
   const name = row.Preferred || row.First || 'cousin';
-  const people = attendeeNames_(row).map(n => '<li>' + htmlEsc_(n) + '</li>').join('');
   const html = mailWrap_(
     '<p>Hi ' + htmlEsc_(name) + ',</p>' +
-    '<p>Thank you for registering for the Lewis Family Reunion, July 2–5, 2027 in Fresno. Here is who we have on your registration:</p>' +
-    '<ul>' + people + '</ul>' +
-    '<p>The committee will email you about fees and payment. To change anything, reply to this email.</p>', cfg);
+    '<p>Thank you for registering for the Lewis Family Reunion, July 2–5, 2027 in Fresno. Here is what we have for your household.</p>' +
+    regDetails_(row, cfg, false) +
+    '<p>To change anything, or with any question, reply to this email. It reaches the committee.</p>', cfg);
   return sendMail_({
     to: String(row.Email), toName: name, subject: 'You are registered: Lewis Family Reunion 2027', html: html, text: htmlToText_(html),
     // The minute in the key: a double tap sends one email, but a resend asked for later the same day still goes out.
@@ -1204,11 +1209,44 @@ function payLine_(cfg) {
   return ways.length ? 'Ways to pay: ' + ways.join(', ') + '.' : '';
 }
 
+/**
+ * The middle of both registration emails (linkEmail_ and sendReceipt_): the household's details with its Household ID,
+ * what happens next, and the reunion hotel with the group-rate codes. live = the site is live, so payments are reported
+ * on My Registration; otherwise by replying. HOTEL holds the same facts as the hotel card in index.html.
+ */
+function regDetails_(row, cfg, live) {
+  const id = str_(row['Household ID']).trim(), people = attendeeNames_(row);
+  const travel = [iso_(row.Arrive) ? 'arriving ' + iso_(row.Arrive) : '', iso_(row.Depart) ? 'leaving ' + iso_(row.Depart) : ''].filter(String).join(', ');
+  const mine = [
+    id ? ['Household ID', '<b>' + htmlEsc_(id) + '</b>'] : null,
+    people.length ? ['Coming', htmlEsc_(people.join(', '))] : null,
+    str_(row.Days) ? ['Days', htmlEsc_(str_(row.Days))] : null,
+    travel ? ['Travel', htmlEsc_(travel)] : null,
+    str_(row.Lodging) ? ['Staying', htmlEsc_(str_(row.Lodging))] : null
+  ].filter(Boolean).map(l => l[0] + ': ' + l[1]);
+  const fees = num_(cfg.feeAdult) !== null && num_(cfg.feeChild) !== null, pay = payLine_(cfg);
+  const next = fees ? [
+    htmlEsc_(dueLine_(row, cfg) + (pay ? ' ' + pay : '')),
+    (live ? 'After you pay, report the payment on your My Registration page.' : 'After you pay, reply to this email with the amount, the method and the date.') +
+      (id ? ' Please put your household ID, ' + htmlEsc_(id) + ', in the payment note so we can match it to you.' : ''),
+    'The committee confirms each payment and emails you a receipt.'
+  ] : [
+    'Registration fees will be announced soon. Nothing is due yet; we will email you when they are set.',
+    'Keep your household ID, ' + (id ? htmlEsc_(id) : 'shown above') + '. You will put it in the note when you pay.'
+  ];
+  next.push('The committee will email updates about the schedule and the venues as plans are confirmed.');
+  const block = str_(cfg.roomBlock).trim();
+  return '<p><b>Your registration</b><br>' + mine.join('<br>') + '</p>' +
+    '<p><b>What happens next</b></p><ul>' + next.map(n => '<li>' + n + '</li>').join('') + '</ul>' +
+    '<p><b>Reunion hotel</b><br>' + htmlEsc_(HOTEL.name) + '<br>' + htmlEsc_(HOTEL.address) + '<br>' + htmlEsc_(HOTEL.phone) + '<br>' +
+    'Group rate available. Group code: <b>' + HOTEL.groupCode + '</b>. Hotel code: <b>' + HOTEL.hotelCode + '</b>.' +
+    (block ? '<br>' + htmlEsc_(block) : '') + '</p>';
+}
+
 /** The registration email: private link as a button, then the same link, family code and registration code in plain text. */
 function linkEmail_(row, cfg, token, rotate) {
   const name = row.Preferred || row.First || 'cousin', base = siteBase_(cfg), code = String(cfg.familyCode || '');
   const link = base + '?c=' + encodeURIComponent(code) + '&t=' + token + '#me';
-  const people = attendeeNames_(row), pay = payLine_(cfg);
   const html = mailWrap_(
     '<p>Hi ' + htmlEsc_(name) + ',</p>' +
     '<p>' + (rotate ? 'Here is a fresh private link to your registration. Older links and codes no longer work.' : 'Thank you for registering for the Lewis Family Reunion, July 2–5, 2027 in Fresno.') + '</p>' +
@@ -1220,9 +1258,9 @@ function linkEmail_(row, cfg, token, rotate) {
       'Registration code: <b>' + htmlEsc_(groups_(token)) + '</b>',
       'If the link does not open, go to the website, open My Registration, and type the family code and the registration code.'
     ]) +
-    (people.length ? '<p>Coming: ' + htmlEsc_(people.join(', ')) + '.</p>' : '') +
-    '<p>' + htmlEsc_(dueLine_(row, cfg)) + (pay ? ' ' + htmlEsc_(pay) : '') + '</p>' +
-    '<p>Use the link to update who is coming, report a payment, and see when the committee confirms it. Please keep this email; anyone with the link or codes can change your registration.</p>', cfg);
+    regDetails_(row, cfg, true) +
+    '<p>Use the link to update who is coming, report a payment, and see when the committee confirms it. Please keep this email; anyone with the link or codes can change your registration.</p>' +
+    '<p>Questions? Reply to this email. It reaches the committee.</p>', cfg);
   return {
     to: String(row.Email), toName: name, subject: rotate ? 'Your Lewis Reunion registration link' : 'You are registered: Lewis Family Reunion 2027',
     html: html, text: htmlToText_(html), key: 'link:' + row['Household ID'] + ':' + hash_(token).slice(0, 12), kind: 'link', householdId: String(row['Household ID'] || '')
