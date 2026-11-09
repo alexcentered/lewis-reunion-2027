@@ -35,7 +35,7 @@ This file is for an AI agent or a committee volunteer who opens this repo cold. 
 `Household ID`, `Registered`, `Updated`, `First`, `Middle`, `Last`, `Birth surname`, `Preferred`, `Email`, `Phone`, `City`, `State`, `Branch`, `Parents`, `Grandparent`, `Spouse`, `Adults`, `Children`, `Attendees` (one line per person: `name · Adult|Child · age · shirt · diet`; the fifth field is blank for "None" and absent on rows written before Nov 2026), `Shirt sizes`, `Days`, `Arrive`, `Depart`, `Nights`, `Lodging`, `Diet` (written by `register_` from the per-person choices as `Name: Vegan; Name: Gluten-free`, blank when nobody needs anything; the form no longer asks it per household), `Needs`, `Show on list`, `Token hash`, then five columns that `recompute_` writes as one block and so must sit side by side in this order: `Due`, `Confirmed`, `Awaiting`, `Balance`, `Status`. Then `Mail opt-out` (`REG_OPTOUT`, appended by `setup()`): `Yes` leaves the household out of committee updates only; link emails and receipts still go. The committee types it by hand when a household replies STOP.
 
 **Payments** (one row per reported payment)
-`Payment ID`, `Household ID`, `Household`, `Reported`, `Amount`, `Method`, `Date sent`, `Reference`, `Note`, `Status` (`Reported`, `Confirmed`, `Not received`), `Confirmed on`, `Confirmed by`, `Receipt sent`. `Receipt sent` is appended by `setup()` if missing and holds `<Status> · <ISO time> · <route>` once a receipt email has gone out.
+`Payment ID`, `Household ID`, `Household`, `Reported`, `Amount`, `Method`, `Date sent`, `Reference`, `Note`, `Status` (`Reported`, `Confirmed`, `Not received`), `Confirmed on`, `Confirmed by`, `Receipt sent`, `Received by`. `Receipt sent` is appended by `setup()` if missing and holds `<Status> · <ISO time> · <route>` once a receipt email has gone out. `Received by` (`PAY_RECEIVED_BY`, appended by `setup()`) names the committee member whose account or hand the money went to; `report_` fills it with `holderFor_` when exactly one Holders row lists the payment's Method, and the simple `onEdit` does the same for a hand-typed row left blank. `onEdit` (`fillPayments_`) also fills a blank `Household ID` when the typed `Household` matches exactly one registration by email, by Preferred-or-First + Last, or by First + Last (case and spaces ignored); otherwise it appends `Check: no single household matched` to `Note`.
 
 **Entries** (stories, tributes, veterans, directory, photos, marketplace)
 `Entry ID`, `Type` (one of `story`, `memoriam`, `veteran`, `directory`, `photo`, `market`), `Posted`, `Posted by`, `Visible` (checkbox), `Title`, `Subtitle`, `Meta`, `Body`, `Contact`, `Photo ID` (Drive file id), `Token hash`.
@@ -55,13 +55,22 @@ This file is for an AI agent or a committee volunteer who opens this repo cold. 
 
 **MailQueue** (created by `setup()`; every email sent or waiting). Exactly these 13 headers, in this order (`MAIL_HEADERS`):
 `Queued`, `To`, `Subject`, `Html`, `Text`, `Status`, `Attempts`, `Last error`, `Sent`, `Via`, `Key`, `Kind`, `Household ID`.
-`Status` is `Queued` (waiting), `Sending` (claimed by a running drain; `Last error` holds `claimed <ISO time>`), `Sent`, or `Failed` (20 attempts). A `Sending` row older than 15 minutes is reclaimed by the next drain. The committee retries a Failed row by typing `Queued` into Status (case and spaces do not matter). `Via` reads `Brevo <messageId>`, `MailApp`, `dupe` (the key was sent within 6 hours, so the row was marked Sent without sending), or stays blank while queued. `Kind` is one of `link`, `receipt0`, `receipt`, `committee`, `test`. Rows are written by header name, so columns may be reordered; `send_` writes `Status`, `Attempts`, `Last error`, `Sent`, `Via` as one block when they are adjacent.
+`Status` is `Queued` (waiting), `Sending` (claimed by a running drain; `Last error` holds `claimed <ISO time>`), `Sent`, or `Failed` (20 attempts). A `Sending` row older than 15 minutes is reclaimed by the next drain. The committee retries a Failed row by typing `Queued` into Status (case and spaces do not matter). `Via` reads `Brevo <messageId>`, `MailApp`, `dupe` (the key was sent within 6 hours, so the row was marked Sent without sending), or stays blank while queued. `Kind` is one of `link`, `receipt0`, `receipt`, `committee`, `update`, `money`, `test`. Rows are written by header name, so columns may be reordered; `send_` writes `Status`, `Attempts`, `Last error`, `Sent`, `Via` as one block when they are adjacent.
 
 **Updates** (created by `setup()` through `updatesSheet_`; one row per broadcast email). Exactly these 11 headers (`UPDATE_HEADERS`):
 `ID`, `Created`, `Subject`, `Notes`, `Draft`, `Approved`, `Audience`, `Sent at`, `Sent`, `Failed`, `Skipped`.
 `ID` is `U-` plus 8 uppercase hex characters, written by `claimUpdates_` when blank, as is `Created`. `Approved` is a checkbox (data validation on rows 2 to 200 when the tab is first created; `yes_` also accepts the text `Yes`). `Audience` is one of `UPDATE_AUDIENCES` (`all`, `unpaid`, `paid`, `test`) or a Branch name, case-insensitive. `Sent at` is the idempotency gate: blank means unsent, `sending…` (`UPDATE_SENDING`) means in progress or interrupted and the next run resumes it, a date means done and the row is never sent again. The per-recipient MailQueue key `update:<ID>:<email>` is the record of who was queued; `updateKeys_` reads it before queueing so a resume never duplicates. `Sent`, `Failed`, `Skipped` are written back by `sendUpdates` as one block through `cells_` (adjacent columns are written in one call; otherwise cell by cell). `Failed` is blank on success, `In progress: N of M queued; the next run continues` when the 4-minute queueing budget (`UPDATE_QUEUE_MS`) ran out, `ERROR: ...; the next run retries` on an exception, or a text reason when nothing was queued (blank Draft, unknown audience, blank Config `email` for a test). `Skipped` counts households dropped for `Mail opt-out` = Yes or a blank email. `Notes` is only read by `draftUpdate`.
 
 **Dashboard** is a committee tab of plain spreadsheet formulas. The code never touches it.
+
+**Money tabs** (created by `setup()` through `moneyTabs_`; the treasurer's tabs). Every dollar names the person holding it, because payments land in different committee members' own accounts.
+- **Holders**: `Name`, `Methods` (comma list such as `Zelle, Cash App`; drives `holderFor_`), `Email`, `Notes`. One row per person who receives or spends reunion money. Its Name column feeds the dropdowns below.
+- **Expenses**: `Date`, `What`, `Vendor`, `Category` (dropdown from Budget), `Amount`, `Status` (`Paid` or `Planned`; blank counts as Paid), `Paid by` (dropdown from Holders), `Receipt` (a Drive link), `Note`.
+- **Transfers**: `Date`, `From`, `To`, `Amount`, `Note`. Money handed between holders, a deposit to a bank account (add the account as a Holders row), or paying someone back.
+- **Budget**: `Category`, `Budget`, `Notes`. Seeded with `BUDGET_CATEGORIES` when the tab is empty.
+- **Money**: written only by `moneySummary_`, which `recompute_` runs after `balances_` and `onEdit` runs after any Expenses, Transfers, Budget or Holders edit. It is cleared and rewritten each time, protected with a warning. Blocks: cash on hand; money in (expected, confirmed, waiting, not received, still owed, households paid in full / partly / nothing); who holds what (received + transfers in - transfers out - spent = holds now; below zero reads "Owed back", settled by a Transfer to that person); money out by category (budget, paid, planned, left); needs a look (payments still Reported after `MONEY_STALE_DAYS` = 3 days, paid expenses with no receipt link). A name that is not on Holders is marked `(not on Holders tab)`; money with no name is the `Not filled in` row. All numbers come from `moneyData_`, which the money report uses too.
+- `setup` adds dropdowns (`dropdown_`, invalid values allowed with a warning) only where a column's first data cell has no validation yet: Payments `Status`, `Method` (`PAY_METHODS`, the same list as `#pMethod` in `index.html`), `Received by`; Expenses `Category`, `Status`, `Paid by`; Transfers `From`, `To`. A rule the committee set by hand is left alone.
+- Everything is cell edits and dropdowns, so it works from the Google Sheets phone app, where custom menus do not appear.
 
 ## Config tab keys
 
@@ -83,8 +92,9 @@ This file is for an AI agent or a committee volunteer who opens this repo cold. 
 | `mailFromName` | Display name on every email. | `Lewis Family Reunion 2027` |
 | `mailReplyTo` | Reply-To address. Blank means use `email`. | blank |
 | `notifyCommittee` | `Yes` sends `committeeEmail_` to `email` on each new registration. | `No` |
+| `treasurerEmail` | Gets the money report (`moneyReport`) every Monday morning. | blank: no report |
 
-The last four come from `CONFIG_DEFAULTS`. `config_()` fills them in when the row is missing or blank, and `ensureConfigKeys_()` (run by `setup`) appends the rows so the committee can see them.
+The last five come from `CONFIG_DEFAULTS`. `config_()` fills them in when the row is missing or blank, and `ensureConfigKeys_()` (run by `setup`) appends the rows so the committee can see them.
 
 ## Script Properties
 
@@ -153,10 +163,11 @@ Installed by `setup()` through `installTriggers_` and `ensureTrigger_` (one per 
 - `onPaymentsEdit`: on edit, payment receipt emails.
 - `drainMailQueue`: time-based, every hour.
 - `sendUpdates`: time-based, every day at hour 9 (`everyDays(1).atHour(9)`, in the script's time zone).
+- `moneyReport`: time-based, Mondays at hour 8 (`onWeekDay(MONDAY).atHour(8)`). Emails `moneyEmail_` to Config `treasurerEmail` through `sendMail_`, kind `money`, key `money:<date>` (so at most one a day); does nothing but log when `treasurerEmail` is blank. The email names households and amounts and carries no codes.
 
-The simple `onEdit(e)` (no install needed) stamps `Confirmed on` and `Confirmed by` on Payments and runs `recompute_` after Payments, Config or Registrations edits. It cannot call the network, which is why receipts need the installable trigger.
+The simple `onEdit(e)` (no install needed) stamps `Confirmed on` and `Confirmed by` on Payments, fills `Household ID` and `Received by` on hand-typed Payments rows (`fillPayments_`), runs `recompute_` after Payments, Config or Registrations edits, and `moneySummary_` after Expenses, Transfers, Budget or Holders edits. It cannot call the network, which is why receipts need the installable trigger.
 
-The **Reunion** menu (`onOpen`), in this order: "Refresh balances and status" (`recompute_`), "Send queued mail now" (`drainMailQueue`), "Send me a test email" (`testSendMail`), "Send approved updates now" (`sendUpdates`), "Draft update with AI" (`draftUpdate`), "Sync photo privacy" (`syncPhotoSharing`), "Run setup" (`setup`).
+The **Reunion** menu (`onOpen`), in this order: "Refresh balances and status" (`recompute_`), "Send queued mail now" (`drainMailQueue`), "Send me a test email" (`testSendMail`), "Send approved updates now" (`sendUpdates`), "Send the money report now" (`moneyReportNow`: the same email, sent even if one went out today), "Draft update with AI" (`draftUpdate`), "Sync photo privacy" (`syncPhotoSharing`), "Run setup" (`setup`).
 
 ## Claude API call
 

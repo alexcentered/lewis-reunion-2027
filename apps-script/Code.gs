@@ -14,10 +14,13 @@
  * ANTHROPIC_API_KEY is optional: the menu item "Draft update with AI" (draftUpdate) uses it to turn committee notes into a draft.
  * Committee Updates (section "committee updates"): the Updates tab holds one broadcast email per row; sendUpdates() (menu
  * "Send approved updates now" and a daily trigger) queues an Approved row to every registered household in its Audience.
- * Tabs this file writes to: Registrations, Payments, Entries, Config, MailQueue and Updates (both created by setup()).
+ * Money (section "money"): Holders, Expenses, Transfers and Budget are the treasurer's tabs; the Money tab is a summary the
+ * script rewrites after every edit (moneySummary_), and moneyReport() emails it to Config treasurerEmail every Monday.
+ * Tabs this file writes to: Registrations, Payments, Entries, Config, MailQueue, Updates and the money tabs (created by setup()).
  */
 
-const TAB = { reg: 'Registrations', pay: 'Payments', ent: 'Entries', cfg: 'Config', agenda: 'Agenda', branches: 'Branches', names: 'Names', people: 'People', treeNotes: 'Tree notes', mail: 'MailQueue', updates: 'Updates' };
+const TAB = { reg: 'Registrations', pay: 'Payments', ent: 'Entries', cfg: 'Config', agenda: 'Agenda', branches: 'Branches', names: 'Names', people: 'People', treeNotes: 'Tree notes', mail: 'MailQueue', updates: 'Updates',
+  holders: 'Holders', exp: 'Expenses', xfer: 'Transfers', budget: 'Budget', money: 'Money' };
 /* Mail layer constants. MAIL_RESERVE keeps a few MailApp sends back so the committee's own scripts never hit zero. */
 const MAIL_RESERVE = 5;
 const MAIL_HEADERS = ['Queued', 'To', 'Subject', 'Html', 'Text', 'Status', 'Attempts', 'Last error', 'Sent', 'Via', 'Key', 'Kind', 'Household ID'];
@@ -44,12 +47,29 @@ const CONFIG_DEFAULTS = {
   mailFrom: 'committee@lewisfamilyroots.com',   // Brevo sender address; must be a verified sender on the domain
   mailFromName: 'Lewis Family Reunion 2027',   // display name on every email (Brevo and MailApp)
   mailReplyTo: '',                              // blank = replies go to the Config "email" address
-  notifyCommittee: 'No'                         // Yes = email the committee (Config "email") on each new registration
+  notifyCommittee: 'No',                        // Yes = email the committee (Config "email") on each new registration
+  treasurerEmail: ''                            // gets the weekly money report (moneyReport); blank = no report
 };
 const CONFIG_NOTES = {
   mailFrom: 'Sender address for emails sent through Brevo', mailFromName: 'Sender name on every email',
-  mailReplyTo: 'Reply-to address; blank means the "email" row', notifyCommittee: 'Yes = email the committee about each new registration'
+  mailReplyTo: 'Reply-to address; blank means the "email" row', notifyCommittee: 'Yes = email the committee about each new registration',
+  treasurerEmail: 'Gets the money report every Monday morning; blank = no report'
 };
+/* Money tracking (section "money"). Payments land in different committee members' own accounts, so every dollar in or
+   out names the person holding it: Payments "Received by", Expenses "Paid by", Transfers "From" and "To". Names come
+   from the Holders tab. Methods on Holders ("Zelle, Cash App") let report_ fill "Received by" for a payment reported
+   online. The Money tab is written only by moneySummary_. */
+const HOLDER_HEADERS = ['Name', 'Methods', 'Email', 'Notes'];
+const EXPENSE_HEADERS = ['Date', 'What', 'Vendor', 'Category', 'Amount', 'Status', 'Paid by', 'Receipt', 'Note'];
+const TRANSFER_HEADERS = ['Date', 'From', 'To', 'Amount', 'Note'];
+const BUDGET_HEADERS = ['Category', 'Budget', 'Notes'];
+const BUDGET_CATEGORIES = ['Venue', 'Hotel', 'Food', 'Shirts', 'Printing', 'Decorations', 'Entertainment', 'Gifts', 'Fees and supplies', 'Other'];
+const PAY_RECEIVED_BY = 'Received by';                        // Payments column, appended by setup()
+const PAY_METHODS = ['Zelle', 'Cash App', 'Venmo', 'PayPal', 'Check', 'Cash to committee'];   // the same list as #pMethod in index.html
+const PAY_STATUSES = ['Reported', 'Confirmed', 'Not received'];
+const EXPENSE_STATUSES = ['Paid', 'Planned'];                 // a blank Status counts as Paid
+const MONEY_STALE_DAYS = 3;                                   // a payment still Reported after this many days is listed as needing a look
+const NO_MATCH_NOTE = 'Check: no single household matched';
 /* The reunion hotel, as printed in the registration email (regDetails_). The hotel card in index.html shows the same
    facts; change both together. Config roomBlock adds a note under them (a booking cutoff, for example). */
 const HOTEL = {
@@ -277,6 +297,7 @@ function report_(p, cfg) {
     'Household': (row.Preferred || row.First) + ' ' + row.Last, 'Reported': new Date(), 'Amount': amount,
     'Method': clean_(pm.method, 40), 'Date sent': clean_(pm.date, 10), 'Reference': clean_(pm.ref, 80), 'Note': clean_(pm.note, 300), 'Status': 'Reported'
   };
+  data[PAY_RECEIVED_BY] = holderFor_(data.Method, rowsIf_(TAB.holders));
   sh.appendRow(H.names.map(n => data[n] !== undefined ? data[n] : ''));
   sh.getRange(sh.getLastRow(), H.col['Date sent'] + 1).setNumberFormat('@').setValue(data['Date sent']);
   recompute_();
@@ -411,9 +432,12 @@ function onEdit(e) {
           }
         }
       }
+      fillPayments_(sh, Math.max(2, e.range.getRow()), e.range.getLastRow());
       recompute_();
     } else if (name === TAB.cfg || name === TAB.reg) {
       recompute_();
+    } else if ([TAB.exp, TAB.xfer, TAB.budget, TAB.holders].indexOf(name) >= 0) {
+      moneySummary_();
     }
   } catch (err) { console.warn(err); }
 }
@@ -424,6 +448,7 @@ function onOpen() {
     .addItem('Send queued mail now', 'drainMailQueue')
     .addItem('Send me a test email', 'testSendMail')
     .addItem('Send approved updates now', 'sendUpdates')
+    .addItem('Send the money report now', 'moneyReportNow')
     .addItem('Draft update with AI', 'draftUpdate')
     .addItem('Sync photo privacy', 'syncPhotoSharing')
     .addItem('Run setup', 'setup')
@@ -545,13 +570,14 @@ function ensureTrigger_(fn, build) {
   if (!have) build(ScriptApp.newTrigger(fn)).create();
 }
 
-/** Installable triggers: photo privacy and payment receipts on edit, the mail queue every hour, approved updates daily at 9. Safe to run again. */
+/** Installable triggers: photo privacy and payment receipts on edit, the mail queue every hour, approved updates daily at 9, the money report Mondays at 8. Safe to run again. */
 function installTriggers_() {
   const ss = SpreadsheetApp.getActive();
   ensureTrigger_('onEntriesEdit', b => b.forSpreadsheet(ss).onEdit());
   ensureTrigger_('onPaymentsEdit', b => b.forSpreadsheet(ss).onEdit());
   ensureTrigger_('drainMailQueue', b => b.timeBased().everyHours(1));
   ensureTrigger_('sendUpdates', b => b.timeBased().everyDays(1).atHour(9));
+  ensureTrigger_('moneyReport', b => b.timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(8));
 }
 
 /** Creates the tab with these headers if it is missing; otherwise appends any header not yet present (never reorders). */
@@ -577,8 +603,14 @@ function ensureConfigKeys_() {
   Object.keys(CONFIG_DEFAULTS).forEach(k => { if (have.indexOf(k) < 0) sh.appendRow([k, CONFIG_DEFAULTS[k], CONFIG_NOTES[k] || '']); });
 }
 
-/** Recalculates Due, Confirmed, Awaiting, Balance and Status for every household. */
+/** Recalculates Due, Confirmed, Awaiting, Balance and Status for every household, then rewrites the Money tab. */
 function recompute_() {
+  balances_();
+  // The Money tab is a convenience: a problem there must never fail a registration or a payment report.
+  try { moneySummary_(); } catch (err) { console.warn('Money summary failed: ' + (err && err.message)); }
+}
+
+function balances_() {
   const cfg = config_(), sh = sheet_(TAB.reg), H = headers_(sh), last = sh.getLastRow();
   if (last < 2) return;
   const totals = {};
@@ -609,17 +641,19 @@ function recompute_() {
 }
 
 /**
- * Run from the editor (safe to run again): creates the MailQueue and Updates tabs and the mail Config rows, adds the
- * "Receipt sent" column to Payments and "Mail opt-out" to Registrations, creates the private photo folder if needed and
+ * Run from the editor (safe to run again): creates the MailQueue and Updates tabs, the money tabs (Holders, Expenses,
+ * Transfers, Budget, Money) with their dropdowns, and the mail Config rows, adds the "Receipt sent" and "Received by"
+ * columns to Payments and "Mail opt-out" to Registrations, creates the private photo folder if needed and
  * keeps it private, installs the triggers, syncs photo sharing with the Visible boxes, and asks Google for permissions.
  */
 function setup() {
   ensureTab_(TAB.mail, MAIL_HEADERS);
   sheet_(TAB.pay);                              // a clear "Missing tab" error beats creating a one-column Payments tab
-  ensureTab_(TAB.pay, ['Receipt sent']);
+  ensureTab_(TAB.pay, ['Receipt sent', PAY_RECEIVED_BY]);
   sheet_(TAB.reg);
   ensureTab_(TAB.reg, [REG_OPTOUT]);            // appends the column; existing columns keep their places
   updatesSheet_();
+  moneyTabs_();
   ensureConfigKeys_();
   const cfg = config_();
   const folder = photoFolder_(cfg);
@@ -636,6 +670,263 @@ function setup() {
   console.log('Mail: from ' + cfg.mailFromName + ' <' + cfg.mailFrom + '>, reply-to ' + (cfg.mailReplyTo || cfg.email || '(none)') + '. ' +
     (hasKey ? 'BREVO_API_KEY is set, so Brevo is tried first.' : 'BREVO_API_KEY is not set (Project Settings → Script Properties), so only MailApp is used.') +
     ' MailApp sends left today: ' + MailApp.getRemainingDailyQuota() + '.');
+  console.log('Money: fill in the Holders tab (who receives money, and by which methods) and Config treasurerEmail (the Monday money report' +
+    (String(cfg.treasurerEmail || '').trim() ? ' goes to ' + cfg.treasurerEmail : ' is off until it is set') + ').');
+}
+
+/* ---------------- money ----------------
+   The treasurer's tabs: Holders (who holds reunion money), Expenses (money out), Transfers (money handed between
+   holders, or deposited), Budget (a target per category). Payments is money in. Everything here is cell edits and
+   dropdowns, so it works from the Google Sheets phone app, where the Reunion menu does not show. The Money tab is a
+   summary written by moneySummary_ after every edit; moneyReport() emails the same numbers to Config treasurerEmail. */
+
+/** Creates the money tabs if missing, seeds Budget categories into an empty Budget tab, and adds dropdowns where a column has none. */
+function moneyTabs_() {
+  const holders = ensureTab_(TAB.holders, HOLDER_HEADERS), exp = ensureTab_(TAB.exp, EXPENSE_HEADERS);
+  const xfer = ensureTab_(TAB.xfer, TRANSFER_HEADERS), budget = ensureTab_(TAB.budget, BUDGET_HEADERS);
+  if (budget.getLastRow() < 2) budget.getRange(2, 1, BUDGET_CATEGORIES.length, 1).setValues(BUDGET_CATEGORIES.map(c => [c]));
+  if (!SpreadsheetApp.getActive().getSheetByName(TAB.money)) {
+    const m = SpreadsheetApp.getActive().insertSheet(TAB.money);
+    try { m.protect().setDescription('Written by the script').setWarningOnly(true); } catch (err) { console.warn('Money tab protection: ' + err.message); }
+    try { m.setColumnWidth(1, 320); } catch (err) {}
+  }
+  const names = colRange_(holders, 'Name'), cats = colRange_(budget, 'Category'), pay = sheet_(TAB.pay);
+  dropdown_(pay, 'Status', PAY_STATUSES);
+  dropdown_(pay, 'Method', PAY_METHODS);
+  dropdown_(pay, PAY_RECEIVED_BY, names);
+  dropdown_(exp, 'Category', cats);
+  dropdown_(exp, 'Status', EXPENSE_STATUSES);
+  dropdown_(exp, 'Paid by', names);
+  dropdown_(xfer, 'From', names);
+  dropdown_(xfer, 'To', names);
+}
+
+/** Rows 2 to the bottom of one column, found by header; null when the header is missing. */
+function colRange_(sh, header) {
+  const c = headers_(sh).col[header];
+  return c === undefined ? null : sh.getRange(2, c + 1, Math.max(1, sh.getMaxRows() - 1), 1);
+}
+
+/** Adds a dropdown (a list, or the values of a range) to a column, unless its first data cell already has validation.
+    Other values are allowed with a warning, so rows typed before the dropdown existed stay as they are. */
+function dropdown_(sh, header, source) {
+  const rg = colRange_(sh, header);
+  if (!rg || !source || rg.getCell(1, 1).getDataValidation()) return;
+  const b = SpreadsheetApp.newDataValidation().setAllowInvalid(true);
+  if (Array.isArray(source)) b.requireValueInList(source, true); else b.requireValueInRange(source, true);
+  rg.setDataValidation(b.build());
+}
+
+/** Rows of a tab as objects, or [] when the tab does not exist yet (setup has not run). */
+function rowsIf_(name) {
+  return SpreadsheetApp.getActive().getSheetByName(name) ? rows_(name) : [];
+}
+
+function nameKey_(s) { return str_(s).trim().replace(/\s+/g, ' ').toLowerCase(); }
+
+/** The one holder whose Methods list names this method (case and spaces ignored), or '' when none or several do. */
+function holderFor_(method, holders) {
+  const m = nameKey_(method);
+  if (!m) return '';
+  const hits = holders.filter(h => str_(h.Name).trim() && String(h.Methods || '').split(',').some(x => nameKey_(x) === m));
+  return hits.length === 1 ? str_(hits[0].Name).trim() : '';
+}
+
+/**
+ * Called by onEdit for Payments rows first..last. A row the treasurer typed by hand (cash, a check) gets its
+ * Household ID from the Household cell when exactly one registration matches it by email or by name
+ * ("Preferred or First" + Last, or First + Last); otherwise the Note says to check it. A blank "Received by" is
+ * filled from the Holders methods. Simple trigger: no network, so it also works from the phone app.
+ */
+function fillPayments_(sh, first, last) {
+  if (last < first) return;
+  const H = headers_(sh);
+  if (H.col['Household ID'] === undefined || H.col.Household === undefined) return;
+  let regs = null, holders = null;
+  for (let r = first; r <= last; r++) {
+    const row = rowAt_(sh, H, r), who = nameKey_(row.Household);
+    if (!str_(row['Household ID']).trim() && who) {
+      regs = regs || rowsIf_(TAB.reg);
+      const hits = regs.filter(x => str_(x['Household ID']).trim() && (nameKey_(x.Email) === who ||
+        nameKey_((x.Preferred || x.First) + ' ' + x.Last) === who || nameKey_(x.First + ' ' + x.Last) === who));
+      if (hits.length === 1) sh.getRange(r, H.col['Household ID'] + 1).setValue(hits[0]['Household ID']);
+      else if (H.col.Note !== undefined && String(row.Note || '').indexOf(NO_MATCH_NOTE) < 0) {
+        sh.getRange(r, H.col.Note + 1).setValue((str_(row.Note).trim() ? str_(row.Note).trim() + ' · ' : '') + NO_MATCH_NOTE);
+      }
+    }
+    if (H.col[PAY_RECEIVED_BY] !== undefined && !str_(row[PAY_RECEIVED_BY]).trim() && str_(row.Method).trim()) {
+      holders = holders || rowsIf_(TAB.holders);
+      const h = holderFor_(row.Method, holders);
+      if (h) sh.getRange(r, H.col[PAY_RECEIVED_BY] + 1).setValue(h);
+    }
+  }
+}
+
+function cents_(n) { return Math.round((Number(n) || 0) * 100) / 100; }
+function dayOf_(v) {
+  if (v instanceof Date) return v;
+  const s = str_(v).trim().slice(0, 10);
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(s + 'T12:00:00') : null;
+  return d && !isNaN(d) ? d : null;
+}
+
+/**
+ * Every number the Money tab and the money report show, from the tabs as they stand. Payments count by Status:
+ * Confirmed is money in hand; Reported (or blank) is waiting for the treasurer; Not received is neither. Expenses
+ * count as Paid unless their Status is Planned. A holder's "holds now" = confirmed payments they received +
+ * transfers in - transfers out - expenses they paid; below zero, the reunion owes them that much (a Transfer to
+ * them settles it). Cash on hand = confirmed in - paid out, which is also the sum of "holds now".
+ */
+function moneyData_(cfg, now) {
+  now = now || new Date();
+  const amt = x => num_(x.Amount) || 0, sum = (a, f) => cents_(a.reduce((s, x) => s + f(x), 0)), st = x => str_(x.Status).trim();
+  const regs = rowsIf_(TAB.reg).filter(r => str_(r['Household ID']).trim());
+  const pays = rowsIf_(TAB.pay).filter(p => num_(p.Amount) !== null);
+  const exps = rowsIf_(TAB.exp).filter(x => num_(x.Amount) !== null);
+  const xfers = rowsIf_(TAB.xfer).filter(x => num_(x.Amount) !== null);
+  const confirmed = pays.filter(p => st(p) === 'Confirmed'), waiting = pays.filter(p => st(p) === 'Reported' || !st(p));
+  const missing = pays.filter(p => st(p) === 'Not received');
+  const paid = exps.filter(x => !/^planned$/i.test(st(x))), planned = exps.filter(x => /^planned$/i.test(st(x)));
+  const fees = num_(cfg.feeAdult) !== null && num_(cfg.feeChild) !== null;
+  const full = regs.filter(r => str_(r.Status) === 'Paid in full').length;
+  const partly = regs.filter(r => (num_(r.Confirmed) || 0) > 0 && str_(r.Status) !== 'Paid in full').length;
+  const moneyIn = {
+    households: regs.length, paidInFull: full, partly: partly, nothing: regs.length - full - partly,
+    expected: fees ? sum(regs, r => num_(r.Due) || 0) : null, owed: fees ? sum(regs, r => num_(r.Balance) || 0) : null,
+    confirmed: sum(confirmed, amt), confirmedCount: confirmed.length,
+    waiting: sum(waiting, amt), waitingCount: waiting.length, missing: sum(missing, amt), missingCount: missing.length
+  };
+
+  const cats = [], byCat = {};
+  const cat = name => {
+    const k = nameKey_(name);
+    if (!byCat[k]) { byCat[k] = { name: k ? str_(name).trim() : 'No category', budget: null, paid: 0, planned: 0, listed: false }; cats.push(byCat[k]); }
+    return byCat[k];
+  };
+  rowsIf_(TAB.budget).filter(b => str_(b.Category).trim()).forEach(b => {
+    const c = cat(b.Category); c.listed = true;
+    if (num_(b.Budget) !== null) c.budget = cents_((c.budget || 0) + num_(b.Budget));
+  });
+  paid.forEach(x => { const c = cat(x.Category); c.paid = cents_(c.paid + amt(x)); });
+  planned.forEach(x => { const c = cat(x.Category); c.planned = cents_(c.planned + amt(x)); });
+  cats.forEach(c => { c.left = c.budget === null ? null : cents_(c.budget - c.paid - c.planned); });
+  const budgets = cats.filter(c => c.budget !== null);
+  const moneyOut = {
+    categories: cats.filter(c => c.listed || c.paid || c.planned),
+    budget: budgets.length ? sum(budgets, c => c.budget) : null, paid: sum(paid, amt), planned: sum(planned, amt)
+  };
+  moneyOut.left = moneyOut.budget === null ? null : cents_(moneyOut.budget - moneyOut.paid - moneyOut.planned);
+
+  const people = [], byName = {};
+  const person = name => {
+    const k = nameKey_(name);
+    if (!byName[k]) { byName[k] = { name: k ? str_(name).trim() : 'Not filled in', blank: !k, listed: false, received: 0, xin: 0, xout: 0, spent: 0 }; people.push(byName[k]); }
+    return byName[k];
+  };
+  rowsIf_(TAB.holders).filter(h => str_(h.Name).trim()).forEach(h => { person(h.Name).listed = true; });
+  confirmed.forEach(p => { const x = person(p[PAY_RECEIVED_BY]); x.received = cents_(x.received + amt(p)); });
+  paid.forEach(e => { const x = person(e['Paid by']); x.spent = cents_(x.spent + amt(e)); });
+  xfers.forEach(t => { const a = person(t.From), b = person(t.To); a.xout = cents_(a.xout + amt(t)); b.xin = cents_(b.xin + amt(t)); });
+  people.forEach(x => { x.holds = cents_(x.received + x.xin - x.xout - x.spent); });
+  const holders = people.filter(x => !x.blank).concat(people.filter(x => x.blank && (x.received || x.xin || x.xout || x.spent)));
+
+  const stale = waiting.filter(p => {
+    const d = dayOf_(p.Reported) || dayOf_(p['Date sent']);
+    return d && (now - d) >= MONEY_STALE_DAYS * 864e5;
+  });
+  return {
+    moneyIn: moneyIn, moneyOut: moneyOut, holders: holders, cash: cents_(moneyIn.confirmed - moneyOut.paid),
+    stale: stale, noReceipt: paid.filter(x => !str_(x.Receipt).trim()), unassigned: people.some(x => x.blank && (x.received || x.xin || x.xout || x.spent))
+  };
+}
+
+/** "Owed back $40" for a negative holding, else "$120". */
+function holds_(n) { return n < 0 ? 'Owed back ' + money_(-n) : money_(n); }
+function payWho_(p) { return str_(p.Household).trim() || str_(p['Household ID']).trim() || 'Unknown household'; }
+
+/** Rewrites the Money tab from moneyData_. Does nothing until setup() has created the tab. */
+function moneySummary_() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(TAB.money);
+  if (!sh) return;
+  const cfg = config_(), d = moneyData_(cfg), i = d.moneyIn, o = d.moneyOut, W = 6, rows = [], titles = [];
+  const add = (r, title) => { if (title) titles.push(rows.length + 1); rows.push(r); };
+  add(['Money summary. The script rewrites this tab after every edit. Change Payments, Expenses, Transfers, Budget or Holders instead.']);
+  add(['Updated', Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'America/Los_Angeles', 'yyyy-MM-dd HH:mm')]);
+  add([]);
+  add(['CASH ON HAND', money_(d.cash)], true);
+  add(['Confirmed payments minus paid expenses. It equals the "Holds now" total below.']);
+  add([]);
+  add(['MONEY IN', 'Dollars', 'Count'], true);
+  add(['Expected from registered households', i.expected === null ? 'Fees not set' : money_(i.expected), i.households]);
+  add(['Confirmed', money_(i.confirmed), i.confirmedCount]);
+  add(['Reported, waiting for confirmation', money_(i.waiting), i.waitingCount]);
+  add(['Marked Not received', money_(i.missing), i.missingCount]);
+  add(['Still owed by households', i.owed === null ? 'Fees not set' : money_(i.owed), '']);
+  add(['Households paid in full', '', i.paidInFull]);
+  add(['Households partly paid', '', i.partly]);
+  add(['Households with nothing confirmed yet', '', i.nothing]);
+  add([]);
+  add(['WHO HOLDS WHAT', 'Received', 'Transfers in', 'Transfers out', 'Spent', 'Holds now'], true);
+  d.holders.forEach(x => add([x.name + (x.blank ? ' (fill in Received by, Paid by, From or To)' : x.listed ? '' : ' (not on Holders tab)'),
+    money_(x.received), money_(x.xin), money_(x.xout), money_(x.spent), holds_(x.holds)]));
+  if (!d.holders.length) add(['Nobody yet. Add each person who receives or spends reunion money to the Holders tab.']);
+  add(['Total', money_(d.holders.reduce((s, x) => s + x.received, 0)), '', '', money_(d.holders.reduce((s, x) => s + x.spent, 0)), money_(d.cash)]);
+  add([]);
+  add(['MONEY OUT', 'Budget', 'Paid', 'Planned', 'Left'], true);
+  o.categories.forEach(c => add([c.name + (c.listed ? '' : ' (not on Budget tab)'), c.budget === null ? '' : money_(c.budget), money_(c.paid), money_(c.planned), c.left === null ? '' : money_(c.left)]));
+  add(['Total', o.budget === null ? '' : money_(o.budget), money_(o.paid), money_(o.planned), o.left === null ? '' : money_(o.left)]);
+  add([]);
+  add(['NEEDS A LOOK', 'Amount', 'Method', 'Received by', 'Date sent'], true);
+  d.stale.forEach(p => add(['Waiting ' + MONEY_STALE_DAYS + '+ days: ' + payWho_(p), money_(p.Amount), str_(p.Method), str_(p[PAY_RECEIVED_BY]), iso_(p['Date sent'])]));
+  d.noReceipt.forEach(x => add(['No receipt link: ' + (str_(x.What).trim() || str_(x.Vendor).trim() || 'expense'), money_(x.Amount), '', str_(x['Paid by']), iso_(x.Date)]));
+  if (!d.stale.length && !d.noReceipt.length) add(['Nothing. Every payment older than ' + MONEY_STALE_DAYS + ' days is settled and every paid expense has a receipt link.']);
+  sh.clear();
+  sh.getRange(1, 1, rows.length, W).setValues(rows.map(r => r.concat(Array(W - r.length).fill('')).slice(0, W)));
+  titles.forEach(r => sh.getRange(r, 1, 1, W).setFontWeight('bold'));
+}
+
+/** Weekly trigger (Mondays at 8): emails the money report to Config treasurerEmail. Once a day at most. */
+function moneyReport() { return moneyReport_(false); }
+/** Menu "Send the money report now": the same email, sent even if one already went out today. */
+function moneyReportNow() { return moneyReport_(true); }
+
+function moneyReport_(now) {
+  const cfg = config_(), to = str_(cfg.treasurerEmail).trim();
+  if (!to) { alert_('The money report is off: put the treasurer\'s email address in the Config row treasurerEmail.'); return { ok: false, error: 'no treasurerEmail' }; }
+  try { recompute_(); } catch (err) { console.warn('recompute failed', err); }
+  const msg = moneyEmail_(moneyData_(cfg), cfg, SpreadsheetApp.getActive().getUrl());
+  const day = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'America/Los_Angeles', 'yyyy-MM-dd');
+  msg.to = to; msg.key = 'money:' + day + (now ? ':' + Utilities.getUuid() : '');
+  const res = sendMail_(msg, cfg);
+  console.log('Money report to ' + to + ': ' + (res.ok ? 'sent via ' + res.via : 'not sent') + (res.error ? ' (' + res.error + ')' : ''));
+  if (now) alert_(res.ok ? 'The money report is on its way to ' + to + '.' : 'The money report did not go out: ' + res.error);
+  return res;
+}
+
+/** The money report: the Money tab in short form. Names households and amounts, so it goes to the treasurer only. */
+function moneyEmail_(d, cfg, sheetUrl) {
+  const i = d.moneyIn, o = d.moneyOut, e = htmlEsc_, li = a => '<ul>' + a.map(x => '<li>' + x + '</li>').join('') + '</ul>';
+  const attention = d.stale.map(p => e('Waiting ' + MONEY_STALE_DAYS + '+ days: ' + payWho_(p) + ', ' + money_(p.Amount) + ' by ' + (str_(p.Method) || 'unknown method') +
+      (str_(p[PAY_RECEIVED_BY]).trim() ? ' to ' + str_(p[PAY_RECEIVED_BY]).trim() : '') + (iso_(p['Date sent']) ? ', sent ' + iso_(p['Date sent']) : '')))
+    .concat(d.noReceipt.map(x => e('No receipt link: ' + (str_(x.What).trim() || str_(x.Vendor).trim() || 'expense') + ', ' + money_(x.Amount))));
+  if (d.unassigned) attention.push('Some money has no name in Received by, Paid by, From or To. It shows as "Not filled in" on the Money tab.');
+  const html = mailWrap_(
+    '<p>Here is where the reunion money stands.</p>' +
+    '<p><b>Cash on hand: ' + e(money_(d.cash)) + '</b><br>Confirmed payments minus paid expenses.</p>' +
+    '<p><b>Money in</b></p>' + li([
+      'Confirmed: ' + e(money_(i.confirmed)) + ' (' + i.confirmedCount + ' payments)',
+      'Waiting for confirmation: ' + e(money_(i.waiting)) + ' (' + i.waitingCount + ')',
+      i.owed === null ? 'Still owed: fees not set yet' : 'Still owed by households: ' + e(money_(i.owed)) + ' of ' + e(money_(i.expected)) + ' expected',
+      i.households + ' households: ' + i.paidInFull + ' paid in full, ' + i.partly + ' partly paid, ' + i.nothing + ' with nothing confirmed'
+    ]) +
+    '<p><b>Who holds what</b></p>' + (d.holders.length ? li(d.holders.map(x => e(x.name + ': ' + holds_(x.holds)))) : '<p>Nobody is on the Holders tab yet.</p>') +
+    '<p><b>Money out</b></p>' + li([
+      'Paid: ' + e(money_(o.paid)), 'Planned: ' + e(money_(o.planned)),
+      o.budget === null ? 'No budget amounts set yet' : 'Budget left: ' + e(money_(o.left)) + ' of ' + e(money_(o.budget))
+    ]) +
+    '<p><b>Needs a look</b></p>' + (attention.length ? li(attention) : '<p>Nothing this week.</p>') +
+    (sheetUrl ? '<p>Details are on the Money tab: <a href="' + e(sheetUrl) + '">open the Sheet</a>.</p>' : ''), cfg);
+  return { to: '', toName: 'Reunion treasurer', subject: 'Reunion money report: ' + money_(d.cash) + ' on hand', html: html, text: htmlToText_(html), key: '', kind: 'money', householdId: '' };
 }
 
 /* ---------------- helpers ---------------- */
