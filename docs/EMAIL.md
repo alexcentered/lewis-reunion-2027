@@ -159,11 +159,12 @@ A committee update is one email to every registered household (or to a slice of 
 
 1. **Open the Updates tab** and start a new row. Leave `ID`, `Created`, `Sent at`, `Sent`, `Failed` and `Skipped` blank; the script fills them.
 2. **Write the Subject.** This is the email subject line, for example `Fees are set: $120 per adult`.
-3. **Write the body.** Two ways:
+3. **Write the body.** Three ways:
+   - Pick a **Template** (the last column). Its Subject and Body appear in the row's blank Subject and Draft cells, ready to change. Templates live on the **Templates** tab; see "Templates and fields" below.
    - Type the email yourself into `Draft`. Plain paragraphs separated by a blank line are fine; simple HTML (`<p>`, `<br>`, `<b>`, `<a>`) also works. Start with a greeting line such as `Hi,`, `Hello,`, `Hi everyone,` or `Dear family,` and the script will put each household's name in (`Hi Denise,`). If you leave the greeting out, the script adds one. Do not add the sign-off line or your name at the bottom; the email frame adds "Somehow, some way, your foundation is Lewis — and you belong here." and the committee address itself. If you type the sign-off anyway, it is removed so it does not appear twice.
    - Or put bullet points in `Notes` and choose **Reunion, Draft update with AI** from the Sheet menu. The script sends your notes to Claude and writes the result into `Draft`. Read it. Change anything you like. It is a draft, not the email. (Setup for this is below.)
 4. **Set the Audience.** One word from the table below, or a Branch name exactly as it appears on the Registrations tab.
-5. **Test it first.** Set Audience to `test`, tick **Approved**, and choose **Reunion, Send approved updates now**. Within a minute the email arrives at the Config `email` address with the greeting `Hi committee,`. Read it on a phone. If you want to change it, make a new row (a sent row is finished).
+5. **Test it first.** Quickest: click the row and choose **Reunion, Email me this draft**; it comes to you filled in for a made-up household (Cousin Lewis, `H-SAMPLE1`) and nothing is marked sent. Or set Audience to `test`, tick **Approved**, and choose **Reunion, Send approved updates now**. Within a minute the email arrives at the Config `email` address with the greeting `Hi committee,`. Read it on a phone. If you want to change it, make a new row (a sent row is finished).
 6. **Send it.** Make a new row, or copy the tested one, with the real Audience. Tick **Approved**. Then either wait for the daily run at 9 in the morning (the script's time zone, normally Pacific) or choose **Reunion, Send approved updates now**.
 7. **Check the counts.** `Sent at` gets the time, `Sent` the number of households queued, `Skipped` the number left out, and `Failed` any problem. Then look at the **MailQueue** tab: one row per household, Kind `update`. Rows go from `Queued` to `Sent` as the hourly drain works through them.
 
@@ -174,6 +175,26 @@ A committee update is one email to every registered household (or to a slice of 
 | `U-3F9A12C0` | 2027-02-01 | Fees are set and the hotel block is open | fees $120 adult $60 child, deadline May 1, hotel block code LEWIS27 | Hi, The committee has set the fees: ... (two or three paragraphs) | ticked | all | 2027-02-02 09:00 | 184 | 0 | 3 |
 
 Read it as: 184 households were queued, 3 were left out (opted out or no email), nothing failed. `ID` and `Created` were blank when the row was written; the script filled them.
+
+### Templates and fields
+
+The **Templates** tab holds emails the committee reuses: `Name`, `Subject`, `Body`, `Notes`. Pick one in the **Template** column of an Updates row and its words fill the blank Subject and Draft. Change them there for this one email; the template stays as it was.
+
+A Subject or Body can use these fields. Each household gets its own values:
+
+| Field | Becomes |
+|---|---|
+| `{{first name}}` | Preferred name, or first name |
+| `{{last name}}` | Last name |
+| `{{household id}}` | For example `H-1A2B3C4D` |
+| `{{total due}}`, `{{paid so far}}`, `{{balance}}` | Dollar amounts; "to be announced" until fees are set |
+| `{{deadline}}` | Config `deadline` as "April 30, 2027" |
+| `{{ways to pay}}` | "Ways to pay: Zelle ..., Cash App ...." from Config |
+| `{{website}}`, `{{my registration}}` | The site, and its My Registration page (no codes) |
+
+A misspelt field (`{{firstname}}`) is not sent: the row's **Failed** names it and lists the fields that work, and **Email me this draft** says the same before anything goes out.
+
+Two rows word the registration email itself: **Registration: thank you** (its first line) and **Registration: what happens next** (extra lines under "What happens next", one per line). The household ID, the codes, the link, the money lines and the hotel are fixed and cannot be changed there. To see a change, click the row and choose **Email me this draft**.
 
 ### Audience values
 
