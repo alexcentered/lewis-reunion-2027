@@ -82,7 +82,7 @@ Sent once when a Payments row is set to `Confirmed` or `Not received`. Subject: 
 Sent to Config `email` on each new registration when `notifyCommittee` is `Yes`. Subject: `New registration: <Preferred or First> <Last>`. Lists household and ID, branch, adults, children, days, city and state, email, phone.
 
 **Committee update** (`updateEmail_`, kind `update`)
-One per household when an Updates row is approved and sent. Subject: the row's `Subject` (or `An update from the Lewis Family Reunion committee` if blank). Contains: `Hi <Preferred or First>,` (or `Hi cousin,`), the `Draft` as paragraphs, and the footer "You are getting this because your household is registered for the Lewis Family Reunion. To stop these updates, reply with the word STOP." No link and no codes. Always queued, never sent directly. Key `update:<ID>:<email>`. See "Committee Updates: how to send one".
+One per household when an Updates row is approved and sent. Subject: the row's `Subject` (or `An update from the Lewis Family Reunion committee` if blank). Contains: `Hi <Preferred or First>,` (or `Hi cousin,`), the `Draft` as paragraphs, and the footer "You are getting this because your household is registered for the Lewis Family Reunion. To stop these updates, reply with the word STOP." A Contacts row (someone not registered) gets "You are getting this because the reunion committee has you on the Lewis family contact list. To stop these updates, reply with the word STOP." instead, and MailQueue shows `CONTACT` as its Household ID. No registration code ever; the family code only if the Draft uses `{{family link}}`. Always queued, never sent directly. Key `update:<ID>:<email>`. See "Committee Updates: how to send one".
 
 **Money report** (`moneyEmail_`, kind `money`)
 To Config `treasurerEmail` only, Mondays at 8 (`moneyReport`) or from the menu **Reunion → Send the money report now** (`moneyReportNow`). Subject: `Reunion money report: $N on hand`. Contains the Money tab in short form: cash on hand; money in; who holds what; money out against the budget; payments still waiting for confirmation after 3 days and paid expenses with no receipt link; a link to the Sheet. It names households and amounts, so it never goes to the family, and it carries no codes. Key `money:<date>` for the weekly run (one a day); the menu run adds a unique suffix so it always sends.
@@ -191,6 +191,11 @@ A Subject or Body can use these fields. Each household gets its own values:
 | `{{deadline}}` | Config `deadline` as "April 30, 2027" |
 | `{{ways to pay}}` | "Ways to pay: Zelle ..., Cash App ...." from Config |
 | `{{website}}`, `{{my registration}}` | The site, and its My Registration page (no codes) |
+| `{{family link}}` | The family link with the Family code in it (`https://lewisfamilyroots.com?c=...`), so the reader can open Register. Use it only in emails meant for the family. |
+
+With Audience `everyone`, `contacts` or `unregistered`, the fields about one household (`{{household id}}`, `{{total due}}`, `{{paid so far}}`, `{{balance}}`, `{{my registration}}`) are refused, because people on the Contacts tab have not registered. **Failed** says which field to take out.
+
+The **Welcome from the committee** template is ready for the first email to the whole family: dates, the weekend at a glance, the family link, the hotel group code, and that fees are coming. `setup` adds it once; change the words freely.
 
 A misspelt field (`{{firstname}}`) is not sent: the row's **Failed** names it and lists the fields that work, and **Email me this draft** says the same before anything goes out.
 
@@ -205,8 +210,13 @@ Two rows word the registration email itself: **Registration: thank you** (its fi
 | `paid` | Households whose `Status` is `Paid in full`. |
 | `test` | Only the Config `email` address. No household is touched. Use this to proof an email. |
 | a Branch name | Households whose `Branch` matches, for example `Melvin`. Capital letters do not matter. Spelling does. |
+| `everyone` | Every registered household, plus everyone on the **Contacts** tab. Someone on both gets one copy, as a registered household. |
+| `contacts` | Everyone on the **Contacts** tab, registered or not. |
+| `unregistered` | People on the **Contacts** tab whose email is not on Registrations yet. Good for "please register" reminders. |
 
-Case does not matter for the keywords either. Whatever the audience, a household with `Mail opt-out` = `Yes` or a blank email is skipped, and two households sharing one email address get one copy.
+Case does not matter for the keywords either. Whatever the audience, a blank email is skipped, an address with `Mail opt-out` = `Yes` on Registrations or on Contacts is skipped, and two rows sharing one email address get one copy.
+
+The **Contacts** tab (`First`, `Last`, `Email`, `Branch`, `Notes`, `Mail opt-out`) is for relatives the committee wants to reach before they register. Type or paste them in; `setup` creates the tab. `Branch` there is a note for you: Branch audiences match Registrations only.
 
 ### What Sent, Failed and Skipped mean
 
@@ -221,8 +231,10 @@ Delivery problems after queueing (Brevo down, quota used) do not show up in `Fai
 
 The footer of every update says: "You are getting this because your household is registered for the Lewis Family Reunion. To stop these updates, reply with the word STOP." Replies land in `lewisfamilyreunion2027@gmail.com`.
 
+People on the Contacts tab see a different first sentence ("...the reunion committee has you on the Lewis family contact list.") and the same STOP line.
+
 When someone replies STOP:
-1. Find their row on the **Registrations** tab (search by email).
+1. Find their row on the **Registrations** tab, or the **Contacts** tab if they have not registered (search by email). Either one stops them everywhere.
 2. Type `Yes` in the `Mail opt-out` column (added by `setup`; it sits after the other columns).
 3. Reply to them if you like. Nothing else is needed.
 
