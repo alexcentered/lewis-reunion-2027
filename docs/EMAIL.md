@@ -197,6 +197,13 @@ With Audience `everyone`, `contacts` or `unregistered`, the fields about one hou
 
 The **Welcome from the committee** template is ready for the first email to the whole family: dates, the weekend at a glance, the family link, the hotel group code, and that fees are coming. `setup` adds it once; change the words freely.
 
+**HTML emails.** A Draft or template Body that contains `<p>` or `<br>` is sent exactly as written, so a template can be a designed email. Rules that keep it working:
+- Start with `<p>Hi,</p>`: the script swaps it for `Hi <first name>,`. Anything else first gets a greeting paragraph added above it.
+- Inline styles only (`style="..."`), tables for layout, no images, no `<style>` block. The script wraps the email in its usual frame (Georgia, the sign-off, the committee address) and adds the STOP footer.
+- Write characters, not entity names: `·`, `–` and `’` rather than `&middot;`, `&ndash;` and `&rsquo;`. The plain-text copy every email carries only decodes `&amp;`, `&lt;`, `&gt;`, `&quot;` and `&nbsp;`.
+- A field inside a tag gets the bare value, so `<a href="{{family link}}">Register now</a>` makes a working button. Written on its own, a link field becomes a link showing the address. Buttons lose their address in the plain-text copy, so keep a "copy this link" line with the field on its own.
+- [`docs/templates/welcome.html`](templates/welcome.html) is the designed welcome: an invitation card with a Register button, the weekend at a glance, the hotel, what to do now, and a fallback link. Paste the whole file into the Body of a Templates row (for example "Welcome from the committee (HTML)"), with the Subject `Welcome to the Lewis Family Reunion 2027`. Proof it with **Email me this draft** or Audience `test` before sending.
+
 A misspelt field (`{{firstname}}`) is not sent: the row's **Failed** names it and lists the fields that work, and **Email me this draft** says the same before anything goes out.
 
 Two rows word the registration email itself: **Registration: thank you** (its first line) and **Registration: what happens next** (extra lines under "What happens next", one per line). The household ID, the codes, the link, the money lines and the hotel are fixed and cannot be changed there. To see a change, click the row and choose **Email me this draft**.
