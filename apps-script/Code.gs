@@ -821,13 +821,14 @@ function mergeText_(text, row, cfg) {
   return String(text == null ? '' : text).replace(MERGE_RE, (m, k) => { const f = MERGE_FIELDS[nameKey_(k)]; return f ? String(f(row, cfg)) : m; });
 }
 
-/** The same for HTML that is already escaped: values are escaped, and the link fields become links. */
+/** The same for HTML that is already escaped: values are escaped, and the link fields become links. A field written inside a
+    tag, such as <a href="{{family link}}"> in an HTML template, gets the bare escaped value so the committee's own button works. */
 function mergeHtml_(html, row, cfg) {
-  return String(html == null ? '' : html).replace(MERGE_RE, (m, k) => {
+  return String(html == null ? '' : html).replace(MERGE_RE, (m, k, at, all) => {
     const key = nameKey_(k), f = MERGE_FIELDS[key];
     if (!f) return m;
-    const v = String(f(row, cfg));
-    return MERGE_LINKS.indexOf(key) >= 0 && v ? '<a href="' + htmlEsc_(v) + '">' + htmlEsc_(v) + '</a>' : htmlEsc_(v);
+    const v = String(f(row, cfg)), inTag = all.lastIndexOf('<', at) > all.lastIndexOf('>', at);
+    return MERGE_LINKS.indexOf(key) >= 0 && v && !inTag ? '<a href="' + htmlEsc_(v) + '">' + htmlEsc_(v) + '</a>' : htmlEsc_(v);
   });
 }
 
