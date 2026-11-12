@@ -179,6 +179,14 @@ Checks for a committee update to every household. Do them after `setup` has been
 - [ ] Clear **Mail opt-out** on your test household. New row, same Branch, **Approved** ticked, run again. **Sent** goes up by one and the email arrives, opening with that household's first name.
 - [ ] Misspell the Audience on a new row (for example `Melvn`), tick **Approved**, run. **Sent** `0`, **Failed** reads `No households matched audience "Melvn"`, nothing in MailQueue. Fix the spelling, clear **Sent at**, run again if you want it to go.
 
+**Whole-family check (Contacts and the welcome email)**
+- [ ] After `setup`, the Sheet has a **Contacts** tab (`First`, `Last`, `Email`, `Branch`, `Notes`, `Mail opt-out`) and the **Templates** tab has a **Welcome from the committee** row.
+- [ ] Contacts: add yourself with an email you can read that is **not** on Registrations.
+- [ ] Updates, new row: Template `Welcome from the committee`, Audience `test`, **Approved** ticked, **Send approved updates now**. The proof arrives at the Config `email`: it opens `Hi committee,` and the family link under "Registration is open" opens the site with the family pages unlocked.
+- [ ] New row, same Template, Audience `unregistered`, **Approved** ticked, run. **Sent** counts the Contacts who are not registered (you included). Your copy opens with your first name and ends "...has you on the Lewis family contact list. To stop these updates, reply with the word STOP." MailQueue shows Household ID `CONTACT`. Use `everyone` only for the real send: it reaches every registered household too.
+- [ ] New row: Draft `Your balance is {{balance}}.`, Audience `contacts`, **Approved**, run. **Sent** `0` and **Failed** says `{{balance}} needs a registered household`. Nothing in MailQueue.
+- [ ] Type `Yes` in your Contacts **Mail opt-out**. A new `unregistered` row skips you (**Skipped** goes up by one).
+
 **AI draft check (only if `ANTHROPIC_API_KEY` is set)**
 - [ ] Updates tab, new row: Subject `Hotel block`, Notes `hotel block open, code LEWIS27, closes June 1`, Draft empty. Menu **Reunion → Draft update with AI**.
 - [ ] A dialog says `Draft written to row N. Read it, edit it, set the Audience, then tick Approved.` The **Draft** cell holds short paragraphs mentioning the code and the date, no greeting at the top, and **Approved** is unticked.
@@ -191,7 +199,7 @@ Checks for a committee update to every household. Do them after `setup` has been
 |---|---|
 | **Sent at** stays blank after the menu item | Approved is not ticked, or the Sheet was busy. Tick it and run again. Check Executions. |
 | **Sent at** stuck on `sending…` | A big list needs another run, or the run died. **Failed** says which. Run **Send approved updates now** again; households already queued are skipped. |
-| **Failed** has words in it | Read them: blank Draft, misspelt Audience, or blank Config `email`. Fix, clear **Sent at**, run again. |
+| **Failed** has words in it | Read them: blank Draft, misspelt Audience, blank Config `email`, an empty Contacts tab, or a household field such as `{{balance}}` sent to Contacts. Fix, clear **Sent at**, run again. |
 | Email says `Hi cousin,` | The household has no Preferred or First name on Registrations. |
 | **Draft** starts with `ERROR:` | The AI call failed; the text says why. Fix the key or credit, clear the cell, try again, or write the email by hand. |
 | Only some households got it today | Normal for a big list. Brevo allows about 300 a day; the hourly drain sends the rest tomorrow. |

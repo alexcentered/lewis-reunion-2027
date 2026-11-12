@@ -17,11 +17,11 @@
  * Money (section "money"): Holders, Expenses, Transfers and Budget are the treasurer's tabs; the Money tab is a summary the
  * script rewrites after every edit (moneySummary_), and moneyReport() emails it to Config treasurerEmail every Monday.
  * Templates (section "templates"): reusable emails with {{fields}} for Updates rows, and two rows that word the registration email.
- * Tabs this file writes to: Registrations, Payments, Entries, Config, MailQueue, Updates, Templates and the money tabs (created by setup()).
+ * Tabs this file writes to: Registrations, Payments, Entries, Config, MailQueue, Updates, Templates, Contacts and the money tabs (created by setup()).
  */
 
 const TAB = { reg: 'Registrations', pay: 'Payments', ent: 'Entries', cfg: 'Config', agenda: 'Agenda', branches: 'Branches', names: 'Names', people: 'People', treeNotes: 'Tree notes', mail: 'MailQueue', updates: 'Updates',
-  holders: 'Holders', exp: 'Expenses', xfer: 'Transfers', budget: 'Budget', money: 'Money', tpl: 'Templates' };
+  holders: 'Holders', exp: 'Expenses', xfer: 'Transfers', budget: 'Budget', money: 'Money', tpl: 'Templates', contacts: 'Contacts' };
 /* Mail layer constants. MAIL_RESERVE keeps a few MailApp sends back so the committee's own scripts never hit zero. */
 const MAIL_RESERVE = 5;
 const MAIL_HEADERS = ['Queued', 'To', 'Subject', 'Html', 'Text', 'Status', 'Attempts', 'Last error', 'Sent', 'Via', 'Key', 'Kind', 'Household ID'];
@@ -32,12 +32,19 @@ const BREVO_URL = 'https://api.brevo.com/v3/smtp/email';
    blank "Sent at" means sendUpdates() will send it; Sent, Failed and Skipped are the counts it writes back. Skipped =
    households left out for Mail opt-out = Yes or a blank email, so the committee can see why Sent differs from the roll. */
 const UPDATE_HEADERS = ['ID', 'Created', 'Subject', 'Notes', 'Draft', 'Approved', 'Audience', 'Sent at', 'Sent', 'Failed', 'Skipped'];
-const UPDATE_AUDIENCES = ['all', 'unpaid', 'paid', 'test'];   // any other Audience value is matched against the Registrations Branch column
+const UPDATE_AUDIENCES = ['all', 'unpaid', 'paid', 'test', 'everyone', 'contacts', 'unregistered'];   // any other value is matched against the Registrations Branch column
+/* Contacts (section "committee updates"). Relatives the committee wants to reach before they register: one row per person,
+   typed or pasted by the committee. Audience everyone = registered households plus Contacts, contacts = the Contacts tab,
+   unregistered = Contacts whose email is not on Registrations. One copy per email; an address with Mail opt-out = Yes on
+   either tab is skipped everywhere. */
+const CONTACT_HEADERS = ['First', 'Last', 'Email', 'Branch', 'Notes', 'Mail opt-out'];
+const CONTACT_AUDIENCES = ['everyone', 'contacts', 'unregistered'];
 const REG_OPTOUT = 'Mail opt-out';                            // Registrations column; the committee types Yes when a household replies STOP
 const UPDATE_SENDING = 'sending…';                            // "Sent at" while a run holds the row or has not finished it; the next run resumes it
 const UPDATE_QUEUE_MS = 4 * 60000;                            // sendUpdates stops queueing after this and leaves the rest to the next run
 const RUN_MS = 6 * 60000;                                     // Apps Script stops any run at six minutes; the drain after queueing gets what is left
 const UPDATE_FOOTER = 'You are getting this because your household is registered for the Lewis Family Reunion. To stop these updates, reply with the word STOP.';
+const CONTACT_FOOTER = 'You are getting this because the reunion committee has you on the Lewis family contact list. To stop these updates, reply with the word STOP.';
 const SIGNOFF = 'Somehow, some way, your foundation is Lewis — and you belong here.';
 /* Claude API for draftUpdate(). Raw HTTP: Apps Script has no SDK. Key = Script Property ANTHROPIC_API_KEY (never logged). */
 const CLAUDE_URL = 'https://api.anthropic.com/v1/messages';
@@ -81,12 +88,23 @@ const TPL_REG_THANKS = 'Registration: thank you';
 const TPL_REG_NEXT = 'Registration: what happens next';
 const REG_THANKS_DEFAULT = 'Thank you for registering for the Lewis Family Reunion, July 2–5, 2027 in Fresno.';
 const REG_NEXT_DEFAULT = 'The committee will email updates about the schedule and the venues as plans are confirmed.';
+const TPL_WELCOME = 'Welcome from the committee';
+const WELCOME_SEED = [TPL_WELCOME, 'Welcome to the Lewis Family Reunion 2027',
+  'Hi,\n\nOn behalf of the reunion committee, welcome. From Friday, July 2 to Monday, July 5, 2027, the Lewis family is gathering in Fresno, California, and we want you there.\n\n' +
+  'It is four days to connect and reconnect: a meet and greet on Friday evening, a banquet on Saturday night, family day and a picnic on Sunday with Fourth of July fireworks, and a farewell breakfast on Monday morning. The schedule on the website fills in as plans are confirmed.\n\n' +
+  'Registration is open. Your family link opens the registration page:\n{{family link}}\n\n' +
+  'Please keep the link within the family. Forward it to relatives who did not get this email, so every branch is counted.\n\n' +
+  'The reunion hotel is Home2 Suites by Hilton Fresno Northwest. Book with group code 501 for the family rate.\n\n' +
+  'Fees and payment dates are being finalized. We will email them as soon as they are set.\n\n' +
+  'Questions or ideas? Reply to this email and it reaches the committee.',
+  'A welcome for the whole family. Send it with Audience everyone (registered households and the Contacts tab), after a test. Change the words freely; keep {{family link}} so people can register.'];
 const TEMPLATE_SEED = [
   [TPL_REG_THANKS, '', REG_THANKS_DEFAULT, 'The first line of every registration email. Keep it to one or two sentences. Leave it blank to use the built-in line.'],
   [TPL_REG_NEXT, '', REG_NEXT_DEFAULT, 'Extra lines under "What happens next" in the registration email, one per line. The fee, payment and household ID lines are added by the script and cannot be changed here.'],
   ['Example: payment reminder', 'Lewis Reunion: your balance',
     'Hi,\n\nA reminder about the Lewis Family Reunion, July 2–5, 2027 in Fresno.\n\nYour household ID is {{household id}}. Your total is {{total due}}, you have paid {{paid so far}}, and your balance is {{balance}}, due by {{deadline}}.\n\n{{ways to pay}} Please put your household ID in the payment note.\n\nYou can see your registration at {{my registration}}.',
-    'An example to copy. Pick a template in the Template column of the Updates tab, or use Reunion, Email me this draft, to see it as a family will.']
+    'An example to copy. Pick a template in the Template column of the Updates tab, or use Reunion, Email me this draft, to see it as a family will.'],
+  WELCOME_SEED
 ];
 /* Fields a template may use. Each takes the household row and Config and returns plain text. A field the script does not
    know stops the send with a message in Failed, rather than mailing families a raw {{...}}. */
@@ -100,9 +118,13 @@ const MERGE_FIELDS = {
   'deadline': (r, c) => longDate_(c.deadline) || 'to be announced',
   'ways to pay': (r, c) => payLine_(c),
   'website': (r, c) => siteBase_(c),
-  'my registration': (r, c) => siteBase_(c) + '#me'
+  'my registration': (r, c) => siteBase_(c) + '#me',
+  'family link': (r, c) => familyLink_(c)
 };
-const MERGE_LINKS = ['website', 'my registration'];   // shown as links in the HTML part
+const MERGE_LINKS = ['website', 'my registration', 'family link'];   // shown as links in the HTML part
+/* Fields that only make sense for a registered household. An update whose audience reaches the Contacts tab and uses one of
+   these is stopped with a message, rather than telling a relative who has not registered that their balance is $0. */
+const HOUSEHOLD_FIELDS = ['household id', 'total due', 'paid so far', 'balance', 'my registration'];
 const MERGE_RE = /\{\{\s*([^{}]*?)\s*\}\}/g;
 /* The reunion hotel, as printed in the registration email (regDetails_). The hotel card in index.html shows the same
    facts; change both together. Config roomBlock adds a note under them (a booking cutoff, for example). */
@@ -690,6 +712,7 @@ function setup() {
   sheet_(TAB.reg);
   ensureTab_(TAB.reg, [REG_OPTOUT]);            // appends the column; existing columns keep their places
   updatesSheet_();
+  ensureTab_(TAB.contacts, CONTACT_HEADERS);
   templatesTab_();
   moneyTabs_();
   ensureConfigKeys_();
@@ -716,10 +739,14 @@ function setup() {
    The Templates tab (TEMPLATE_HEADERS) and the merge fields in MERGE_FIELDS. Used by committee updates (the Template
    column on Updates), by "Email me this draft", and by the two reserved rows that word parts of the registration email. */
 
-/** Creates the Templates tab with its starter rows when missing or empty, adds the Template column to Updates with a dropdown. */
+/** Creates the Templates tab with its starter rows when missing or empty, adds the welcome row to a tab that has none named
+    TPL_WELCOME, and adds the Template column to Updates with a dropdown. */
 function templatesTab_() {
   const sh = ensureTab_(TAB.tpl, TEMPLATE_HEADERS);
   if (sh.getLastRow() < 2) sh.getRange(2, 1, TEMPLATE_SEED.length, TEMPLATE_HEADERS.length).setValues(TEMPLATE_SEED);
+  else if (!templateRow_(TPL_WELCOME, rows_(TAB.tpl))) {   // Sheets set up before the welcome existed get it once; a renamed copy stops this
+    const H = headers_(sh); sh.appendRow(H.names.map(n => WELCOME_SEED[TEMPLATE_HEADERS.indexOf(n)] !== undefined ? WELCOME_SEED[TEMPLATE_HEADERS.indexOf(n)] : ''));
+  }
   const upd = ensureTab_(TAB.updates, ['Template']);
   dropdown_(upd, 'Template', colRange_(sh, 'Name'));
 }
@@ -772,6 +799,21 @@ function unknownFields_() {
 }
 function unknownText_(bad) {
   return 'Unknown field' + (bad.length > 1 ? 's ' : ' ') + bad.join(', ') + '. Fields that work: ' + Object.keys(MERGE_FIELDS).map(k => '{{' + k + '}}').join(', ');
+}
+
+/** The household-only {{...}} fields (HOUSEHOLD_FIELDS) used in these texts, each once, as typed. */
+function householdFields_() {
+  const used = [];
+  Array.prototype.slice.call(arguments).forEach(t => {
+    String(t == null ? '' : t).replace(MERGE_RE, (m, k) => { if (HOUSEHOLD_FIELDS.indexOf(nameKey_(k)) >= 0 && used.indexOf(m) < 0) used.push(m); return m; });
+  });
+  return used;
+}
+
+/** The link relatives tap to open the family pages and register: siteUrl?c=<family code>. The website alone when either is blank. */
+function familyLink_(cfg) {
+  const base = siteBase_(cfg), code = String(cfg.familyCode || '').trim();
+  return base && code ? base + '?c=' + encodeURIComponent(code) : base;
 }
 
 /** Plain text with every known field filled in for this household; unknown ones are left as typed. */
@@ -1423,15 +1465,17 @@ function sendUpdates(onlyId) {
   if (claim.error === 'busy') { console.log('Updates: the sheet is busy; try again in a minute.'); return claim; }
   const out = { ok: true, updates: claim.todo.length, queued: 0, pending: 0 };
   if (!claim.todo.length) { console.log('Updates: nothing approved and unsent.'); return out; }
-  const cfg = config_(), regs = rows_(TAB.reg), sh = claim.sh, H = claim.H, keys = updateKeys_(), tpls = rowsIf_(TAB.tpl);
+  const cfg = config_(), regs = rows_(TAB.reg), contacts = rowsIf_(TAB.contacts), sh = claim.sh, H = claim.H, keys = updateKeys_(), tpls = rowsIf_(TAB.tpl);
   claim.todo.forEach(item => {
     const upd = withTemplate_(item.upd, tpls), res = { 'Sent at': new Date(), Sent: 0, Failed: '', Skipped: 0 };
     try {
-      const aud = audience_(upd.Audience, regs, cfg), bad = unknownFields_(upd.Subject, upd.Draft);
+      const aud = audience_(upd.Audience, regs, cfg, contacts), bad = unknownFields_(upd.Subject, upd.Draft);
+      const hh = aud.contacts ? householdFields_(upd.Subject, upd.Draft) : [];
       res.Skipped = aud.skipped;
       if (upd.missingTemplate) res.Failed = 'No template named "' + str_(upd.Template).trim() + '" on the Templates tab; nothing was sent';
       else if (!String(upd.Draft == null ? '' : upd.Draft).trim()) res.Failed = 'Draft is blank; nothing was sent';
       else if (bad.length) res.Failed = unknownText_(bad) + '; nothing was sent';
+      else if (hh.length) res.Failed = hh.join(', ') + (hh.length > 1 ? ' need' : ' needs') + ' a registered household, and Audience "' + str_(upd.Audience).trim() + '" includes people on the Contacts tab. Use all, unpaid or paid, or take ' + (hh.length > 1 ? 'them' : 'it') + ' out; nothing was sent';
       else if (!aud.rows.length) res.Failed = aud.known ? (aud.why || 'No households matched') : 'No households matched audience "' + str_(upd.Audience).trim() + '"';
       else {
         let stopped = false;
@@ -1502,16 +1546,43 @@ function updatesSheet_() {
 
 /**
  * Who gets an update. value is the Audience cell: all (every household), unpaid (Balance > 0), paid (Status "Paid in full"),
- * test (only the committee address from Config), or a Branch name (case does not matter). Households with Mail opt-out = Yes
- * or a blank email are counted in skipped; one row per email. Returns { rows, skipped, known, why }: known = the value is a
- * keyword or matched at least one Branch, so an empty list with known false means a misspelt audience.
+ * test (only the committee address from Config), everyone (every household plus the Contacts tab), contacts (the Contacts tab),
+ * unregistered (Contacts whose email is not on Registrations), or a Branch name matched against Registrations (case does not
+ * matter). Rows with a blank email, or whose address has Mail opt-out = Yes on Registrations or Contacts, are counted in
+ * skipped; one row per email, and a registered household wins over its Contacts row. Contacts rows come back with
+ * _contact: true. Returns { rows, skipped, known, why, contacts }: known = the value is a keyword or matched at least one
+ * Branch, so an empty list with known false means a misspelt audience; contacts = the audience reaches the Contacts tab.
  */
-function audience_(value, regs, cfg) {
-  const a = String(value == null ? '' : value).trim().toLowerCase(), out = { rows: [], skipped: 0, known: UPDATE_AUDIENCES.indexOf(a) >= 0, why: '' };
+function audience_(value, regs, cfg, contacts) {
+  const a = String(value == null ? '' : value).trim().toLowerCase(), out = { rows: [], skipped: 0, known: UPDATE_AUDIENCES.indexOf(a) >= 0, why: '', contacts: CONTACT_AUDIENCES.indexOf(a) >= 0 };
   if (a === 'test') {
     const to = String(cfg.email || '').trim();
     // Sample amounts so merge fields show something real-looking in a test; the greeting still says "Hi committee,".
     if (to) out.rows.push(Object.assign(sampleRow_(cfg, to), { 'Household ID': 'COMMITTEE', Preferred: 'committee' })); else out.why = 'Config "email" is blank, so a test has nowhere to go';
+    return out;
+  }
+  contacts = contacts || [];
+  const emailOf = r => str_(r.Email).trim().toLowerCase();
+  const stopped = {};   // an address that said STOP on either tab
+  regs.concat(contacts).forEach(r => { const e = emailOf(r); if (e && yes_(r[REG_OPTOUT])) stopped[e] = true; });
+  const seen = {};
+  const take = (r, contact) => {
+    const email = emailOf(r);
+    if (!email || stopped[email]) { out.skipped++; return; }
+    if (seen[email]) return;   // two households (or a household and its Contacts row) sharing an address get one copy
+    seen[email] = true;
+    out.rows.push(contact ? Object.assign({}, r, { _contact: true }) : r);
+  };
+  if (out.contacts) {
+    const registered = {};
+    regs.forEach(r => { const e = emailOf(r); if (e) registered[e] = true; });
+    if (a === 'everyone') regs.forEach(r => take(r, false));
+    contacts.forEach(r => {
+      if (!str_(r.Email).trim() && !str_(r.First).trim() && !str_(r.Last).trim()) return;   // an empty row is not a person
+      if (a === 'unregistered' && registered[emailOf(r)]) return;
+      take(r, true);
+    });
+    if (!out.rows.length && !out.skipped) out.why = a === 'everyone' ? 'Nobody is on Registrations or Contacts yet' : 'The Contacts tab has no one ' + (a === 'unregistered' ? 'who is not already registered' : 'on it yet');
     return out;
   }
   let pick;
@@ -1519,27 +1590,23 @@ function audience_(value, regs, cfg) {
   else if (a === 'unpaid') pick = r => (num_(r.Balance) || 0) > 0;
   else if (a === 'paid') pick = r => str_(r.Status).trim() === 'Paid in full';
   else pick = r => str_(r.Branch).trim().toLowerCase() === a && !!a;
-  const seen = {};
   regs.forEach(r => {
     if (!pick(r)) return;
     out.known = true;
-    const email = str_(r.Email).trim().toLowerCase();
-    if (!email || yes_(r[REG_OPTOUT])) { out.skipped++; return; }
-    if (seen[email]) return;   // two households sharing an address get one copy
-    seen[email] = true;
-    out.rows.push(r);
+    take(r, false);
   });
   return out;
 }
 
-/** One MailQueue message for a household: the Draft as HTML with "Hi <name>," on top and the STOP footer, inside the usual frame. */
+/** One MailQueue message for a household or a Contacts row: the Draft as HTML with "Hi <name>," on top and the STOP footer
+    that says why they are getting it, inside the usual frame. */
 function updateEmail_(row, upd, cfg) {
   const name = str_(row.Preferred).trim() || str_(row.First).trim() || 'cousin', email = str_(row.Email).trim();
-  const body = greet_(mergeHtml_(draftHtml_(upd.Draft), row, cfg), name) + '<p style="font-size:14px;color:#555">' + htmlEsc_(UPDATE_FOOTER) + '</p>';
+  const body = greet_(mergeHtml_(draftHtml_(upd.Draft), row, cfg), name) + '<p style="font-size:14px;color:#555">' + htmlEsc_(row._contact ? CONTACT_FOOTER : UPDATE_FOOTER) + '</p>';
   const html = mailWrap_(body, cfg);
   return {
     to: email, toName: name, subject: mergeText_(str_(upd.Subject), row, cfg).replace(/\s+/g, ' ').trim() || 'An update from the Lewis Family Reunion committee', html: html, text: htmlToText_(html),
-    key: 'update:' + upd.ID + ':' + email.toLowerCase(), kind: 'update', householdId: String(row['Household ID'] || '')
+    key: 'update:' + upd.ID + ':' + email.toLowerCase(), kind: 'update', householdId: row._contact ? 'CONTACT' : String(row['Household ID'] || '')
   };
 }
 
