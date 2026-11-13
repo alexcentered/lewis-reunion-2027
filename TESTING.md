@@ -172,6 +172,12 @@ Checks for a committee update to every household. Do them after `setup` has been
 - [ ] Leave **Approved** ticked. Menu **Reunion → Send approved updates now** again. **Sent at** does not change, no new MailQueue row appears, and Executions says `Updates: nothing approved and unsent.`
 - [ ] Untick and re-tick **Approved**. Still nothing. (A row with anything in **Sent at** is finished. To send again, make a new row.)
 
+**Send on check (a scheduled update)**
+- [ ] After `setup`, the **Updates** tab ends with a **Send on** column.
+- [ ] New row: any Subject and Draft, Audience `test`, **Approved** ticked, **Send on** = tomorrow's date. **Reunion → Send approved updates now**. **Sent at** stays blank, **Failed** reads `Scheduled: goes out on <tomorrow> at the 9 am run`, and no email arrives.
+- [ ] Type `soon` in **Send on** and run again. **Failed** reads `Waiting: Send on is not a date...`. Nothing is sent.
+- [ ] Change **Send on** to today's date and run again. **Sent at** gets the time, **Failed** clears, and the test email arrives.
+
 **Opt-out check with a test household**
 - [ ] Sheet → **Registrations**: find a test household with your own email (register one from the phone if there is none) and note its **Branch**. Type `Yes` in its **Mail opt-out** column (the last column; run `setup` if it is missing).
 - [ ] Updates tab, new row: any Subject and Draft, Audience = that household's Branch name, **Approved** ticked. **Reunion → Send approved updates now**.

@@ -40,6 +40,7 @@ const UPDATE_AUDIENCES = ['all', 'unpaid', 'paid', 'test', 'everyone', 'contacts
 const CONTACT_HEADERS = ['First', 'Last', 'Email', 'Branch', 'Notes', 'Mail opt-out'];
 const CONTACT_AUDIENCES = ['everyone', 'contacts', 'unregistered'];
 const REG_OPTOUT = 'Mail opt-out';                            // Registrations column; the committee types Yes when a household replies STOP
+const UPDATE_SEND_ON = 'Send on';                             // Updates column (appended by setup): an approved row waits until this date
 const UPDATE_SENDING = 'sending…';                            // "Sent at" while a run holds the row or has not finished it; the next run resumes it
 const UPDATE_QUEUE_MS = 4 * 60000;                            // sendUpdates stops queueing after this and leaves the rest to the next run
 const RUN_MS = 6 * 60000;                                     // Apps Script stops any run at six minutes; the drain after queueing gets what is left
@@ -714,6 +715,7 @@ function setup() {
   updatesSheet_();
   ensureTab_(TAB.contacts, CONTACT_HEADERS);
   templatesTab_();
+  sendOnColumn_();
   moneyTabs_();
   ensureConfigKeys_();
   const cfg = config_();
@@ -1465,7 +1467,8 @@ function sendUpdates(onlyId) {
   const claim = locked_(() => claimUpdates_(onlyId));
   if (claim.error === 'busy') { console.log('Updates: the sheet is busy; try again in a minute.'); return claim; }
   const out = { ok: true, updates: claim.todo.length, queued: 0, pending: 0 };
-  if (!claim.todo.length) { console.log('Updates: nothing approved and unsent.'); return out; }
+  out.waiting = claim.waiting || 0;
+  if (!claim.todo.length) { console.log('Updates: nothing approved and unsent' + (out.waiting ? '; ' + out.waiting + ' waiting for a Send on date (see Failed).' : '.')); return out; }
   const cfg = config_(), regs = rows_(TAB.reg), contacts = rowsIf_(TAB.contacts), sh = claim.sh, H = claim.H, keys = updateKeys_(), tpls = rowsIf_(TAB.tpl);
   claim.todo.forEach(item => {
     const upd = withTemplate_(item.upd, tpls), res = { 'Sent at': new Date(), Sent: 0, Failed: '', Skipped: 0 };
@@ -1509,8 +1512,9 @@ function sendUpdates(onlyId) {
  * get an ID (and Created) if blank and Sent at = 'sending…'. onlyId limits the claim to that one ID. Returns { ok, sh, H, todo: [{ row, upd }] }.
  */
 function claimUpdates_(onlyId) {
-  const sh = updatesSheet_(), H = headers_(sh), last = sh.getLastRow(), out = { ok: true, sh: sh, H: H, todo: [] };
+  const sh = updatesSheet_(), H = headers_(sh), last = sh.getLastRow(), out = { ok: true, sh: sh, H: H, todo: [], waiting: 0 };
   if (last < 2 || H.col.Approved === undefined || H.col['Sent at'] === undefined) return out;
+  const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'America/Los_Angeles', 'yyyy-MM-dd');
   const all = sh.getRange(2, 1, last - 1, H.names.length).getValues();
   all.forEach((r, i) => {
     const upd = {}; H.names.forEach((n, j) => { if (n) upd[n] = r[j]; });
@@ -1518,6 +1522,14 @@ function claimUpdates_(onlyId) {
     if (!yes_(upd.Approved) || (at && at !== UPDATE_SENDING)) return;
     if (onlyId && str_(upd.ID).trim() !== onlyId) return;
     const row = i + 2;
+    if (!at) {   // a row already started ("sending…") always finishes; only a new one waits for its Send on date
+      const wait = sendOnWait_(upd[UPDATE_SEND_ON], today);
+      if (wait) {
+        out.waiting++;
+        if (H.col.Failed !== undefined && str_(upd.Failed) !== wait) sh.getRange(row, H.col.Failed + 1).setValue(wait);
+        return;
+      }
+    }
     if (!str_(upd.ID).trim()) { upd.ID = 'U-' + Utilities.getUuid().slice(0, 8).toUpperCase(); if (H.col.ID !== undefined) sh.getRange(row, H.col.ID + 1).setValue(upd.ID); }
     if (H.col.Created !== undefined && !upd.Created) sh.getRange(row, H.col.Created + 1).setValue(new Date());
     sh.getRange(row, H.col['Sent at'] + 1).setValue(UPDATE_SENDING);
@@ -1525,6 +1537,24 @@ function claimUpdates_(onlyId) {
   });
   SpreadsheetApp.flush();   // the marks must be on the sheet before locked_ releases the lock, or a parallel run claims the same rows
   return out;
+}
+
+/**
+ * Why an approved, unsent row should wait, as the note for its Failed cell, or '' when it may go now. The Send on cell may
+ * be blank (send at the next run), a date (a Sheets date, or text such as 2026-12-01): the row goes at the first run on or
+ * after that day, normally the 9 am trigger. Anything else waits with a note saying how to fix it, so nothing goes early.
+ */
+function sendOnWait_(v, today) {
+  if (v === '' || v === null || v === undefined || (typeof v === 'string' && !v.trim())) return '';
+  const d = iso_(v instanceof Date ? v : str_(v).trim());
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || isNaN(new Date(d + 'T12:00:00'))) return 'Waiting: Send on is not a date. Type a date such as 2026-12-01, or clear it to send at the next run';
+  return d > today ? 'Scheduled: goes out on ' + longDate_(d) + ' at the 9 am run' : '';
+}
+
+/** Appends the Send on column to Updates and gives it a date check (other values allowed with a warning) unless it has one. */
+function sendOnColumn_() {
+  const sh = ensureTab_(TAB.updates, [UPDATE_SEND_ON]), rg = colRange_(sh, UPDATE_SEND_ON);
+  if (rg && !rg.getCell(1, 1).getDataValidation()) rg.setDataValidation(SpreadsheetApp.newDataValidation().requireDate().setAllowInvalid(true).build());
 }
 
 /** Every update:<ID>:<email> key already in MailQueue, read once per run: who has been queued for which update. */
