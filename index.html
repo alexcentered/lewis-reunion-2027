@@ -190,6 +190,10 @@ details p{color:var(--muted);max-width:68ch}
 .sumrow{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line);font-size:.94rem}
 .sumrow:first-of-type{border-top:0}
 .sumrow span:first-child{color:var(--muted)}
+.fees{margin:12px 0 8px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.fees-h{color:var(--muted);font-size:.8rem;margin-bottom:4px}
+.feerow{display:flex;justify-content:space-between;gap:12px;padding:3px 0;font-size:.9rem;color:var(--text)}
+.fees-due{margin-top:6px;padding-top:6px;border-top:1px solid var(--line);color:var(--muted)}
 .big{font:600 2.4rem/1 var(--display)}
 
 /* family */
@@ -651,7 +655,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
             <div class="sumrow"><span>Under 16</span><span class="num" id="sKids">0</span></div>
             <div class="sumrow"><span>Nights</span><span class="num" id="sNights">3</span></div>
             <div class="sumrow"><span>Estimated total</span><span class="num" id="sTotal">TBA</span></div>
-            <p class="hint" id="sFeeNote">The committee will post registration fees soon. You can register now and pay later.</p>
+            <div class="hint fees" id="sFeeNote">The committee will post registration fees soon. You can register now and pay later.</div>
             <p class="hint" id="sGift">A free gift goes to the first 10 adults who pay in full.</p>
             <button class="btn" type="submit" style="width:100%;margin-top:10px" id="regSubmit">Save registration</button>
             <div class="msg" id="regMsg" aria-live="polite"></div>
@@ -898,6 +902,6 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 <script src="tree-engine.js?v=20261109"></script>
 <script src="tree.js?v=20261109"></script>
 <script src="config.js?v=20261109"></script>
-<script src="app.js?v=20261117"></script>
+<script src="app.js?v=20261117b"></script>
 </body>
 </html>
