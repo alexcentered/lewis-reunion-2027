@@ -94,7 +94,7 @@ const DAYS = [
   { key: 'mon', label: 'Mon, July 5', long: 'Farewell breakfast' }
 ];
 const S = {
-  info: { agenda: DEFAULT_AGENDA, feeAdult: null, feeChild: null, childAge: 12, deadline: '', roomBlock: '' },
+  info: { agenda: DEFAULT_AGENDA, fees: null, deadline: '', roomBlock: '' },
   family: null,            // branches, names, roll, entries, pay — only with the family code
   code: LINKMODE ? String(window.LR.code || '') : (store.get('lr-code') || ''), token: LINKMODE ? '' : (store.get('lr-token') || ''),
   mine: null, codeBad: false, tokenBad: false,   // tokenBad: a registration code the cousin just typed was refused by the server
@@ -184,11 +184,30 @@ function renderAgenda(){
   const days = (S.info.agenda && S.info.agenda.days && S.info.agenda.days.length) ? S.info.agenda.days : DEFAULT_AGENDA.days;
   $('#agenda').innerHTML = days.map(d => `<div class="card day"><div class="d">${esc(d.date)}</div><h3>${esc(d.title)}</h3><div style="margin-top:10px">${(d.items || []).map(it => `<div class="item"><div class="t">${esc(it.time || 'Time TBA')}</div><div class="w">${esc(it.what)}</div>${it.where ? `<div class="p">${esc(it.where)}</div>` : ''}</div>`).join('')}</div></div>`).join('');
 }
-function feeSet(){ return S.info.feeAdult != null && S.info.feeChild != null; }
+/* Fees by age at the reunion (July 2, 2027). The same bands are in Code.gs (FEE_BANDS); the amounts come from the backend.
+   'legacy' is what an older backend understands, so a registration still saves while the two are being updated. */
+const FEE_BANDS = [
+  { key: 'a23', label: '23 and older', short: '23+', pick: '23 & up', min: 23, legacy: 'adult' },
+  { key: 'y16', label: '16 to 22', short: '16–22', pick: '16–22', min: 16, legacy: 'adult' },
+  { key: 'c4', label: '4 to 15', short: '4–15', pick: '4–15', min: 4, legacy: 'child' },
+  { key: 'i0', label: '3 and under', short: '0–3', pick: '0–3', min: 0, legacy: 'child' }
+];
+/** A band key from a band key or short label, else from the age, else from the old adult/child word. */
+function bandOf(band, age){
+  const b = String(band || '').trim(), hit = FEE_BANDS.find(x => x.key === b || x.short === b);
+  if (hit) return hit.key;
+  const n = parseInt(age, 10);
+  if (!isNaN(n) && n >= 0 && n < 130) return FEE_BANDS.find(x => n >= x.min).key;
+  return /child/i.test(b) ? 'c4' : 'a23';
+}
+const adultBand = k => k === 'a23' || k === 'y16';
+function feeOf(key){ const f = (S.info.fees || []).find(x => x.key === key); return f && f.fee != null && f.fee !== '' ? Number(f.fee) : null; }
+function feeSet(){ return Array.isArray(S.info.fees) && FEE_BANDS.every(b => feeOf(b.key) != null); }
+function feeText(){ return FEE_BANDS.map(b => b.label + ': ' + (feeOf(b.key) ? money(feeOf(b.key)) : 'free')).join(' · '); }
 function renderInfo(){
   const i = S.info;
   $('#roomBlock').textContent = i.roomBlock || 'Room-block details coming from the committee.';
-  $('#sFeeNote').textContent = feeSet() ? `${money(i.feeAdult)} per adult, ${money(i.feeChild)} per child under ${i.childAge || 12}.` + (i.deadline ? ' Due by ' + fmtDate(i.deadline) + '.' : '')
+  $('#sFeeNote').textContent = feeSet() ? 'Fees by age on July 2, 2027. ' + feeText() + '.' + (i.deadline ? ' Due by ' + fmtDate(i.deadline) + '.' : '')
     : 'The committee will post registration fees soon. You can register now and pay later.';
   const p = (S.family && S.family.pay) || {};
   const ways = [p.zelle && 'Zelle: ' + p.zelle, p.cashapp && 'Cash App: ' + p.cashapp, p.venmo && 'Venmo: ' + p.venmo, p.paypal && 'PayPal: ' + p.paypal].filter(Boolean);
@@ -257,39 +276,45 @@ function renderStrip(items){
 }
 
 /* ---------- registration form ---------- */
-let attendees = [{ name: '', band: 'adult', age: '', shirt: '', diet: '' }];
+const NEW_PERSON = () => ({ name: '', band: 'a23', age: '', shirt: '', diet: '' });
+let attendees = [NEW_PERSON()];
 const SHIRTS = ['Youth S','Youth M','Youth L','XS','S','M','L','XL','2XL','3XL','4XL','No shirt'];
 /* Dietary needs are asked per person so the caterer knows who needs what. 'None' is stored as blank. */
 const DIETS = ['Vegetarian','Vegan','Kosher','Halal','Gluten-free','Diabetic-friendly','Other (tell us below)'];
 function renderAttendees(){
   $('#attendees').innerHTML = attendees.map((a, i) => `<div class="att">
     <div class="nm"><label for="a-n${i}">Full name</label><input id="a-n${i}" data-i="${i}" data-k="name" value="${esc(a.name)}"></div>
-    <div><label for="a-b${i}">Adult or child</label><select id="a-b${i}" data-i="${i}" data-k="band"><option value="adult" ${a.band === 'adult' ? 'selected' : ''}>Adult</option><option value="child" ${a.band === 'child' ? 'selected' : ''}>Child</option></select></div>
+    <div><label for="a-b${i}">Age group</label><select id="a-b${i}" data-i="${i}" data-k="band">${FEE_BANDS.map(b => `<option value="${b.key}" ${a.band === b.key ? 'selected' : ''}>${b.pick}</option>`).join('')}</select></div>
     <div><label for="a-a${i}">Age</label><input id="a-a${i}" data-i="${i}" data-k="age" inputmode="numeric" value="${esc(a.age)}"></div>
     <div><label for="a-s${i}">T-shirt</label><select id="a-s${i}" data-i="${i}" data-k="shirt"><option value="">Size</option>${SHIRTS.map(s => `<option ${a.shirt === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
     <div>${i ? `<button type="button" class="btn quiet sm" data-rm="${i}" aria-label="Remove person ${i + 1}">Remove</button>` : ''}</div>
     <div class="diet"><label for="a-d${i}">Dietary needs</label><select id="a-d${i}" data-i="${i}" data-k="diet"><option value="">None</option>${DIETS.map(d => `<option ${a.diet === d ? 'selected' : ''}>${d}</option>`).join('')}</select></div></div>`).join('');
   updateSummary();
 }
-['input', 'change'].forEach(ev => $('#attendees').addEventListener(ev, e => { const t = e.target; if (t.dataset.i != null){ attendees[+t.dataset.i][t.dataset.k] = t.value; updateSummary(); } }));
+['input', 'change'].forEach(ev => $('#attendees').addEventListener(ev, e => {
+  const t = e.target; if (t.dataset.i == null) return;
+  const a = attendees[+t.dataset.i]; a[t.dataset.k] = t.value;
+  if (t.dataset.k === 'age' && /^\d{1,3}$/.test(t.value.trim())){ a.band = bandOf('', t.value); const sel = $('#a-b' + t.dataset.i); if (sel) sel.value = a.band; }
+  updateSummary();
+}));
 $('#attendees').addEventListener('click', e => { const r = e.target.dataset && e.target.dataset.rm; if (r != null){ attendees.splice(+r, 1); renderAttendees(); } });
-$('#addAtt').addEventListener('click', () => { attendees.push({ name: '', band: 'adult', age: '', shirt: '', diet: '' }); renderAttendees(); $('#a-n' + (attendees.length - 1)).focus(); });
+$('#addAtt').addEventListener('click', () => { attendees.push(NEW_PERSON()); renderAttendees(); $('#a-n' + (attendees.length - 1)).focus(); });
 $('#dayChecks').innerHTML = DAYS.map(d => `<label class="check"><input type="checkbox" name="day" value="${d.key}" checked> <span><b style="font-weight:600">${d.label}</b><br><span class="hint">${d.long}</span></span></label>`).join('');
 ['#fArrive', '#fDepart'].forEach(s => $(s).addEventListener('change', updateSummary));
 function nights(a, d){ const n = Math.round((new Date(d + 'T12:00:00') - new Date(a + 'T12:00:00')) / 864e5); return isNaN(n) || n < 0 ? 0 : n; }
 function updateSummary(){
   const named = attendees.filter(a => a.name.trim());
-  const ad = named.filter(a => a.band !== 'child').length, ch = named.filter(a => a.band === 'child').length;
+  const ad = named.filter(a => adultBand(a.band)).length, ch = named.length - ad;
   $('#sAdults').textContent = ad; $('#sKids').textContent = ch;
   $('#sNights').textContent = nights($('#fArrive').value, $('#fDepart').value);
-  $('#sTotal').textContent = feeSet() ? money(ad * S.info.feeAdult + ch * S.info.feeChild) : 'TBA';
+  $('#sTotal').textContent = feeSet() ? money(named.reduce((t, a) => t + (feeOf(a.band) || 0), 0)) : 'TBA';
 }
 function collectReg(){
   const v = s => $(s).value.trim();
   return { first: v('#fFirst'), middle: v('#fMiddle'), last: v('#fLast'), birthSurname: v('#fBirth'), preferred: v('#fPreferred'),
     email: v('#fEmail'), phone: v('#fPhone'), city: v('#fCity'), state: v('#fState'),
     branch: $('#fBranch').value, parents: v('#fParents'), grandparent: v('#fGrand'), spouse: v('#fSpouse'),
-    attendees: attendees.filter(a => a.name.trim()).map(a => ({ name: a.name.trim(), band: a.band, age: String(a.age || '').trim(), shirt: a.shirt, diet: a.diet || '' })),
+    attendees: attendees.filter(a => a.name.trim()).map(a => ({ name: a.name.trim(), ageBand: a.band, band: (FEE_BANDS.find(b => b.key === a.band) || FEE_BANDS[0]).legacy, age: String(a.age || '').trim(), shirt: a.shirt, diet: a.diet || '' })),
     days: $$('input[name="day"]:checked').map(x => x.value), arrive: $('#fArrive').value, depart: $('#fDepart').value,
     lodging: $('#fLodging').value, needs: v('#fNeeds'), travelAck: $('#fTravel').checked, showOnList: $('#fShow').checked };
 }
@@ -301,7 +326,7 @@ function fillReg(r){
   set('#fArrive', r.arrive); set('#fDepart', r.depart); set('#fLodging', r.lodging); set('#fNeeds', r.needs);
   $('#fTravel').checked = true; $('#fShow').checked = r.showOnList !== false;
   $$('input[name="day"]').forEach(x => x.checked = (r.days || []).includes(x.value));
-  attendees = (r.attendees && r.attendees.length) ? r.attendees.map(a => ({ diet: '', ...a })) : [{ name: '', band: 'adult', age: '', shirt: '', diet: '' }];
+  attendees = (r.attendees && r.attendees.length) ? r.attendees.map(a => ({ diet: '', ...a, band: bandOf(a.band, a.age) })) : [NEW_PERSON()];
   renderAttendees();
   $('#regTitle').textContent = 'Update your registration';
   $('#regSubmit').textContent = 'Save changes';
@@ -371,7 +396,7 @@ function linkOutSubmit(r){
     <div class="row" style="margin-top:10px"><button type="button" class="btn quiet sm" id="regAnother" hidden>Register another household</button></div>`;
   $('#sendReg').addEventListener('click', () => { $('#sendNote').textContent = 'Sent. Check the page that opened for your confirmation. If no page opened, press the button again.'; $('#regAnother').hidden = false; });
   $('#regAnother').addEventListener('click', () => {
-    $('#regForm').reset(); attendees = [{ name: '', band: 'adult', age: '', shirt: '' }]; renderAttendees();
+    $('#regForm').reset(); attendees = [NEW_PERSON()]; renderAttendees();
     d.hidden = true; d.innerHTML = ''; say($('#regMsg'), '', true); $('#fFirst').focus();
     $('[data-view="register"]').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
   });
@@ -401,7 +426,8 @@ function renderMe(){
   $('#meTitle').textContent = (r.preferred || r.first) + ' ' + r.last + ' household';
   $('#meStatus').innerHTML = `<span class="pill ${tone}">${esc(s.status)}</span>`;
   const att = r.attendees || [];
-  $('#meStats').innerHTML = [['Adults', att.filter(a => a.band !== 'child').length], ['Children', att.filter(a => a.band === 'child').length], ['Nights', r.nights], ['Total due', money(s.due)], ['Confirmed', money(s.confirmed)], ['Balance', money(s.balance)]]
+  const adults = att.filter(a => adultBand(bandOf(a.band, a.age))).length;
+  $('#meStats').innerHTML = [['Ages 16+', adults], ['Under 16', att.length - adults], ['Nights', r.nights], ['Total due', money(s.due)], ['Confirmed', money(s.confirmed)], ['Balance', money(s.balance)]]
     .map(([k, v]) => `<div class="stat"><b class="num">${esc(v)}</b><span>${k}</span></div>`).join('');
   $('#meId').hidden = !m.householdId;
   $('#meId').innerHTML = m.householdId ? `Household ID: <b class="num">${esc(m.householdId)}</b>. Put it in the note when you pay, so the committee can match your payment.` : '';

@@ -72,7 +72,7 @@ Sent instead of the link email while Config `siteLive` is not `Yes`. Subject: `Y
 
 **The details block** (`regDetails_(row, cfg, live)`, in both registration emails)
 - **Your registration:** Household ID, who is coming (with dietary needs), days, arrive and leave dates, where they are staying.
-- **What happens next:** before fees are set, "Registration fees will be announced soon" and "keep your household ID". Once `feeAdult` and `feeChild` are numbers: the estimated total and deadline (`dueLine_`), the ways to pay (`payLine_`), how to report the payment (My Registration when `live`, otherwise reply with amount, method and date), "put your household ID in the payment note", and that the committee confirms each payment with a receipt. Always: updates about the schedule and venues will follow by email.
+- **What happens next:** before fees are set, "Registration fees will be announced soon" and "keep your household ID". Once all four fees (`feeAdult`, `feeYouth`, `feeChild`, `feeInfant`) are numbers: the estimated total by age band and the deadline (`dueLine_`), the ways to pay (`payLine_`), how to report the payment (My Registration when `live`, otherwise reply with amount, method and date), "put your household ID in the payment note", and that the committee confirms each payment with a receipt. Always: updates about the schedule and venues will follow by email.
 - **Reunion hotel:** name, address, phone, and the group rate (group code 501, hotel code FATNOHT) from the `HOTEL` constant, then Config `roomBlock` if it is set. The hotel card in `index.html` shows the same facts; change both together.
 
 **Payment receipt** (`receiptEmail_`, kind `receipt`)
@@ -158,7 +158,7 @@ A committee update is one email to every registered household (or to a slice of 
 ### The steps
 
 1. **Open the Updates tab** and start a new row. Leave `ID`, `Created`, `Sent at`, `Sent`, `Failed` and `Skipped` blank; the script fills them.
-2. **Write the Subject.** This is the email subject line, for example `Fees are set: $120 per adult`.
+2. **Write the Subject.** This is the email subject line, for example `Fees are set: $245 for ages 23 and up`.
 3. **Write the body.** Three ways:
    - Pick a **Template** (the last column). Its Subject and Body appear in the row's blank Subject and Draft cells, ready to change. Templates live on the **Templates** tab; see "Templates and fields" below.
    - Type the email yourself into `Draft`. Plain paragraphs separated by a blank line are fine; simple HTML (`<p>`, `<br>`, `<b>`, `<a>`) also works. Start with a greeting line such as `Hi,`, `Hello,`, `Hi everyone,` or `Dear family,` and the script will put each household's name in (`Hi Denise,`). If you leave the greeting out, the script adds one. Do not add the sign-off line or your name at the bottom; the email frame adds "Somehow, some way, your foundation is Lewis — and you belong here." and the committee address itself. If you type the sign-off anyway, it is removed so it does not appear twice.

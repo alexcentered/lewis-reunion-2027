@@ -88,8 +88,7 @@ This file is for an AI agent or a committee volunteer who opens this repo cold. 
 | `siteUrl` | The site address, used to build private links in email. | none |
 | `siteLive` | `Yes` turns on private links and registration codes in email. Anything else sends a plain receipt (`receipt0`) and leaves tokens alone. | treated as No |
 | `email` | The committee address shown in email footers, used as Reply-To when `mailReplyTo` is blank, and as the recipient of committee notifications. | none |
-| `feeAdult`, `feeChild` | Dollar amounts. Both must be numbers for Due and Balance to be computed. | blank = fees not announced |
-| `childAge` | Age cutoff for the child fee. | 12 |
+| `feeAdult`, `feeYouth`, `feeChild`, `feeInfant` | Fees by age at the reunion (July 2, 2027): 23 and older, 16 to 22, 4 to 15, 3 and under (`FEE_BANDS` in Code.gs and app.js). All four must be numbers (0 = free) for Due and Balance to be computed. `setup` adds `feeYouth` and `feeInfant`. | blank = fees not announced |
 | `deadline` | Payment due date, shown on the site and in the registration email. | none |
 | `roomBlock` | Hotel room-block note shown on the site under the group-rate codes, and in the registration email under the hotel. | none |
 | `zelle`, `cashapp`, `venmo`, `paypal` | Payment handles shown on the site and in the registration email. | none |
@@ -185,7 +184,7 @@ The **Reunion** menu (`onOpen`), in this order: "Refresh balances and status" (`
 - headers `x-api-key: <key>`, `anthropic-version: 2026-10-21`, `anthropic-beta: server-side-fallback-2026-07-01`
 - body `{ model: 'claude-opus-5-5' (CLAUDE_MODEL), max_tokens: 16000, fallbacks: 'default', system: <updatePrompt_>, messages: [{ role: 'user', content: <updateContext_> }] }`. No thinking, temperature or tools are sent.
 
-`updatePrompt_` sets the voice (warm committee cousin, plain English, no emojis, no subject, no greeting because `greet_` adds it, invent nothing, end with `SIGNOFF`, plain text with blank lines between paragraphs). `updateContext_` passes the Subject, the Notes, and facts from Config: dates and city, fees and `childAge` when both fees are numbers, `deadline`, `payLine_`, `siteBase_`.
+`updatePrompt_` sets the voice (warm committee cousin, plain English, no emojis, no subject, no greeting because `greet_` adds it, invent nothing, end with `SIGNOFF`, plain text with blank lines between paragraphs). `updateContext_` passes the Subject, the Notes, and facts from Config: dates and city, the fees by age band when all four are numbers, `deadline`, `payLine_`, `siteBase_`.
 
 The result written into `Draft` is the joined `text` blocks, or a line starting `ERROR:` for: a thrown fetch (`ERROR: <message>`), a non-2xx status (`ERROR: HTTP <status> <first 200 chars>`), a body that is not JSON, `stop_reason === 'refusal'` (`ERROR: the AI declined to draft this one. <stop_details.explanation>`), or no text blocks. `Approved` is set to false either way. The key and the request body are never logged; the log line holds the row number and the character count or the first 200 characters of the error. There is no SDK in Apps Script, so this is the only place that speaks to Anthropic.
 
