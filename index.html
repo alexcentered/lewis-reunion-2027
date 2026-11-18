@@ -126,6 +126,10 @@ hr{border:0;border-top:1px solid var(--line);margin:26px 0}
 .hero .wrap{position:relative}
 .hero .when{font:500 .8rem var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent-2)}
 .hero h1{margin:18px 0 22px;max-width:13ch}
+.hero-title{display:flex;align-items:center;gap:clamp(10px,1.7vw,18px);margin:18px 0 22px;max-width:58%}
+.hero-title h1{margin:0;font-size:clamp(2rem,6.6vw,4.9rem)}
+.hero-crest{display:block;flex:0 0 auto;width:clamp(44px,8vw,96px);height:auto}
+@media(max-width:900px){.hero-title{max-width:100%}}
 .hero h1 i{color:var(--accent-2)}
 .lead{font-size:1.14rem;color:var(--muted);max-width:52ch}
 .count{display:flex;gap:34px;flex-wrap:wrap;margin:34px 0}
@@ -467,7 +471,10 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
     <span class="landmark-cap" aria-hidden="true">Old Fresno Water Tower · 1894</span>
     <div class="wrap">
       <div class="when">July 2 – 5, 2027 · Fresno, California</div>
-      <h1>Lewis Family Reunion <i>2027</i></h1>
+      <div class="hero-title">
+        <img class="hero-crest" src="assets/lewis-family-crest.png" width="288" height="335" alt="Lewis family crest" decoding="async">
+        <h1>Lewis Family Reunion <i>2027</i></h1>
+      </div>
       <p class="lead">Come to Fresno, California, to celebrate your connection to family. Spend four days to connect, reconnect to the roots that make our family. Meet the cousins you haven't met yet, and update your branch on the family tree.</p>
       <div class="count">
         <div><b class="num" id="cdDays">—</b><span>days to go</span></div>
