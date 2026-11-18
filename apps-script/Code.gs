@@ -46,7 +46,7 @@ const UPDATE_QUEUE_MS = 4 * 60000;                            // sendUpdates sto
 const RUN_MS = 6 * 60000;                                     // Apps Script stops any run at six minutes; the drain after queueing gets what is left
 const UPDATE_FOOTER = 'You are getting this because your household is registered for the Lewis Family Reunion. To stop these updates, reply with the word STOP.';
 const CONTACT_FOOTER = 'You are getting this because the reunion committee has you on the Lewis family contact list. To stop these updates, reply with the word STOP.';
-const SIGNOFF = 'Somehow, some way, your foundation is Lewis — and you belong here.';
+const SIGNOFF = 'Somehow, some way, your foundation is Lewis, and you belong here.';
 /* Claude API for draftUpdate(). Raw HTTP: Apps Script has no SDK. Key = Script Property ANTHROPIC_API_KEY (never logged). */
 const CLAUDE_URL = 'https://api.anthropic.com/v1/messages';
 const CLAUDE_MODEL = 'claude-opus-5-5';
@@ -57,12 +57,16 @@ const CONFIG_DEFAULTS = {
   mailFromName: 'Lewis Family Reunion 2027',   // display name on every email (Brevo and MailApp)
   mailReplyTo: '',                              // blank = replies go to the Config "email" address
   notifyCommittee: 'No',                        // Yes = email the committee (Config "email") on each new registration
-  treasurerEmail: ''                            // gets the weekly money report (moneyReport); blank = no report
+  treasurerEmail: '',                           // gets the weekly money report (moneyReport); blank = no report
+  feeYouth: '',                                 // fee for ages 16 to 22 at the reunion (FEE_BANDS)
+  feeInfant: ''                                 // fee for ages 3 and under; 0 = free
 };
 const CONFIG_NOTES = {
   mailFrom: 'Sender address for emails sent through Brevo', mailFromName: 'Sender name on every email',
   mailReplyTo: 'Reply-to address; blank means the "email" row', notifyCommittee: 'Yes = email the committee about each new registration',
-  treasurerEmail: 'Gets the money report every Monday morning; blank = no report'
+  treasurerEmail: 'Gets the money report every Monday morning; blank = no report',
+  feeYouth: 'Fee for ages 16 to 22 at the reunion (feeAdult is 23 and older, feeChild 4 to 15)',
+  feeInfant: 'Fee for ages 3 and under at the reunion; 0 = free'
 };
 /* Money tracking (section "money"). Payments land in different committee members' own accounts, so every dollar in or
    out names the person holding it: Payments "Received by", Expenses "Paid by", Transfers "From" and "To". Names come
@@ -133,6 +137,16 @@ const HOTEL = {
   name: 'Home2 Suites by Hilton Fresno Northwest', address: '6965 W. Farrington Avenue, Fresno, CA 93722', phone: '(559) 512-8410',
   groupCode: '501', hotelCode: 'FATNOHT'
 };
+/* Fees go by each person's age at the reunion (July 2, 2027), in four bands. Each band's fee is a Config row; fees count as
+   set only when all four are numbers (0 is allowed). The Attendees cell stores the band's short label. Registrations made
+   before the bands say Adult or Child: bandOf_ places them by the age they gave, or as 23+ / 4–15 when they gave none.
+   The same bands are in app.js (FEE_BANDS); change both together. */
+const FEE_BANDS = [
+  { key: 'a23', label: '23 and older', short: '23+', min: 23, cfg: 'feeAdult' },
+  { key: 'y16', label: '16 to 22', short: '16–22', min: 16, cfg: 'feeYouth' },
+  { key: 'c4', label: '4 to 15', short: '4–15', min: 4, cfg: 'feeChild' },
+  { key: 'i0', label: '3 and under', short: '0–3', min: 0, cfg: 'feeInfant' }
+];
 const TYPES = ['story','memoriam', 'veteran', 'directory', 'photo', 'market'];
 const DAY_LABELS = { fri: 'Fri Jul 2', sat: 'Sat Jul 3', sun: 'Sun Jul 4', mon: 'Mon Jul 5' };
 /* Photo rules. The browser shrinks photos before sending, so real uploads are well under the cap.
@@ -173,7 +187,7 @@ function signup_(p) {
   }
   if (!res.ok) return page_('A few things are missing', '<p>' + htmlEsc_(res.message || 'Please check the form.') + '</p><p>Go back to the registration page, fill them in, and press Send again.</p>');
   const r = res.mine.reg, s = res.mine.summary;
-  const people = (r.attendees || []).map(a => '<li>' + htmlEsc_(a.name) + (a.band === 'child' ? ' <span>(child' + (a.age ? ', ' + htmlEsc_(a.age) : '') + ')</span>' : '') + (a.diet ? ' <span>' + htmlEsc_(a.diet) + '</span>' : '') + '</li>').join('');
+  const people = (r.attendees || []).map(a => '<li>' + htmlEsc_(a.name) + (a.band !== 'a23' ? ' <span>(' + htmlEsc_(bandShort_(a.band)) + (a.age ? ', age ' + htmlEsc_(a.age) : '') + ')</span>' : '') + (a.diet ? ' <span>' + htmlEsc_(a.diet) + '</span>' : '') + '</li>').join('');
   const due = s.due == null ? 'The committee will post fees soon.' : 'Total due: $' + s.due + '.';
   return page_('You’re registered!',
     '<p>Thank you, ' + htmlEsc_(r.preferred || r.first) + '. The ' + htmlEsc_(r.last) + ' household is on the list for the Lewis Family Reunion, July 2–5, 2027 in Fresno.</p>' +
@@ -228,7 +242,7 @@ function publicInfo_(cfg) {
   return {
     agenda: agenda_(),
     email: cfg.email || '',
-    feeAdult: num_(cfg.feeAdult), feeChild: num_(cfg.feeChild), childAge: num_(cfg.childAge) || 12,
+    fees: FEE_BANDS.map(b => ({ key: b.key, label: b.label, fee: num_(cfg[b.cfg]) })),
     deadline: iso_(cfg.deadline), roomBlock: String(cfg.roomBlock || '')
   };
 }
@@ -284,7 +298,7 @@ function register_(p, cfg) {
     diet: clean_(r.diet, 80), needs: clean_(r.needs, 1000), arrive: clean_(r.arrive, 10), depart: clean_(r.depart, 10)
   };
   const att = (Array.isArray(r.attendees) ? r.attendees : []).slice(0, 30).map(a => ({
-    name: clean_(a.name, 80), band: a.band === 'child' ? 'child' : 'adult', age: clean_(a.age, 10), shirt: clean_(a.shirt, 12),
+    name: clean_(a.name, 80), band: bandOf_(a.ageBand || a.band, clean_(a.age, 10)), age: clean_(a.age, 10), shirt: clean_(a.shirt, 12),
     diet: /^none$/i.test(clean_(a.diet, 40)) ? '' : clean_(a.diet, 40)
   })).filter(a => a.name);
   const days = (Array.isArray(r.days) ? r.days : []).filter(d => DAY_LABELS[d]);
@@ -313,8 +327,8 @@ function register_(p, cfg) {
     'Updated': now, 'First': v.first, 'Middle': v.middle, 'Last': v.last, 'Birth surname': v.birthSurname, 'Preferred': v.preferred,
     'Email': v.email, 'Phone': v.phone, 'City': v.city, 'State': v.state, 'Branch': v.branch, 'Parents': v.parents,
     'Grandparent': v.grandparent, 'Spouse': v.spouse,
-    'Adults': att.filter(a => a.band === 'adult').length, 'Children': att.filter(a => a.band === 'child').length,
-    'Attendees': att.map(a => [a.name, a.band === 'child' ? 'Child' : 'Adult', a.age, a.shirt, a.diet].join(' · ')).join('\n'),
+    'Adults': att.filter(a => adultBand_(a.band)).length, 'Children': att.filter(a => !adultBand_(a.band)).length,
+    'Attendees': att.map(a => [a.name, bandShort_(a.band), a.age, a.shirt, a.diet].join(' · ')).join('\n'),
     'Shirt sizes': shirtSummary_(att), 'Days': days.map(d => DAY_LABELS[d]).join(', '),
     'Arrive': v.arrive, 'Depart': v.depart, 'Nights': nights, 'Lodging': v.lodging, 'Diet': dietSummary_(att) || v.diet, 'Needs': v.needs,
     'Show on list': r.showOnList === false ? 'No' : 'Yes'
@@ -680,14 +694,13 @@ function balances_() {
     if (p.Status === 'Confirmed') totals[id].c += Number(p.Amount) || 0;
     else if (p.Status === 'Reported' || !p.Status) totals[id].a += Number(p.Amount) || 0;
   });
-  const fa = num_(cfg.feeAdult), fc = num_(cfg.feeChild), feeSet = fa !== null && fc !== null;
+  const fees = feesOf_(cfg), feeSet = !!fees;
   const ids = sh.getRange(2, H.col['Household ID'] + 1, last - 1, 1).getValues();
-  const ad = sh.getRange(2, H.col.Adults + 1, last - 1, 1).getValues();
-  const ch = sh.getRange(2, H.col.Children + 1, last - 1, 1).getValues();
+  const atts = sh.getRange(2, H.col.Attendees + 1, last - 1, 1).getValues();
   const outRows = ids.map((idRow, i) => {
     const id = idRow[0]; if (!id) return ['', '', '', '', ''];
     const t = totals[id] || { c: 0, a: 0 };
-    const due = feeSet ? (Number(ad[i][0]) || 0) * fa + (Number(ch[i][0]) || 0) * fc : '';
+    const due = feeSet ? dueFor_(parseAttendees_(atts[i][0]), fees) : '';
     const bal = feeSet ? Math.max(0, due - t.c) : '';
     let st;
     if (feeSet && due > 0 && t.c >= due) st = 'Paid in full';
@@ -844,10 +857,10 @@ function longDate_(v) {
 
 /** A made-up household for previews and tests: two adults and a child, with amounts from the Config fees when they are set. */
 function sampleRow_(cfg, email) {
-  const fa = num_(cfg.feeAdult), fc = num_(cfg.feeChild), due = fa !== null && fc !== null ? 2 * fa + fc : '';
+  const att = 'Cousin Lewis · 23+\nPartner Lewis · 23+\nLittle Lewis · 4–15 · 8', d = dueFor_(parseAttendees_(att), feesOf_(cfg)), due = d === null ? '' : d;
   return {
     'Household ID': 'H-SAMPLE1', First: 'Cousin', Preferred: '', Last: 'Lewis', Email: email || '', Adults: 2, Children: 1,
-    Attendees: 'Cousin Lewis · Adult\nPartner Lewis · Adult\nLittle Lewis · Child · 8', Days: 'Fri Jul 2, Sat Jul 3, Sun Jul 4',
+    Attendees: att, Days: 'Fri Jul 2, Sat Jul 3, Sun Jul 4',
     Arrive: '2027-07-02', Depart: '2027-07-05', Lodging: 'Reunion hotel (Home2 Suites)', Due: due, Confirmed: 0, Balance: due
   };
 }
@@ -1011,7 +1024,7 @@ function moneyData_(cfg, now) {
   const confirmed = pays.filter(p => st(p) === 'Confirmed'), waiting = pays.filter(p => st(p) === 'Reported' || !st(p));
   const missing = pays.filter(p => st(p) === 'Not received');
   const paid = exps.filter(x => !/^planned$/i.test(st(x))), planned = exps.filter(x => /^planned$/i.test(st(x)));
-  const fees = num_(cfg.feeAdult) !== null && num_(cfg.feeChild) !== null;
+  const fees = !!feesOf_(cfg);
   const full = regs.filter(r => str_(r.Status) === 'Paid in full').length;
   const partly = regs.filter(r => (num_(r.Confirmed) || 0) > 0 && str_(r.Status) !== 'Paid in full').length;
   const moneyIn = {
@@ -1160,10 +1173,7 @@ function mineData_(row, cfg) {
     amount: Number(p.Amount) || 0, method: String(p.Method || ''), date: iso_(p['Date sent']), ref: String(p.Reference || ''),
     status: String(p.Status || 'Reported'), confirmedOn: iso_(p['Confirmed on'])
   }));
-  const att = String(row.Attendees || '').split('\n').filter(String).map(l => {
-    const [name, band, age, shirt, diet] = l.split(' · ');
-    return { name: name || '', band: /child/i.test(band || '') ? 'child' : 'adult', age: age || '', shirt: shirt || '', diet: diet || '' };
-  });
+  const att = parseAttendees_(row.Attendees);
   const dayKeys = Object.keys(DAY_LABELS).filter(k => String(row.Days || '').indexOf(DAY_LABELS[k]) >= 0);
   return {
     householdId: row['Household ID'],
@@ -1703,8 +1713,8 @@ function updatePrompt_() {
 /** The notes plus the facts Claude may use: dates and city, fees and deadline when Config has them, payment handles, the website. */
 function updateContext_(upd, cfg) {
   const facts = ['Lewis Family Reunion, July 2-5, 2027, Fresno, California.'];
-  const fa = num_(cfg.feeAdult), fc = num_(cfg.feeChild);
-  if (fa !== null && fc !== null) facts.push('Fees: ' + money_(fa) + ' per adult, ' + money_(fc) + ' per child (age ' + (num_(cfg.childAge) !== null ? num_(cfg.childAge) : 12) + ' and under).');
+  const fees = feesOf_(cfg);
+  if (fees) facts.push('Fees by age at the reunion: ' + FEE_BANDS.map(b => b.label + ' ' + (fees[b.key] ? money_(fees[b.key]) : 'free')).join(', ') + '.');
   if (cfg.deadline) facts.push('Payment deadline: ' + iso_(cfg.deadline) + '.');
   const pay = payLine_(cfg); if (pay) facts.push(pay);
   const site = siteBase_(cfg); if (site) facts.push('Website: ' + site);
@@ -1766,12 +1776,13 @@ function codeBox_(lines) {
   return '<p style="font-size:14px;background:#f4f1ea;padding:12px 16px;border-radius:8px">' + lines.join('<br>') + '</p>';
 }
 
-/** "Estimated total: $N (A adults × $fa, C children × $fc). Due by YYYY-MM-DD." or the fees-pending sentence. */
+/** "Estimated total: $N (2 × $245 for 23 and older, 1 × $55 for 4 to 15). Due by YYYY-MM-DD." or the fees-pending sentence. */
 function dueLine_(row, cfg) {
-  const fa = num_(cfg.feeAdult), fc = num_(cfg.feeChild);
-  if (fa === null || fc === null) return 'Registration fees will be announced soon; nothing is due yet.';
-  const a = Number(row.Adults) || 0, c = Number(row.Children) || 0;
-  let s = 'Estimated total: ' + money_(a * fa + c * fc) + ' (' + a + (a === 1 ? ' adult × ' : ' adults × ') + money_(fa) + ', ' + c + (c === 1 ? ' child × ' : ' children × ') + money_(fc) + ').';
+  const fees = feesOf_(cfg);
+  if (!fees) return 'Registration fees will be announced soon; nothing is due yet.';
+  const att = parseAttendees_(row.Attendees), c = bandCounts_(att);
+  const parts = FEE_BANDS.filter(b => c[b.key]).map(b => c[b.key] + (fees[b.key] ? ' × ' + money_(fees[b.key]) : ' free') + ' for ' + b.label);
+  let s = 'Estimated total: ' + money_(dueFor_(att, fees)) + (parts.length ? ' (' + parts.join(', ') + ')' : '') + '.';
   if (cfg.deadline) s += ' Due by ' + iso_(cfg.deadline) + '.';
   return s;
 }
@@ -1798,7 +1809,7 @@ function regDetails_(row, cfg, live) {
     travel ? ['Travel', htmlEsc_(travel)] : null,
     str_(row.Lodging) ? ['Staying', htmlEsc_(str_(row.Lodging))] : null
   ].filter(Boolean).map(l => l[0] + ': ' + l[1]);
-  const fees = num_(cfg.feeAdult) !== null && num_(cfg.feeChild) !== null, pay = payLine_(cfg);
+  const fees = !!feesOf_(cfg), pay = payLine_(cfg);
   const next = fees ? [
     htmlEsc_(dueLine_(row, cfg) + (pay ? ' ' + pay : '')),
     (live ? 'After you pay, report the payment on your My Registration page.' : 'After you pay, reply to this email with the amount, the method and the date.') +
@@ -2037,6 +2048,32 @@ function iso_(v) {
   if (v instanceof Date) return Utilities.formatDate(v, Session.getScriptTimeZone() || 'America/Los_Angeles', 'yyyy-MM-dd');
   return String(v == null ? '' : v).replace(/^'/, '').slice(0, 10);
 }
+/** A band key from a band key or short label, else from the age, else from the old Adult/Child word. */
+function bandOf_(band, age) {
+  const b = str_(band).trim(), hit = FEE_BANDS.filter(x => x.key === b || x.short === b)[0];
+  if (hit) return hit.key;
+  const n = parseInt(str_(age), 10);
+  if (!isNaN(n) && n >= 0 && n < 130) return FEE_BANDS.filter(x => n >= x.min)[0].key;
+  return /child/i.test(b) ? 'c4' : 'a23';
+}
+function bandShort_(key) { return (FEE_BANDS.filter(b => b.key === key)[0] || FEE_BANDS[0]).short; }
+function adultBand_(key) { return key === 'a23' || key === 'y16'; }   // the Adults column counts 16 and over
+/** { a23: 245, ... } from Config, or null until every band has a number. */
+function feesOf_(cfg) {
+  const f = {};
+  for (let i = 0; i < FEE_BANDS.length; i++) { const v = num_(cfg[FEE_BANDS[i].cfg]); if (v === null) return null; f[FEE_BANDS[i].key] = v; }
+  return f;
+}
+/** The Attendees cell ("name · band · age · shirt · diet" per line) as objects, each with a band key. */
+function parseAttendees_(cell) {
+  return str_(cell).split('\n').filter(l => l.trim()).map(l => {
+    const f = l.split(' · ');
+    return { name: f[0] || '', band: bandOf_(f[1], f[2]), age: f[2] || '', shirt: f[3] || '', diet: f[4] || '' };
+  });
+}
+function bandCounts_(att) { const c = {}; FEE_BANDS.forEach(b => { c[b.key] = 0; }); att.forEach(a => { c[a.band] = (c[a.band] || 0) + 1; }); return c; }
+/** Total fee for a household's attendees, or null when fees are not set. */
+function dueFor_(att, fees) { return fees ? cents_(att.reduce((t, a) => t + (fees[a.band] || 0), 0)) : null; }
 function nights_(a, d) {
   const x = new Date(a + 'T12:00:00'), y = new Date(d + 'T12:00:00'), n = Math.round((y - x) / 864e5);
   return isNaN(n) || n < 0 ? 0 : n;
