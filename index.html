@@ -126,9 +126,10 @@ hr{border:0;border-top:1px solid var(--line);margin:26px 0}
 .hero .wrap{position:relative}
 .hero .when{font:500 .8rem var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent-2)}
 .hero h1{margin:18px 0 22px;max-width:13ch}
-.hero-title{display:flex;align-items:center;gap:clamp(10px,1.7vw,18px);margin:18px 0 22px;max-width:58%}
-.hero-title h1{margin:0;font-size:clamp(2rem,6.6vw,4.9rem)}
-.hero-crest{display:block;flex:0 0 auto;width:clamp(44px,8vw,96px);height:auto}
+.hero-title{display:flex;align-items:center;gap:clamp(10px,1.7vw,18px);margin:18px 0 22px;max-width:62%;font-size:clamp(2rem,6.6vw,4.9rem)}
+.hero-title h1{margin:0;font-size:inherit}
+/* The crest matches two lines of the title at 1.04 line height. */
+.hero-crest{display:block;flex:0 0 auto;width:auto;height:2.08em}
 @media(max-width:900px){.hero-title{max-width:100%}}
 .hero h1 i{color:var(--accent-2)}
 .lead{font-size:1.14rem;color:var(--muted);max-width:52ch}
