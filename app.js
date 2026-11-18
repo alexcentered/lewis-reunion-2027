@@ -203,12 +203,18 @@ function bandOf(band, age){
 const adultBand = k => k === 'a23' || k === 'y16';
 function feeOf(key){ const f = (S.info.fees || []).find(x => x.key === key); return f && f.fee != null && f.fee !== '' ? Number(f.fee) : null; }
 function feeSet(){ return Array.isArray(S.info.fees) && FEE_BANDS.every(b => feeOf(b.key) != null); }
-function feeText(){ return FEE_BANDS.map(b => b.label + ': ' + (feeOf(b.key) ? money(feeOf(b.key)) : 'free')).join(' · '); }
+/** The fee list in the registration summary: one row per age group, then the due date. */
+function feeListHtml(deadline){
+  const ages = { a23: 'Ages 23 and up', y16: 'Ages 16 to 22', c4: 'Ages 4 to 15', i0: 'Ages 3 and under' };
+  return '<div class="fees-h">Fees per person, by age on July 2, 2027</div>' +
+    FEE_BANDS.map(b => `<div class="feerow"><span>${ages[b.key]}</span><span class="num">${feeOf(b.key) ? money(feeOf(b.key)) : 'Free'}</span></div>`).join('') +
+    (deadline ? `<div class="fees-due">Due by ${esc(fmtDate(deadline))}</div>` : '');
+}
 function renderInfo(){
   const i = S.info;
   $('#roomBlock').textContent = i.roomBlock || 'Room-block details coming from the committee.';
-  $('#sFeeNote').textContent = feeSet() ? 'Fees by age on July 2, 2027. ' + feeText() + '.' + (i.deadline ? ' Due by ' + fmtDate(i.deadline) + '.' : '')
-    : 'The committee will post registration fees soon. You can register now and pay later.';
+  if (feeSet()) $('#sFeeNote').innerHTML = feeListHtml(i.deadline);
+  else $('#sFeeNote').textContent = 'The committee will post registration fees soon. You can register now and pay later.';
   const p = (S.family && S.family.pay) || {};
   const ways = [p.zelle && 'Zelle: ' + p.zelle, p.cashapp && 'Cash App: ' + p.cashapp, p.venmo && 'Venmo: ' + p.venmo, p.paypal && 'PayPal: ' + p.paypal].filter(Boolean);
   const how = ways.length ? 'Send payment by ' + ways.join(' · ') + '.' : 'The committee will post where to send payment.';
