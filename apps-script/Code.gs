@@ -17,11 +17,11 @@
  * Money (section "money"): Holders, Expenses, Transfers and Budget are the treasurer's tabs; the Money tab is a summary the
  * script rewrites after every edit (moneySummary_), and moneyReport() emails it to Config treasurerEmail every Monday.
  * Templates (section "templates"): reusable emails with {{fields}} for Updates rows, and two rows that word the registration email.
- * Tabs this file writes to: Registrations, Payments, Entries, Config, MailQueue, Updates, Templates, Contacts and the money tabs (created by setup()).
+ * Tabs this file writes to: Registrations, Payments, Entries, Config, MailQueue, Updates, Templates, Contacts, Reviews and the money tabs (created by setup()).
  */
 
 const TAB = { reg: 'Registrations', pay: 'Payments', ent: 'Entries', cfg: 'Config', agenda: 'Agenda', branches: 'Branches', names: 'Names', people: 'People', treeNotes: 'Tree notes', mail: 'MailQueue', updates: 'Updates',
-  holders: 'Holders', exp: 'Expenses', xfer: 'Transfers', budget: 'Budget', money: 'Money', tpl: 'Templates', contacts: 'Contacts' };
+  holders: 'Holders', exp: 'Expenses', xfer: 'Transfers', budget: 'Budget', money: 'Money', tpl: 'Templates', contacts: 'Contacts', reviews: 'Reviews' };
 /* Mail layer constants. MAIL_RESERVE keeps a few MailApp sends back so the committee's own scripts never hit zero. */
 const MAIL_RESERVE = 5;
 const MAIL_HEADERS = ['Queued', 'To', 'Subject', 'Html', 'Text', 'Status', 'Attempts', 'Last error', 'Sent', 'Via', 'Key', 'Kind', 'Household ID'];
@@ -218,6 +218,9 @@ function handle_(p) {
     const action = String(p.action || '');
     const cfg = config_();
     if (action === 'info') return out_({ ok: true, info: publicInfo_(cfg) });
+    // The review page has its own key per reviewer (Reviews tab), not the family code.
+    if (action === 'review') return out_(review_(p, cfg, false));
+    if (action === 'reviewSave') return out_(locked_(() => review_(p, cfg, true)));
     if (!codeOk_(p.code, cfg)) return out_({ ok: false, error: 'code', message: 'That family code is not right. Please use the link the committee sent you.' });
     switch (action) {
       case 'family': return out_(familyData_(cfg));
@@ -525,6 +528,7 @@ function onOpen() {
     .addItem('Draft update with AI', 'draftUpdate')
     .addItem('Email me this draft', 'emailMeDraft')
     .addItem('Sync photo privacy', 'syncPhotoSharing')
+    .addItem('Make review links', 'reviewLinks')
     .addItem('Run setup', 'setup')
     .addToUi();
 }
@@ -730,6 +734,7 @@ function setup() {
   templatesTab_();
   sendOnColumn_();
   moneyTabs_();
+  ensureTab_(TAB.reviews, REVIEW_HEADERS);
   ensureConfigKeys_();
   const cfg = config_();
   const folder = photoFolder_(cfg);
@@ -748,6 +753,61 @@ function setup() {
     ' MailApp sends left today: ' + MailApp.getRemainingDailyQuota() + '.');
   console.log('Money: fill in the Holders tab (who receives money, and by which methods) and Config treasurerEmail (the Monday money report' +
     (String(cfg.treasurerEmail || '').trim() ? ' goes to ' + cfg.treasurerEmail : ' is off until it is set') + ').');
+}
+
+/* ---------------- reviews ----------------
+   The review page (review/ on the site) lets a committee member try the homepage order and the email wording on any
+   phone or computer, and saves as they go. One Reviews row per reviewer (REVIEW_HEADERS). The committee types a Name;
+   the menu "Make review links" (reviewLinks) fills a blank Key with 32 random hex characters and Link with
+   siteUrl/review/#k=<Key>. The key is in the part of the link after #, which browsers never send to a server, and the
+   page sends it only in the POST body. A wrong or blank key gets the same answer as an unknown one. Clearing or changing
+   a Key retires that link. The page writes Saved, the two readable columns and Data (the page state as JSON, read back
+   when the reviewer opens the page again). Nothing here sends mail. */
+const REVIEW_HEADERS = ['Name', 'Key', 'Link', 'Saved', 'Homepage order', 'Email wording', 'Data', 'Notes'];
+const REVIEW_TEXT_MAX = 45000;      // a Sheets cell holds 50,000 characters
+const REVIEW_BAD = { ok: false, error: 'review', message: 'This review link is not working. Please ask the committee for a new one.' };
+
+/** action review (load) or reviewSave (save, run inside locked_). p.key, and for a save p.data, p.order, p.wording. */
+function review_(p, cfg, save) {
+  const key = String(p.key || '').trim().toLowerCase();
+  if (!/^[0-9a-f]{32}$/.test(key)) return REVIEW_BAD;
+  const sh = SpreadsheetApp.getActive().getSheetByName(TAB.reviews);
+  if (!sh || sh.getLastRow() < 2) return REVIEW_BAD;
+  const H = headers_(sh);
+  if (H.col.Key === undefined) return REVIEW_BAD;
+  const keys = sh.getRange(2, H.col.Key + 1, sh.getLastRow() - 1, 1).getValues();
+  let index = -1;
+  for (let i = 0; i < keys.length; i++) if (str_(keys[i][0]).trim().toLowerCase() === key) { index = i + 2; break; }
+  if (index < 0) return REVIEW_BAD;
+  const row = rowAt_(sh, H, index);
+  if (!save) {
+    let data = null;
+    try { data = str_(row.Data) ? JSON.parse(str_(row.Data)) : null; } catch (err) { data = null; }
+    return { ok: true, name: str_(row.Name), saved: row.Saved instanceof Date ? row.Saved.toISOString() : '', data: data };
+  }
+  const json = JSON.stringify(p.data && typeof p.data === 'object' ? p.data : {});
+  if (json.length > REVIEW_TEXT_MAX) return { ok: false, error: 'big', message: 'That is more than this page can save. Please shorten some of your changes.' };
+  const set = { Saved: new Date(), Data: json };
+  if (p.order != null) set['Homepage order'] = clean_(p.order, REVIEW_TEXT_MAX);
+  if (p.wording != null) set['Email wording'] = clean_(p.wording, REVIEW_TEXT_MAX);
+  Object.keys(set).forEach(h => { if (H.col[h] !== undefined) sh.getRange(index, H.col[h] + 1).setValue(set[h]); });
+  return { ok: true, saved: set.Saved.toISOString() };
+}
+
+/** Menu "Make review links": creates the Reviews tab if needed, and gives every row with a Name and no Key a key and a link. */
+function reviewLinks() {
+  const sh = ensureTab_(TAB.reviews, REVIEW_HEADERS), H = headers_(sh), last = sh.getLastRow();
+  const base = siteBase_(config_()).replace(/\/+$/, '');
+  let made = 0;
+  for (let r = 2; r <= last; r++) {
+    const row = rowAt_(sh, H, r);
+    if (!str_(row.Name).trim() || str_(row.Key).trim()) continue;
+    const key = newToken_();
+    sh.getRange(r, H.col.Key + 1).setValue(key);
+    sh.getRange(r, H.col.Link + 1).setValue(base + '/review/#k=' + key);
+    made++;
+  }
+  alert_('Review links: ' + made + ' new. Type a name in the Reviews tab, then run this again for each new reviewer.');
 }
 
 /* ---------------- templates ----------------

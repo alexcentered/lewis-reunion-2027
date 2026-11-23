@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en" data-built="1" data-combine="" data-review="wording"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review: Lewis Reunion 2027: email wording</title>
+<style>
+  :root { --green:#173d2a; --green2:#2f6e4e; --cream:#f7f2e7; --sand:#f4f1ea; --line:#e3dccd; --ink:#1b1b18; --muted:#5b5a55; --brown:#5b4433; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--cream); color:var(--ink); font:17px/1.6 Georgia, "Times New Roman", serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 0 18px 80px; }
+  header { background:var(--green); color:var(--cream); padding: 36px 18px 30px; text-align:center; }
+  header p.kicker { margin:0 0 6px; font-size:12px; letter-spacing:2px; text-transform:uppercase; color:#cfe0d3; }
+  header h1 { margin:0; font-size:30px; line-height:1.2; font-weight:normal; }
+  header p.sub { margin:10px auto 0; max-width:560px; color:#e6dcc8; font-size:16px; }
+  h2 { font-weight:normal; font-size:26px; margin:44px 0 6px; color:var(--green); }
+  .lead { color:var(--muted); margin:0 0 18px; }
+  .phone { background:#f9eeda; border:1px solid #e8d3a8; border-radius:10px; padding:12px 16px; margin:22px 0 0; font-size:16px; }
+  .phone[hidden] { display:none; }
+  .how { background:#fff; border:1px solid var(--line); border-radius:10px; padding:18px 20px; margin-top:26px; }
+  .how ol { margin:8px 0 0; padding-left:22px; }
+  .how li { margin:4px 0; }
+  label.name { display:block; margin-top:14px; font-weight:bold; }
+  input[type=text] { width:100%; font:inherit; padding:10px 12px; border:1px solid #cdc4b2; border-radius:8px; background:#fff; margin-top:6px; }
+
+  /* timeline */
+  .timeline { list-style:none; margin:0; padding:0; border-left:3px solid var(--line); margin-left:8px; }
+  .timeline li { position:relative; padding:0 0 18px 22px; }
+  .timeline li::before { content:""; position:absolute; left:-9px; top:7px; width:15px; height:15px; border-radius:50%; background:var(--cream); border:3px solid var(--green2); }
+  .timeline li.auto::before { border-color:#b39b6d; }
+  .timeline .when { display:block; font-size:13px; letter-spacing:1px; text-transform:uppercase; color:var(--brown); }
+  .timeline a { color:var(--green); font-weight:bold; text-decoration:none; border-bottom:1px solid #b9cbbf; }
+  .timeline .who { display:block; color:var(--muted); font-size:15px; }
+  .fees { background:#fff; border:1px solid var(--line); border-left:6px solid var(--green2); border-radius:10px; padding:16px 20px; margin-top:22px; }
+  .fees .label { font-size:13px; letter-spacing:1px; text-transform:uppercase; color:var(--brown); margin:0 0 6px; }
+  .fees table { border-collapse:collapse; font-size:18px; }
+  .fees td { padding:4px 28px 4px 0; border-bottom:1px solid #f0ebe0; }
+  .fees td:last-child { font-weight:bold; color:var(--green); }
+  .small { font-size:14px; color:var(--muted); margin:10px 0 0; }
+  .needs { display:grid; gap:12px; }
+  .needs .grp { background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 18px; }
+  .needs .grp.now { border-left:6px solid #b8452f; }
+  .needs .grp.later { border-left:6px solid #c9a24a; }
+  .needs .grp.optional { border-left:6px solid #9fb3a6; }
+  .needs .grp h3 { margin:0; font-size:19px; font-weight:normal; color:var(--ink); }
+  .needs .grp p.why { margin:2px 0 8px; font-size:15px; color:var(--muted); }
+  .needs ul { margin:0; padding-left:20px; }
+  .needs li { margin:3px 0; }
+  .needs li a { color:var(--green); }
+  .needs li span { color:var(--muted); font-size:15px; }
+  .need { display:inline-block; font-size:12px; letter-spacing:1px; text-transform:uppercase; padding:2px 9px; border-radius:999px; margin-left:6px; vertical-align:3px; }
+  .need.now { background:#fbebeb; color:#8a2d2d; }
+  .need.later { background:#f9eeda; color:#7a5a12; }
+  .need.optional { background:#eef3ef; color:#3f5a48; }
+  .qs { display:grid; gap:12px; }
+  .q { background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 18px; }
+  .q .qt { margin:0 0 8px; font-weight:bold; }
+  .q .help { margin:-4px 0 8px; font-size:15px; color:var(--muted); }
+  .q label { display:block; margin:4px 0; cursor:pointer; }
+  .q input[type=radio] { margin-right:6px; accent-color:var(--green2); }
+  .q input[type=date] { font:inherit; padding:8px 10px; border:1px solid #cdc4b2; border-radius:8px; background:#fff; margin-right:8px; }
+  .q input[type=text] { margin-top:8px; }
+  .q.answered { border-color:var(--green2); }
+  .sugg { font-size:13px; letter-spacing:1px; text-transform:uppercase; color:var(--green2); display:block; margin-bottom:2px; }
+  .due-ans { background:#e5f4e4; border-radius:4px; padding:0 4px; }
+  .skipnote { display:none; margin:10px 0 0; font-size:15px; color:#8a2d2d; }
+  html[data-combine="yes"] [data-show="no"], html[data-combine="no"] [data-show="yes"] { display:none; }
+  html[data-combine="yes"] [data-skip-if-combined] { opacity:.5; }
+  html[data-combine="yes"] [data-skip-if-combined] .skipnote { display:block; }
+  html[data-combine="yes"] li[data-skip-if-combined] a { text-decoration:line-through; }
+  .key { font-size:14px; color:var(--muted); margin:0 0 18px; }
+  .key span { display:inline-block; width:11px; height:11px; border-radius:50%; border:3px solid var(--green2); vertical-align:-1px; margin:0 4px 0 0; }
+  .key span.a { border-color:#b39b6d; margin-left:14px; }
+
+  /* email cards */
+  .card { background:#fff; border:1px solid var(--line); border-radius:12px; margin:22px 0; overflow:hidden; scroll-margin-top:12px; }
+  .card > .top { padding:18px 20px 14px; border-bottom:1px solid var(--line); }
+  .card h3 { margin:0; font-size:22px; font-weight:normal; color:var(--green); }
+  .tag { display:inline-block; font-size:12px; letter-spacing:1px; text-transform:uppercase; padding:2px 9px; border-radius:999px; margin-left:8px; vertical-align:3px; }
+  .tag.committee { background:#e5f4e4; color:var(--green); }
+  .tag.auto { background:#f6ecd8; color:var(--brown); }
+  .tag.new { background:#fbebeb; color:#8a2d2d; }
+  .meta { margin:6px 0 0; font-size:15px; color:var(--muted); }
+  .note { margin:10px 0 0; font-size:15px; color:var(--muted); font-style:italic; }
+  .part { padding:16px 20px; border-top:1px solid #f0ebe0; }
+  .part:first-of-type { border-top:0; }
+  .part .label { font-size:13px; letter-spacing:1px; text-transform:uppercase; color:var(--brown); margin:0 0 6px; }
+  .today { background:var(--sand); border-radius:8px; padding:10px 14px; white-space:pre-wrap; }
+  .today .fill { background:#e7f1fb; border-radius:4px; padding:0 4px; font-style:italic; font-size:15px; color:#2b4a6b; white-space:nowrap; }
+  .cover { margin:0; padding-left:20px; }
+  textarea { width:100%; font:inherit; font-size:16px; line-height:1.5; padding:10px 12px; margin-top:8px; border:1px dashed #b7ac95; border-radius:8px; background:#fffdf8; resize:vertical; min-height:52px; }
+  textarea:focus, input:focus { outline:2px solid var(--green2); border-style:solid; }
+  textarea.filled { border:1px solid var(--green2); background:#f3faf5; }
+  .card.has-change > .top h3::after { content:" ✓ changed"; font-size:14px; color:var(--green2); }
+
+  /* send */
+  .send { background:var(--green); color:var(--cream); border-radius:12px; padding:22px 20px; margin-top:34px; }
+  .send h2 { color:var(--cream); margin-top:0; }
+  .send p { margin:6px 0; }
+  .btns { display:flex; flex-wrap:wrap; gap:10px; margin:16px 0 8px; }
+  .btn { font:inherit; font-size:16px; font-weight:bold; border:0; border-radius:999px; padding:12px 22px; cursor:pointer; text-decoration:none; display:inline-block; }
+  .btn.primary { background:var(--cream); color:var(--green); }
+  .btn.ghost { background:transparent; color:var(--cream); border:1px solid #9fbba9; }
+  .status { min-height:1.4em; color:#e6dcc8; font-size:15px; }
+  .send textarea { background:#fff; color:var(--ink); border-style:solid; min-height:160px; font-size:14px; font-family: Menlo, Consolas, monospace; }
+  .addr { color:#fff; font-weight:bold; }
+  footer { text-align:center; color:var(--muted); font-size:14px; margin-top:30px; }
+</style>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="review.css">
+<script src="../config.js"></script>
+<script src="review.js"></script>
+</head>
+<body>
+<header>
+  <p class="kicker">Lewis Family Reunion 2027</p>
+  <h1>The reunion emails: your wording</h1>
+  <p class="sub">Every email the reunion sends, with the words it uses today. Change any line you would say differently.</p>
+</header>
+<main>
+
+  <p class="phone" id="phone-note"><b>Reading this on a phone or in an email preview?</b> You can read everything here, but the boxes and buttons (Email, Copy) only work when the file is saved and opened in a web browser on a computer, such as Chrome, Safari or Edge. Or just reply to Alex's email with your changes.</p>
+
+  <div class="how">
+    <b>How this works</b>
+    <ol>
+      <li>Answer the <b>decisions</b> near the top: the payment due date and a few other choices.</li>
+      <li>Read each email below. The grey box is what it says today.</li>
+      <li>To change a line, type your wording in the box under it. Leave a box empty to keep today's words.</li>
+      <li>There is nothing to send. Your answers save by themselves, and Alex sees them right away.</li>
+    </ol>
+    <p class="lead" style="margin:10px 0 0">Words in <span style="background:#e7f1fb;border-radius:4px;padding:0 4px;font-style:italic;color:#2b4a6b">blue</span> are filled in by the website for each family (names, links, codes, amounts). You don't need to write those. Everything you type is saved, so you can close the page and come back later with the same link, on this device or another one.</p>
+    <label class="name" for="who">Your name</label>
+    <input type="text" id="who" autocomplete="name" placeholder="So we know whose wording this is">
+  </div>
+
+  <div class="fees">
+    <p class="label">Reunion fees, by age at the reunion</p>
+    <table>
+      <tbody><tr><td>23 and older</td><td>$245</td></tr>
+      <tr><td>16 to 22</td><td>$95</td></tr>
+      <tr><td>4 to 15</td><td>$55</td></tr>
+      <tr><td>0 to 3</td><td>Free</td></tr>
+    </tbody></table>
+    <p class="small">Use these in any email that mentions money. You don't need to work out anyone's total.</p>
+  </div>
+
+
+  <h2 id="decisions">Decisions we need</h2>
+  <p class="lead">The emails can't be finished without these. Answer what you can and leave the rest blank.</p>
+  <div class="qs">
+    <div class="q" data-label="Payment due date">
+      <p class="qt">When is payment due? <span class="need now">Needed now</span></p>
+      <input type="date" data-q="due" aria-label="Payment due date">
+      <input type="text" data-q="dueNote" placeholder="Or describe it, for example: half by March 1, the rest by May 1">
+    </div>
+    <div class="q" data-label="Deposit">
+      <p class="qt">One payment, or a deposit first? <span class="need now">Needed now</span></p>
+      <label><input type="radio" name="q-deposit" data-q="deposit" value="One payment, by the due date"> One payment, by the due date</label>
+      <label><input type="radio" name="q-deposit" data-q="deposit" value="A deposit first, the rest by the due date"> A deposit first, the rest by the due date</label>
+      <label><input type="radio" name="q-deposit" data-q="deposit" value="Not decided yet"> Not decided yet</label>
+      <input type="text" data-q="depositNote" placeholder="If a deposit: how much, and by when?">
+    </div>
+    <div class="q" data-label="Combine the welcome and the fees">
+      <p class="qt">Should the welcome email also give the fees? <span class="need now">Needed now</span></p>
+      <p class="help">Combining means families know the cost before they register, and everyone gets one email instead of two. The emails below change to match your choice.</p>
+      <label><input type="radio" name="q-combine" data-q="combine" value="yes"> Yes: one email with the welcome and the fees</label>
+      <label><input type="radio" name="q-combine" data-q="combine" value="no"> No: the welcome now, a separate fees email after it</label>
+      <label><input type="radio" name="q-combine" data-q="combine" value="unsure"> Not sure</label>
+    </div>
+    <div class="q" data-label="Ways to pay">
+      <p class="qt">Ways to pay are Zelle (LewisFamilyLove247@gmail.com) and Cash App ($LewisFamilyLove247). Keep them? <span class="need now">Needed now</span></p>
+      <label><input type="radio" name="q-pay" data-q="pay" value="Keep Zelle and Cash App"> Keep them as they are</label>
+      <label><input type="radio" name="q-pay" data-q="pay" value="Change them (see note)"> Add or change one</label>
+      <input type="text" data-q="payNote" placeholder="What to add or change (Venmo, PayPal, check...)">
+    </div>
+    <div class="q" data-label="Venue names in emails">
+      <p class="qt">Are the venue names firm enough to email to everyone? <span class="need now">Needed now</span></p>
+      <p class="help">The welcome names Clo and Aunt Do’s Place, the Dante Club, Frasier Gardens and Tessy’s house.</p>
+      <label><input type="radio" name="q-venues" data-q="venues" value="Yes, all firm"> Yes, all of them</label>
+      <label><input type="radio" name="q-venues" data-q="venues" value="Not yet, leave them out"> Not yet: leave them out and point to the website</label>
+      <label><input type="radio" name="q-venues" data-q="venues" value="Some (see note)"> Some of them</label>
+      <input type="text" data-q="venuesNote" placeholder="Which ones are not firm yet?">
+    </div>
+    <div class="q" data-label="Signed by">
+      <p class="qt">How should the emails be signed? <span class="need now">Needed now</span></p>
+      <label><input type="radio" name="q-sign" data-q="sign" value="The Lewis Family Reunion Committee"> The Lewis Family Reunion Committee</label>
+      <label><input type="radio" name="q-sign" data-q="sign" value="A person (see note)"> A person's name and role</label>
+      <input type="text" data-q="signNote" placeholder="For example: Denise Lewis, Reunion Chair">
+    </div>
+    <div class="q" data-label="Who answers replies">
+      <p class="qt">Replies go to the committee inbox. Who reads it and answers? <span class="need now">Needed now</span></p>
+      <input type="text" data-q="replies" placeholder="Name(s)">
+    </div>
+    <div class="q" data-label="Treasurer's email">
+      <p class="qt">Treasurer's email address, for the weekly money report <span class="need now">Needed now</span></p>
+      <input type="text" data-q="treasurer" placeholder="name@example.com" autocomplete="off">
+    </div>
+    <div class="q" data-label="Hotel family rate ends">
+      <p class="qt">Last day to book Home2 Suites at the family rate (group code 501) <span class="need later">Needed later</span></p>
+      <input type="date" data-q="hotelDate" aria-label="Last day for the hotel family rate">
+      <input type="text" data-q="hotelNote" placeholder="Or: we don't know yet / who can find out">
+    </div>
+    <div class="q" data-label="Last day to register">
+      <p class="qt">Is there a last day to register? <span class="need later">Needed later</span></p>
+      <input type="date" data-q="regClose" aria-label="Last day to register">
+      <input type="text" data-q="regCloseNote" placeholder="Or: no cut-off / not decided">
+    </div>
+    <div class="q" data-label="Refunds">
+      <p class="qt">If someone pays and then can't come, what happens? <span class="need later">Needed later</span></p>
+      <input type="text" data-q="refunds" placeholder="For example: full refund until May 1, none after">
+    </div>
+    <div class="q" data-label="New-registration emails to the committee">
+      <p class="qt">Should the committee get an email each time a household registers? <span class="need optional">Optional</span></p>
+      <label><input type="radio" name="q-notify" data-q="notify" value="Yes"> Yes</label>
+      <label><input type="radio" name="q-notify" data-q="notify" value="No"> No</label>
+      <input type="text" data-q="notifyNote" placeholder="If yes: to which address?">
+    </div>
+  </div>
+
+  <h2>Emails: what to write first</h2>
+  <p class="lead">Start with the first group. The rest can wait, or already has words that work.</p>
+  <div class="needs" id="needs"><div class="grp now"><h3>Needed now</h3><p class="why">Please send these first.</p><ul><li><a href="#welcome">Welcome to the whole family</a> <span>— The first email to everyone. Read it all, and choose in the decisions whether it also gives the fees.</span></li><li data-skip-if-combined="1"><a href="#fees">Fees are set</a> <span>— Only if the welcome does not give the fees. Not written yet, and it needs the due date.</span></li><li><a href="#every">On every email</a> <span>— The closing and signature go on every email. Please confirm them or give new words.</span></li></ul></div><div class="grp later"><h3>Needed later</h3><p class="why">Not urgent. Each says when it is needed.</p><ul><li><a href="#reminder">Payment reminder</a> <span>— A few weeks before the due date. A sample is ready.</span></li><li><a href="#please-register">Please register</a> <span>— A few weeks after the welcome. Not written yet.</span></li><li><a href="#hotel">Book your hotel room</a> <span>— Before the hotel’s family rate ends. Not written yet, and we need that date.</span></li><li><a href="#final">Final details</a> <span>— By early June 2027. Not written yet.</span></li><li><a href="#thanks">Thank you</a> <span>— After the reunion. Not written yet.</span></li></ul></div><div class="grp optional"><h3>Optional</h3><p class="why">These already have words that work. Change them only if you would say it differently.</p><ul><li><a href="#registration">Registration confirmation</a> <span>— Already going out with working words.</span></li><li><a href="#fresh-link">Fresh registration link</a> <span>— Two short lines that already work.</span></li><li><a href="#paid">Payment confirmed</a> <span>— Words are ready; it starts going out with the first payments.</span></li><li><a href="#not-found">Payment not found</a> <span>— Words are ready; only goes out when a payment can’t be matched.</span></li></ul></div></div>
+
+  <h2>What gets sent when</h2>
+  <p class="lead">In the order families will get them, from now to after the reunion. Tap a name to jump to that email.</p>
+  <p class="key"><span></span>Sent by the committee <span class="a"></span>Sent by the website by itself</p>
+  <ol class="timeline" id="timeline"><li class=""><span class="when">First, when the committee opens registration</span><a href="#welcome">Welcome to the whole family</a><span class="need now">Needed now</span><span class="who">To: Everyone: registered households and relatives on the family contact list</span></li><li class="auto"><span class="when">Any time a household registers</span><a href="#registration">Registration confirmation</a><span class="need optional">Optional</span><span class="who">To: The household that just registered</span></li><li class="auto"><span class="when">Any time someone asks for their link again</span><a href="#fresh-link">Fresh registration link</a><span class="need optional">Optional</span><span class="who">To: That household</span></li><li class="" data-skip-if-combined="1"><span class="when">After the welcome, if the welcome does not give the fees</span><a href="#fees">Fees are set</a><span class="need now">Needed now</span><span class="who">To: Everyone</span></li><li class="auto"><span class="when">After each payment, once the treasurer confirms it</span><a href="#paid">Payment confirmed</a><span class="need optional">Optional</span><span class="who">To: The household that paid</span></li><li class="auto"><span class="when">When the treasurer can’t find a reported payment</span><a href="#not-found">Payment not found</a><span class="need optional">Optional</span><span class="who">To: That household</span></li><li class=""><span class="when">A few weeks before the due date</span><a href="#reminder">Payment reminder</a><span class="need later">Needed later</span><span class="who">To: Households that still owe money</span></li><li class=""><span class="when">While registration is open</span><a href="#please-register">Please register</a><span class="need later">Needed later</span><span class="who">To: Relatives on the contact list who haven’t registered yet</span></li><li class=""><span class="when">Before the hotel’s family rate ends</span><a href="#hotel">Book your hotel room</a><span class="need later">Needed later</span><span class="who">To: Everyone</span></li><li class=""><span class="when">Two or three weeks before July 2</span><a href="#final">Final details</a><span class="need later">Needed later</span><span class="who">To: Registered households</span></li><li class=""><span class="when">After the reunion</span><a href="#thanks">Thank you</a><span class="need later">Needed later</span><span class="who">To: Everyone</span></li></ol>
+
+  <h2>The emails</h2>
+  <div id="cards"><section class="card" id="welcome"><div class="top"><h3>Welcome to the whole family</h3><span class="need now">Needed now</span><span class="tag committee">Sent by the committee</span><p class="meta"><b>When:</b> First, when the committee opens registration<br><b>To:</b> Everyone: registered households and relatives on the family contact list</p><p class="note">This is the email that gets people registered: it carries each family’s registration link. A designed version shows the same words as an invitation card with a Register button. The fees are now set, so the Fees line below can give them instead of saying they are coming.</p></div><div class="part"><p class="label">Subject</p><div class="today">Welcome to the Lewis Family Reunion 2027</div><textarea data-k="welcome:0" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">Welcome</p><div class="today">On behalf of the reunion committee, welcome. From Friday, July 2 to Monday, July 5, 2027, the Lewis family is gathering in Fresno, California, and we want you there.</div><textarea data-k="welcome:1" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">The weekend</p><div class="today">It is four days to connect and reconnect: a meet and greet on Friday evening, a banquet on Saturday night, family day and a picnic on Sunday with Fourth of July fireworks, and a farewell breakfast on Monday morning. The schedule on the website fills in as plans are confirmed.</div><textarea data-k="welcome:2" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">Day by day (designed version)</p><div class="today">Fri, Jul 2: Hotel check-in, then a meet and greet in the evening at Clo and Aunt Do’s Place
+Sat, Jul 3: Reunion activities and a family photo with every branch, then the banquet at the Dante Club
+Sun, Jul 4: Family day and picnic at Frasier Gardens, and Fourth of July fireworks
+Mon, Jul 5: Farewell breakfast at Tessy’s house, then safe travels home</div><textarea data-k="welcome:3" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">Register</p><div class="today">Registration is open. Your family link opens the registration page:
+<span class="fill">family link</span></div><textarea data-k="welcome:4" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">Pass it on</p><div class="today">Please keep the link within the family. Forward it to relatives who did not get this email, so every branch is counted.</div><textarea data-k="welcome:5" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">Hotel</p><div class="today">The reunion hotel is Home2 Suites by Hilton Fresno Northwest. Book with group code 501 for the family rate.</div><textarea data-k="welcome:6" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part" data-show="no"><p class="label">Fees (if the fees go in a separate email)</p><div class="today">Fees and payment dates are being finalized. We will email them as soon as they are set.</div><textarea data-k="welcome:7" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part" data-show="yes"><p class="label">Fees and how to pay (if the welcome gives the fees)</p><div class="today"><span class="sugg">Suggested wording</span>The fees are by age at the reunion: 23 and older $245, 16 to 22 $95, 4 to 15 $55, and 3 and under free. Payment is due by <span class="due-ans">[due date]</span>. You can pay by Zelle (LewisFamilyLove247@gmail.com) or Cash App ($LewisFamilyLove247). Please put your household ID in the payment note; you get it when you register.</div><textarea data-k="welcome:8" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">Questions</p><div class="today">Questions or ideas? Reply to this email and it reaches the committee.</div><textarea data-k="welcome:9" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div></section><section class="card" id="registration"><div class="top"><h3>Registration confirmation</h3><span class="need optional">Optional</span><span class="tag auto">Sent by the website</span><p class="meta"><b>When:</b> Any time a household registers<br><b>To:</b> The household that just registered</p><p class="note">The website also adds their private link and codes, who is coming, their days and where they are staying, and the hotel with group code 501.</p></div><div class="part"><p class="label">Subject</p><div class="today">You are registered: Lewis Family Reunion 2027</div><textarea data-k="registration:0" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">Opening line</p><div class="today">Thank you for registering for the Lewis Family Reunion, July 2–5, 2027 in Fresno.</div><textarea data-k="registration:1" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">What happens next: until fees are set</p><div class="today">Registration fees will be announced soon. Nothing is due yet; we will email you when they are set.
+Keep your household ID, <span class="fill">household id</span>. You will put it in the note when you pay.</div><textarea data-k="registration:2" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">What happens next: once fees are set</p><div class="today">Estimated total: <span class="fill">total</span>. Due by <span class="fill">due date</span>. <span class="fill">ways to pay</span>
+After you pay, report the payment on your My Registration page. Please put your household ID, <span class="fill">household id</span>, in the payment note so we can match it to you.
+The committee confirms each payment and emails you a receipt.</div><textarea data-k="registration:3" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">What happens next: extra line</p><div class="today">The committee will email updates about the schedule and the venues as plans are confirmed.</div><textarea data-k="registration:4" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">Keep this email</p><div class="today">Use the link to update who is coming, report a payment, and see when the committee confirms it. Please keep this email; anyone with the link or codes can change your registration.</div><textarea data-k="registration:5" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">Questions</p><div class="today">Questions? Reply to this email. It reaches the committee.</div><textarea data-k="registration:6" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div></section><section class="card" id="fresh-link"><div class="top"><h3>Fresh registration link</h3><span class="need optional">Optional</span><span class="tag auto">Sent by the website</span><p class="meta"><b>When:</b> Any time someone asks for their link again<br><b>To:</b> That household</p><p class="note">Everything else is the same as the registration confirmation.</p></div><div class="part"><p class="label">Subject</p><div class="today">Your Lewis Reunion registration link</div><textarea data-k="fresh-link:0" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">Opening line</p><div class="today">Here is a fresh private link to your registration. Older links and codes no longer work.</div><textarea data-k="fresh-link:1" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div></section><section class="card" id="fees" data-skip-if-combined="1"><div class="top"><h3>Fees are set</h3><span class="need now">Needed now</span><span class="tag committee">Sent by the committee</span><p class="meta"><b>When:</b> After the welcome, if the welcome does not give the fees<br><b>To:</b> Everyone</p><p class="skipnote">Not needed: the decisions say the welcome email gives the fees.</p></div><div class="part"><p class="label">It should cover</p><ul class="cover"><li>The fees by age at the reunion: 23 and older $245, 16 to 22 $95, 4 to 15 $55, 3 and under free</li><li>The due date (and a deposit, if there is one)</li><li>The ways to pay: Zelle LewisFamilyLove247@gmail.com or Cash App $LewisFamilyLove247</li><li>Putting the household ID in the payment note</li></ul><textarea data-k="fees:draft" rows="6" placeholder="Your draft. Rough notes or bullet points are fine."></textarea></div><div class="part"><p class="label">Subject line</p><textarea data-k="fees:subject" rows="1" placeholder="Your subject line (optional)"></textarea></div></section><section class="card" id="paid"><div class="top"><h3>Payment confirmed</h3><span class="need optional">Optional</span><span class="tag auto">Sent by the website</span><p class="meta"><b>When:</b> After each payment, once the treasurer confirms it<br><b>To:</b> The household that paid</p><p class="note">The website adds the amount, method, date, what they have paid so far and what is left.</p></div><div class="part"><p class="label">Subject</p><div class="today">Payment confirmed: Lewis Family Reunion 2027</div><textarea data-k="paid:0" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">Opening line</p><div class="today">The committee has confirmed the payment you reported. Thank you!</div><textarea data-k="paid:1" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div></section><section class="card" id="not-found"><div class="top"><h3>Payment not found</h3><span class="need optional">Optional</span><span class="tag auto">Sent by the website</span><p class="meta"><b>When:</b> When the treasurer can’t find a reported payment<br><b>To:</b> That household</p><p class="note">The website adds the payment details they reported.</p></div><div class="part"><p class="label">Subject</p><div class="today">We have not found your payment yet: Lewis Family Reunion 2027</div><textarea data-k="not-found:0" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">Opening line</p><div class="today">The committee has not found the payment you reported yet. Please check the details below and reply to this email so we can sort it out together.</div><textarea data-k="not-found:1" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div></section><section class="card" id="reminder"><div class="top"><h3>Payment reminder</h3><span class="need later">Needed later</span><span class="tag committee">Sent by the committee</span><p class="meta"><b>When:</b> A few weeks before the due date<br><b>To:</b> Households that still owe money</p><p class="note">A sample is ready. Reword it freely.</p></div><div class="part"><p class="label">Subject</p><div class="today">Lewis Reunion: your balance</div><textarea data-k="reminder:0" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">Reminder</p><div class="today">A reminder about the Lewis Family Reunion, July 2–5, 2027 in Fresno.</div><textarea data-k="reminder:1" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">Their balance</p><div class="today">Your household ID is <span class="fill">household id</span>. Your total is <span class="fill">total due</span>, you have paid <span class="fill">paid so far</span>, and your balance is <span class="fill">balance</span>, due by <span class="fill">deadline</span>.</div><textarea data-k="reminder:2" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">How to pay</p><div class="today"><span class="fill">ways to pay</span> Please put your household ID in the payment note.</div><textarea data-k="reminder:3" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">Their registration</p><div class="today">You can see your registration at <span class="fill">my registration</span>.</div><textarea data-k="reminder:4" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div></section><section class="card" id="please-register"><div class="top"><h3>Please register</h3><span class="need later">Needed later</span><span class="tag committee">Sent by the committee</span><p class="meta"><b>When:</b> While registration is open<br><b>To:</b> Relatives on the contact list who haven’t registered yet</p></div><div class="part"><p class="label">It should cover</p><ul class="cover"><li>Why registering early helps (food, hotel rooms, the banquet count)</li><li>Their family link, which the website adds</li></ul><textarea data-k="please-register:draft" rows="6" placeholder="Your draft. Rough notes or bullet points are fine."></textarea></div><div class="part"><p class="label">Subject line</p><textarea data-k="please-register:subject" rows="1" placeholder="Your subject line (optional)"></textarea></div></section><section class="card" id="hotel"><div class="top"><h3>Book your hotel room</h3><span class="need later">Needed later</span><span class="tag committee">Sent by the committee</span><p class="meta"><b>When:</b> Before the hotel’s family rate ends<br><b>To:</b> Everyone</p></div><div class="part"><p class="label">It should cover</p><ul class="cover"><li>Home2 Suites and group code 501</li><li>The last day to book at the family rate (we need that date)</li></ul><textarea data-k="hotel:draft" rows="6" placeholder="Your draft. Rough notes or bullet points are fine."></textarea></div><div class="part"><p class="label">Subject line</p><textarea data-k="hotel:subject" rows="1" placeholder="Your subject line (optional)"></textarea></div></section><section class="card" id="final"><div class="top"><h3>Final details</h3><span class="need later">Needed later</span><span class="tag committee">Sent by the committee</span><p class="meta"><b>When:</b> Two or three weeks before July 2<br><b>To:</b> Registered households</p></div><div class="part"><p class="label">It should cover</p><ul class="cover"><li>Where to go first on Friday</li><li>What to bring</li><li>Who to call on the day</li></ul><textarea data-k="final:draft" rows="6" placeholder="Your draft. Rough notes or bullet points are fine."></textarea></div><div class="part"><p class="label">Subject line</p><textarea data-k="final:subject" rows="1" placeholder="Your subject line (optional)"></textarea></div></section><section class="card" id="thanks"><div class="top"><h3>Thank you</h3><span class="need later">Needed later</span><span class="tag committee">Sent by the committee</span><p class="meta"><b>When:</b> After the reunion<br><b>To:</b> Everyone</p></div><div class="part"><p class="label">It should cover</p><ul class="cover"><li>Thanks</li><li>Where to find the photos</li><li>How to stay in touch</li></ul><textarea data-k="thanks:draft" rows="6" placeholder="Your draft. Rough notes or bullet points are fine."></textarea></div><div class="part"><p class="label">Subject line</p><textarea data-k="thanks:subject" rows="1" placeholder="Your subject line (optional)"></textarea></div></section><section class="card" id="every"><div class="top"><h3>On every email</h3><span class="need now">Needed now</span><p class="meta"><b>To:</b> The closing on every email, and the small print at the bottom of committee emails</p></div><div class="part"><p class="label">Closing line</p><div class="today">Somehow, some way, your foundation is Lewis, and you belong here.</div><textarea data-k="every:0" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">Signed</p><div class="today">The Lewis Family Reunion Committee
+committee@lewisfamilyroots.com</div><textarea data-k="every:1" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">Small print: registered families</p><div class="today">You are getting this because your household is registered for the Lewis Family Reunion. To stop these updates, reply with the word STOP.</div><textarea data-k="every:2" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div><div class="part"><p class="label">Small print: relatives not yet registered</p><div class="today">You are getting this because the reunion committee has you on the Lewis family contact list. To stop these updates, reply with the word STOP.</div><textarea data-k="every:3" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div></section><section class="card" id="anything-else"><div class="top"><h3>Anything else?</h3><p class="meta">An email we have missed, a question, or a note for Alex.</p></div><div class="part"><textarea data-k="other:note" rows="4" placeholder="Optional"></textarea></div></section></div>
+
+  <div class="send" id="send">
+    <h2>Send your answers and changes</h2>
+    <p id="count">You haven’t answered or changed anything yet.</p>
+    <div class="btns">
+      <a class="btn primary" id="mail" href="mailto:committee@lewisfamilyroots.com?subject=Reunion%20email%20wording&amp;body=Email%20wording%20from%20(name%20not%20given)">Email my changes</a>
+      <button class="btn ghost" id="copy" type="button">Copy my changes</button>
+    </div>
+    <p class="status" id="status"></p>
+    <p style="font-size:15px">Email my changes opens your email with everything filled in, addressed to <span class="addr" id="to">committee@lewisfamilyroots.com</span>. If you have a lot of changes, it copies them first and the email asks you to paste them in. If no email opens, press <b>Copy my changes</b> and paste it into an email or a text message to Alex instead.</p>
+    <textarea id="out" readonly="" aria-label="Your changes, ready to send"></textarea>
+  </div>
+
+  <footer>Somehow, some way, your foundation is Lewis, and you belong here.</footer>
+</main>
+
+<script>
+/* Where the changes go. One line to change. */
+var SEND_TO = 'committee@lewisfamilyroots.com';
+
+/* {{...}} marks words the website fills in for each family. */
+var EMAILS = [
+  { id:'welcome', title:'Welcome to the whole family', by:'committee', need:'now', needWhy:'The first email to everyone. Read it all, and choose in the decisions whether it also gives the fees.', when:'First, when the committee opens registration',
+    who:'Everyone: registered households and relatives on the family contact list',
+    note:'This is the email that gets people registered: it carries each family’s registration link. A designed version shows the same words as an invitation card with a Register button. The fees are now set, so the Fees line below can give them instead of saying they are coming.',
+    parts:[
+      ['Subject','Welcome to the Lewis Family Reunion 2027'],
+      ['Welcome','On behalf of the reunion committee, welcome. From Friday, July 2 to Monday, July 5, 2027, the Lewis family is gathering in Fresno, California, and we want you there.'],
+      ['The weekend','It is four days to connect and reconnect: a meet and greet on Friday evening, a banquet on Saturday night, family day and a picnic on Sunday with Fourth of July fireworks, and a farewell breakfast on Monday morning. The schedule on the website fills in as plans are confirmed.'],
+      ['Day by day (designed version)','Fri, Jul 2: Hotel check-in, then a meet and greet in the evening at Clo and Aunt Do’s Place\nSat, Jul 3: Reunion activities and a family photo with every branch, then the banquet at the Dante Club\nSun, Jul 4: Family day and picnic at Frasier Gardens, and Fourth of July fireworks\nMon, Jul 5: Farewell breakfast at Tessy’s house, then safe travels home'],
+      ['Register','Registration is open. Your family link opens the registration page:\n{{family link}}'],
+      ['Pass it on','Please keep the link within the family. Forward it to relatives who did not get this email, so every branch is counted.'],
+      ['Hotel','The reunion hotel is Home2 Suites by Hilton Fresno Northwest. Book with group code 501 for the family rate.'],
+      ['Fees (if the fees go in a separate email)','Fees and payment dates are being finalized. We will email them as soon as they are set.',{show:'no'}],
+      ['Fees and how to pay (if the welcome gives the fees)','The fees are by age at the reunion: 23 and older $245, 16 to 22 $95, 4 to 15 $55, and 3 and under free. Payment is due by %%DUE%%. You can pay by Zelle (LewisFamilyLove247@gmail.com) or Cash App ($LewisFamilyLove247). Please put your household ID in the payment note; you get it when you register.',{show:'yes',suggested:true}],
+      ['Questions','Questions or ideas? Reply to this email and it reaches the committee.']
+    ]},
+  { id:'registration', title:'Registration confirmation', by:'auto', need:'optional', needWhy:'Already going out with working words.', when:'Any time a household registers',
+    who:'The household that just registered',
+    note:'The website also adds their private link and codes, who is coming, their days and where they are staying, and the hotel with group code 501.',
+    parts:[
+      ['Subject','You are registered: Lewis Family Reunion 2027'],
+      ['Opening line','Thank you for registering for the Lewis Family Reunion, July 2–5, 2027 in Fresno.'],
+      ['What happens next: until fees are set','Registration fees will be announced soon. Nothing is due yet; we will email you when they are set.\nKeep your household ID, {{household id}}. You will put it in the note when you pay.'],
+      ['What happens next: once fees are set','Estimated total: {{total}}. Due by {{due date}}. {{ways to pay}}\nAfter you pay, report the payment on your My Registration page. Please put your household ID, {{household id}}, in the payment note so we can match it to you.\nThe committee confirms each payment and emails you a receipt.'],
+      ['What happens next: extra line','The committee will email updates about the schedule and the venues as plans are confirmed.'],
+      ['Keep this email','Use the link to update who is coming, report a payment, and see when the committee confirms it. Please keep this email; anyone with the link or codes can change your registration.'],
+      ['Questions','Questions? Reply to this email. It reaches the committee.']
+    ]},
+  { id:'fresh-link', title:'Fresh registration link', by:'auto', need:'optional', needWhy:'Two short lines that already work.', when:'Any time someone asks for their link again',
+    who:'That household',
+    note:'Everything else is the same as the registration confirmation.',
+    parts:[
+      ['Subject','Your Lewis Reunion registration link'],
+      ['Opening line','Here is a fresh private link to your registration. Older links and codes no longer work.']
+    ]},
+  { id:'fees', title:'Fees are set', by:'committee', isNew:true, skipIfCombined:true, need:'now', needWhy:'Only if the welcome does not give the fees. Not written yet, and it needs the due date.', when:'After the welcome, if the welcome does not give the fees',
+    who:'Everyone',
+    cover:['The fees by age at the reunion: 23 and older $245, 16 to 22 $95, 4 to 15 $55, 3 and under free','The due date (and a deposit, if there is one)','The ways to pay: Zelle LewisFamilyLove247@gmail.com or Cash App $LewisFamilyLove247','Putting the household ID in the payment note']},
+  { id:'paid', title:'Payment confirmed', by:'auto', need:'optional', needWhy:'Words are ready; it starts going out with the first payments.', when:'After each payment, once the treasurer confirms it',
+    who:'The household that paid',
+    note:'The website adds the amount, method, date, what they have paid so far and what is left.',
+    parts:[
+      ['Subject','Payment confirmed: Lewis Family Reunion 2027'],
+      ['Opening line','The committee has confirmed the payment you reported. Thank you!']
+    ]},
+  { id:'not-found', title:'Payment not found', by:'auto', need:'optional', needWhy:'Words are ready; only goes out when a payment can’t be matched.', when:'When the treasurer can’t find a reported payment',
+    who:'That household',
+    note:'The website adds the payment details they reported.',
+    parts:[
+      ['Subject','We have not found your payment yet: Lewis Family Reunion 2027'],
+      ['Opening line','The committee has not found the payment you reported yet. Please check the details below and reply to this email so we can sort it out together.']
+    ]},
+  { id:'reminder', title:'Payment reminder', by:'committee', need:'later', needWhy:'A few weeks before the due date. A sample is ready.', when:'A few weeks before the due date',
+    who:'Households that still owe money',
+    note:'A sample is ready. Reword it freely.',
+    parts:[
+      ['Subject','Lewis Reunion: your balance'],
+      ['Reminder','A reminder about the Lewis Family Reunion, July 2–5, 2027 in Fresno.'],
+      ['Their balance','Your household ID is {{household id}}. Your total is {{total due}}, you have paid {{paid so far}}, and your balance is {{balance}}, due by {{deadline}}.'],
+      ['How to pay','{{ways to pay}} Please put your household ID in the payment note.'],
+      ['Their registration','You can see your registration at {{my registration}}.']
+    ]},
+  { id:'please-register', title:'Please register', by:'committee', isNew:true, need:'later', needWhy:'A few weeks after the welcome. Not written yet.', when:'While registration is open',
+    who:'Relatives on the contact list who haven’t registered yet',
+    cover:['Why registering early helps (food, hotel rooms, the banquet count)','Their family link, which the website adds']},
+  { id:'hotel', title:'Book your hotel room', by:'committee', isNew:true, need:'later', needWhy:'Before the hotel’s family rate ends. Not written yet, and we need that date.', when:'Before the hotel’s family rate ends',
+    who:'Everyone',
+    cover:['Home2 Suites and group code 501','The last day to book at the family rate (we need that date)']},
+  { id:'final', title:'Final details', by:'committee', isNew:true, need:'later', needWhy:'By early June 2027. Not written yet.', when:'Two or three weeks before July 2',
+    who:'Registered households',
+    cover:['Where to go first on Friday','What to bring','Who to call on the day']},
+  { id:'thanks', title:'Thank you', by:'committee', isNew:true, need:'later', needWhy:'After the reunion. Not written yet.', when:'After the reunion',
+    who:'Everyone',
+    cover:['Thanks','Where to find the photos','How to stay in touch']},
+  { id:'every', title:'On every email', by:'both', need:'now', needWhy:'The closing and signature go on every email. Please confirm them or give new words.', when:'',
+    who:'The closing on every email, and the small print at the bottom of committee emails',
+    parts:[
+      ['Closing line','Somehow, some way, your foundation is Lewis, and you belong here.'],
+      ['Signed','The Lewis Family Reunion Committee\ncommittee@lewisfamilyroots.com'],
+      ['Small print: registered families','You are getting this because your household is registered for the Lewis Family Reunion. To stop these updates, reply with the word STOP.'],
+      ['Small print: relatives not yet registered','You are getting this because the reunion committee has you on the Lewis family contact list. To stop these updates, reply with the word STOP.']
+    ]}
+];
+
+var KEY = 'lewis-email-wording-v1';
+var store = {};
+try { store = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { store = {}; }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function showToday(s) {
+  return esc(s).replace(/\{\{\s*([^}]+?)\s*\}\}/g, function (m, f) { return '<span class="fill">' + f + '</span>'; });
+}
+function plain(s) { return String(s).replace(/\{\{\s*([^}]+?)\s*\}\}/g, '[$1]'); }
+function tagFor(e) {
+  if (e.by === 'both') return '';
+  return (e.by === 'auto' ? '<span class="tag auto">Sent by the website</span>' : '<span class="tag committee">Sent by the committee</span>');
+}
+
+var NEED = {
+  now: { label:'Needed now', why:'Please send these first.' },
+  later: { label:'Needed later', why:'Not urgent. Each says when it is needed.' },
+  optional: { label:'Optional', why:'These already have words that work. Change them only if you would say it differently.' }
+};
+function needBadge(e) { return e.need ? '<span class="need ' + e.need + '">' + NEED[e.need].label + '</span>' : ''; }
+
+/* Build the page once. A copy saved after building (the one to email) already holds it all,
+   so it reads even where scripts are off, and this block is skipped. */
+if (!document.documentElement.hasAttribute('data-built')) {
+/* what we need */
+var needs = document.getElementById('needs');
+['now', 'later', 'optional'].forEach(function (lv) {
+  var list = EMAILS.filter(function (e) { return e.need === lv; });
+  var g = document.createElement('div');
+  g.className = 'grp ' + lv;
+  g.innerHTML = '<h3>' + NEED[lv].label + '</h3><p class="why">' + NEED[lv].why + '</p><ul>' +
+    list.map(function (e) { return '<li' + (e.skipIfCombined ? ' data-skip-if-combined="1"' : '') + '><a href="#' + e.id + '">' + esc(e.title) + '</a> <span>— ' + esc(e.needWhy || '') + '</span></li>'; }).join('') + '</ul>';
+  needs.appendChild(g);
+});
+
+/* timeline list */
+var tl = document.getElementById('timeline');
+EMAILS.forEach(function (e) {
+  if (!e.when) return;
+  var li = document.createElement('li');
+  li.className = e.by === 'auto' ? 'auto' : '';
+  if (e.skipIfCombined) li.setAttribute('data-skip-if-combined', '1');
+  li.innerHTML = '<span class="when">' + esc(e.when) + '</span><a href="#' + e.id + '">' + esc(e.title) + '</a>' + needBadge(e) +
+    '<span class="who">To: ' + esc(e.who) + '</span>';
+  tl.appendChild(li);
+});
+
+/* cards */
+var cards = document.getElementById('cards');
+EMAILS.forEach(function (e) {
+  var c = document.createElement('section');
+  c.className = 'card'; c.id = e.id;
+  if (e.skipIfCombined) c.setAttribute('data-skip-if-combined', '1');
+  var html = '<div class="top"><h3>' + esc(e.title) + '</h3>' + needBadge(e) + tagFor(e) +
+    '<p class="meta">' + (e.when ? '<b>When:</b> ' + esc(e.when) + '<br>' : '') + '<b>To:</b> ' + esc(e.who) + '</p>' +
+    (e.note ? '<p class="note">' + esc(e.note) + '</p>' : '') +
+    (e.skipIfCombined ? '<p class="skipnote">Not needed: the decisions say the welcome email gives the fees.</p>' : '') + '</div>';
+  if (e.parts) {
+    e.parts.forEach(function (p, i) {
+      var k = e.id + ':' + i, o = p[2] || {};
+      html += '<div class="part"' + (o.show ? ' data-show="' + o.show + '"' : '') + '><p class="label">' + esc(p[0]) + '</p><div class="today">' +
+        (o.suggested ? '<span class="sugg">Suggested wording</span>' : '') +
+        showToday(p[1]).replace(/%%DUE%%/g, '<span class="due-ans">[due date]</span>') + '</div>' +
+        '<textarea data-k="' + k + '" rows="2" placeholder="Your wording (leave empty to keep it)"></textarea></div>';
+    });
+  } else {
+    var k = e.id + ':draft';
+    html += '<div class="part"><p class="label">It should cover</p><ul class="cover">' +
+      e.cover.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' +
+      '<textarea data-k="' + k + '" rows="6" placeholder="Your draft. Rough notes or bullet points are fine."></textarea></div>';
+    html += '<div class="part"><p class="label">Subject line</p>' +
+      '<textarea data-k="' + e.id + ':subject" rows="1" placeholder="Your subject line (optional)"></textarea></div>';
+  }
+  c.innerHTML = html;
+  cards.appendChild(c);
+});
+
+/* anything else */
+var other = document.createElement('section');
+other.className = 'card'; other.id = 'anything-else';
+other.innerHTML = '<div class="top"><h3>Anything else?</h3><p class="meta">An email we have missed, a question, or a note for Alex.</p></div>' +
+  '<div class="part"><textarea data-k="other:note" rows="4" placeholder="Optional"></textarea></div>';
+cards.appendChild(other);
+document.documentElement.setAttribute('data-built', '1');
+}
+var pn = document.getElementById('phone-note'); if (pn) pn.hidden = true;
+
+/* lookups for the summary */
+function describe(k) {
+  var bits = k.split(':'), id = bits[0], which = bits[1];
+  if (id === 'other') return { title:'Anything else', label:'', today:'' };
+  var e = EMAILS.filter(function (x) { return x.id === id; })[0];
+  if (!e) return null;
+  if (which === 'draft') return { title:e.title, label:'Draft', today:'' };
+  if (which === 'subject') return { title:e.title, label:'Subject line', today:'' };
+  var p = e.parts[Number(which)];
+  return { title:e.title, label:p[0], today:plain(p[1]).replace(/%%DUE%%/g, dueText() || '[due date]') };
+}
+
+var who = document.getElementById('who');
+who.value = store.__name || '';
+who.addEventListener('input', function () { store.__name = who.value; save(); update(); });
+
+function grow(t) {
+  t.style.height = '';
+  if (t.value && t.offsetWidth) t.style.height = Math.max(t.offsetHeight, t.scrollHeight + 2) + 'px';
+}
+var boxes = Array.prototype.slice.call(document.querySelectorAll('textarea[data-k]'));
+boxes.forEach(function (t) {
+  t.value = store[t.dataset.k] || '';
+  t.addEventListener('input', function () {
+    if (t.value.trim()) store[t.dataset.k] = t.value; else delete store[t.dataset.k];
+    save(); grow(t); update();
+  });
+});
+
+document.getElementById('to').textContent = SEND_TO;
+
+/* decisions */
+var qInputs = Array.prototype.slice.call(document.querySelectorAll('[data-q]'));
+qInputs.forEach(function (el) {
+  var key = 'q:' + el.dataset.q, v = store[key] || '';
+  if (el.type === 'radio') el.checked = (el.value === v); else el.value = v;
+  el.addEventListener(el.type === 'radio' ? 'change' : 'input', function () {
+    var val = el.type === 'radio' ? (el.checked ? el.value : store[key]) : el.value;
+    if (String(val || '').trim()) store[key] = val; else delete store[key];
+    save(); update();
+  });
+});
+function longDate(iso) {
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); if (!m) return '';
+  var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return months[Number(m[2]) - 1] + ' ' + Number(m[3]) + ', ' + m[1];
+}
+function dueText() { return longDate(store['q:due']) || (store['q:dueNote'] || '').trim(); }
+function answers() {
+  var list = [];
+  document.querySelectorAll('.q').forEach(function (q) {
+    var parts = [];
+    q.querySelectorAll('[data-q]').forEach(function (el) {
+      if (el.type === 'radio') { if (el.checked) parts.push(el.dataset.q === 'combine' ? ({ yes:'Yes, one email', no:'No, a separate fees email', unsure:'Not sure' })[el.value] : el.value); }
+      else if (el.value.trim()) parts.push(el.type === 'date' ? longDate(el.value) : el.value.trim());
+    });
+    q.classList.toggle('answered', parts.length > 0);
+    if (parts.length) list.push(q.dataset.label + ': ' + parts.join(' / '));
+  });
+  return list;
+}
+
+function compose() {
+  var name = (who.value || '').trim(), lines = [], n = 0, lastTitle = '';
+  lines.push('Email wording from ' + (name || '(name not given)'));
+  var ans = answers();
+  if (ans.length) { lines.push(''); lines.push('== DECISIONS =='); ans.forEach(function (a) { lines.push(a); }); n += ans.length; }
+  boxes.forEach(function (t) {
+    var v = t.value.trim(); if (!v) return;
+    var d = describe(t.dataset.k); if (!d) return;
+    n++;
+    if (d.title !== lastTitle) { lines.push(''); lines.push('== ' + d.title.toUpperCase() + ' =='); lastTitle = d.title; }
+    if (d.label) lines.push(d.label + ':');
+    if (d.today) lines.push('  Today: ' + d.today.replace(/\n/g, '\n         '));
+    lines.push((d.today ? '  Change to: ' : '  ') + v.replace(/\n/g, '\n  '));
+  });
+  return { text: lines.join('\n'), n: n, name: name };
+}
+
+var mail = document.getElementById('mail'), out = document.getElementById('out'), count = document.getElementById('count'), statusEl = document.getElementById('status');
+function update() {
+  document.documentElement.setAttribute('data-combine', store['q:combine'] || '');
+  var dt = dueText();
+  document.querySelectorAll('.due-ans').forEach(function (s) { s.textContent = dt || '[due date]'; });
+  var r = compose();
+  out.value = r.n ? r.text : '';
+  count.textContent = r.n ? 'You have ' + r.n + (r.n === 1 ? ' answer or change' : ' answers and changes') + ' ready to send.' : 'You haven’t answered or changed anything yet.';
+  mail.href = mailHref(r);
+  document.querySelectorAll('.card').forEach(function (c) {
+    c.classList.toggle('has-change', !!c.querySelector('textarea.filled, textarea[data-k]') &&
+      Array.prototype.some.call(c.querySelectorAll('textarea[data-k]'), function (t) { return t.value.trim(); }));
+  });
+  boxes.forEach(function (t) { t.classList.toggle('filled', !!t.value.trim()); });
+}
+/* Many mail apps (Outlook, Windows Mail) ignore an email link longer than about 2,000 characters,
+   so long changes go by the clipboard: the button copies them, and the email only says to paste them in. */
+var MAIL_MAX = 1800, longMail = false;
+function mailHref(r) {
+  var head = 'mailto:' + SEND_TO + '?subject=' + encodeURIComponent('Reunion email wording' + (r.name ? ' from ' + r.name : '')) + '&body=';
+  var full = head + encodeURIComponent(r.text);
+  longMail = full.length > MAIL_MAX;
+  return longMail ? head + encodeURIComponent('Hi Alex,\n\nHere are my answers and changes:\n\n(Paste them here: right-click and choose Paste, or press Ctrl+V, or Cmd+V on a Mac.)\n\n') : full;
+}
+/* Copies the text. Calls back with true when it is on the clipboard, false when the person has to copy it by hand. */
+function copyText(t, then) {
+  function byHand() {
+    out.value = t; out.focus(); out.select();
+    var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+    then(ok);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { then(true); }, byHand); else byHand();
+}
+var BY_HAND = 'Your browser would not copy it for you. The text in the box below is selected: copy it (Ctrl+C, or Cmd+C on a Mac) and paste it into an email to ' + SEND_TO + '.';
+mail.addEventListener('click', function (ev) {
+  update();
+  var r = compose();
+  if (!r.n) { ev.preventDefault(); statusEl.textContent = 'Answer a decision or type a change first.'; return; }
+  if (!longMail) { statusEl.textContent = 'Opening your email with your changes in it. Check it, then press Send there. If no email opens, press Copy my changes instead.'; return; }
+  copyText(r.text, function (ok) {
+    statusEl.textContent = ok ? 'Your changes are copied. In the email that opens, paste them in (Ctrl+V, or Cmd+V on a Mac), then press Send. If no email opens, start a new email to ' + SEND_TO + ' and paste them there.' : BY_HAND;
+  });
+});
+document.getElementById('copy').addEventListener('click', function () {
+  var r = compose();
+  if (!r.n) { statusEl.textContent = 'Answer a decision or type a change first.'; return; }
+  copyText(r.text, function (ok) {
+    statusEl.textContent = ok ? 'Copied. Paste it into an email to ' + SEND_TO + ' (Ctrl+V, or Cmd+V on a Mac) and press Send.' : BY_HAND;
+  });
+});
+
+update();
+window.addEventListener('load', function () { boxes.forEach(grow); });
+</script>
+
+
+</body></html>
