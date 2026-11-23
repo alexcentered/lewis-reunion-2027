@@ -1930,7 +1930,7 @@ function linkEmail_(row, cfg, token, rotate) {
     '<p>' + (rotate ? 'Here is a fresh private link to your registration. Older links and codes no longer work.' : regThanks_(row, cfg)) + '</p>' +
     linkButton_(link, 'Open my registration') +
     codeBox_([
-      'Link: <a href="' + htmlEsc_(link) + '">' + htmlEsc_(link) + '</a>',
+      'Link: <a href="' + htmlEsc_(link) + '" style="word-break:break-all">' + htmlEsc_(link) + '</a>',   // a long address must wrap inside the box on a phone
       'Website: ' + htmlEsc_(base),
       'Family code: <b>' + htmlEsc_(code) + '</b>',
       'Registration code: <b>' + htmlEsc_(groups_(token)) + '</b>',
@@ -1965,7 +1965,7 @@ function receiptEmail_(row, pay, cfg) {
     '<p>Confirmed so far: ' + htmlEsc_(money_(row.Confirmed)) + '<br>' + (feesSet ? 'Remaining balance: ' + htmlEsc_(money_(row.Balance)) : 'Fees to be announced') + '</p>' +
     linkButton_(link, 'Open the reunion website') +
     codeBox_([
-      'Website: <a href="' + htmlEsc_(link) + '">' + htmlEsc_(link) + '</a>',
+      'Website: <a href="' + htmlEsc_(link) + '" style="word-break:break-all">' + htmlEsc_(link) + '</a>',
       'Family code: <b>' + htmlEsc_(code) + '</b>',
       'To open your registration, use the private link from your registration email, or choose Email my link on the My Registration page.'
     ]), cfg);
