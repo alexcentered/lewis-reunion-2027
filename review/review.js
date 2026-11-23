@@ -15,8 +15,9 @@
   function get(k) { try { return ls.getItem(k); } catch (e) { return null; } }
   function set(k, v) { try { if (v == null) ls.removeItem(k); else ls.setItem(k, v); } catch (e) {} }
 
-  // The key arrives once as #k=..., is kept on this device, and is taken out of the address bar.
-  var m = /[#&]k=([0-9a-fA-F]{32})\b/.exec(location.hash);
+  // The key arrives once in the link, as #vincent (or the older #k=<32 hex>), is kept on this device, and is taken out
+  // of the address bar.
+  var m = /^#(?:k=)?([a-zA-Z0-9][a-zA-Z0-9-]{1,63})$/.exec(location.hash);
   if (m) {
     set(KEY_STORE, m[1].toLowerCase());
     try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
@@ -84,7 +85,7 @@
   function load() {
     if (!api) { say('The review page cannot reach the website right now.', true); return; }
     if (!key) {
-      block('<b>This page needs your private review link.</b><br>Please open it from the email Alex sent you. The link ends in <b>#k=</b> and a long code.');
+      block('<b>This page needs your private review link.</b><br>Please open it from the email Alex sent you. The link ends in your name.');
       say('Not connected', true); return;
     }
     say('Opening your saved changes…');
