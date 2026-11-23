@@ -758,8 +758,9 @@ function setup() {
 /* ---------------- reviews ----------------
    The review page (review/ on the site) lets a committee member try the homepage order and the email wording on any
    phone or computer, and saves as they go. One Reviews row per reviewer (REVIEW_HEADERS). The committee types a Name;
-   the menu "Make review links" (reviewLinks) fills a blank Key with 32 random hex characters and Link with
-   siteUrl/review/#k=<Key>. The key is in the part of the link after #, which browsers never send to a server, and the
+   the menu "Make review links" (reviewLinks) fills a blank Key with the reviewer's first name (reviewKey_, such as
+   vincent, or vincent-2 when that name is taken) and Link with siteUrl/review/#<Key>. Older 32-hex keys and #k= links
+   still work. A name key is easy to guess, by the committee's choice: anyone who tries it can open that review. The key is in the part of the link after #, which browsers never send to a server, and the
    page sends it only in the POST body. A wrong or blank key gets the same answer as an unknown one. Clearing or changing
    a Key retires that link. The page writes Saved, the two readable columns and Data (the page state as JSON, read back
    when the reviewer opens the page again). Nothing here sends mail. */
@@ -770,7 +771,7 @@ const REVIEW_BAD = { ok: false, error: 'review', message: 'This review link is n
 /** action review (load) or reviewSave (save, run inside locked_). p.key, and for a save p.data, p.order, p.wording. */
 function review_(p, cfg, save) {
   const key = String(p.key || '').trim().toLowerCase();
-  if (!/^[0-9a-f]{32}$/.test(key)) return REVIEW_BAD;
+  if (!/^[a-z0-9][a-z0-9-]{1,63}$/.test(key)) return REVIEW_BAD;
   const sh = SpreadsheetApp.getActive().getSheetByName(TAB.reviews);
   if (!sh || sh.getLastRow() < 2) return REVIEW_BAD;
   const H = headers_(sh);
@@ -794,17 +795,28 @@ function review_(p, cfg, save) {
   return { ok: true, saved: set.Saved.toISOString() };
 }
 
+/** "Vincent Lewis" -> "vincent", or "vincent-2" (then -3...) when a Key in taken (lowercase keys already used) has it. */
+function reviewKey_(name, taken) {
+  let first = (String(name || '').toLowerCase().split(/[^a-z0-9]+/).filter(String)[0] || 'review').slice(0, 20);
+  if (first.length < 2) first = 'review-' + first;
+  let key = first, n = 1;
+  while ((taken || []).indexOf(key) >= 0) key = first + '-' + (++n);
+  return key;
+}
+
 /** Menu "Make review links": creates the Reviews tab if needed, and gives every row with a Name and no Key a key and a link. */
 function reviewLinks() {
   const sh = ensureTab_(TAB.reviews, REVIEW_HEADERS), H = headers_(sh), last = sh.getLastRow();
   const base = siteBase_(config_()).replace(/\/+$/, '');
   let made = 0;
+  const taken = last < 2 ? [] : sh.getRange(2, H.col.Key + 1, last - 1, 1).getValues().map(v => str_(v[0]).trim().toLowerCase()).filter(String);
   for (let r = 2; r <= last; r++) {
     const row = rowAt_(sh, H, r);
     if (!str_(row.Name).trim() || str_(row.Key).trim()) continue;
-    const key = newToken_();
+    const key = reviewKey_(row.Name, taken);
+    taken.push(key);
     sh.getRange(r, H.col.Key + 1).setValue(key);
-    sh.getRange(r, H.col.Link + 1).setValue(base + '/review/#k=' + key);
+    sh.getRange(r, H.col.Link + 1).setValue(base + '/review/#' + key);
     made++;
   }
   alert_('Review links: ' + made + ' new. Type a name in the Reviews tab, then run this again for each new reviewer.');
