@@ -9,6 +9,9 @@
   var PAGES = [['index.html', 'Start', 'home'], ['sample.html', '1. Sample', 'sample'], ['order.html', '2. <span class="rv-long">Homepage </span>order', 'order'],
     ['wording.html', '3. Email<span class="rv-long"> wording</span>', 'wording']];
   var page = document.documentElement.getAttribute('data-review') || 'home';
+  // The backup for when this page can't reach the website: a Google Sheet with the same tables, shared with the reviewer.
+  var BACKUP = 'https://docs.google.com/spreadsheets/d/1dibJT8-1s4UtKp-QocN5Q3z8m5HFxCYM6w94IhsOJRI/edit';
+  var BACKUP_LINK = '<a href="' + BACKUP + '" target="_blank" rel="noopener" style="color:inherit">use the backup Google Sheet</a>';
   var api = window.LR && window.LR.apiUrl;
   var ls = window.localStorage;
 
@@ -34,7 +37,12 @@
   }
 
   var bar, status, cover, reviewer = '';
-  function say(text, bad) { if (!status) return; status.textContent = text; status.className = 'rv-status' + (bad ? ' bad' : ''); }
+  function say(text, bad, backup) {
+    if (!status) return;
+    status.textContent = text;
+    if (backup) { status.appendChild(document.createTextNode(' Or ')); status.insertAdjacentHTML('beforeend', BACKUP_LINK + '.'); }
+    status.className = 'rv-status' + (bad ? ' bad' : '');
+  }
   function block(html) { if (!cover) return; cover.innerHTML = '<div>' + html + '</div>'; cover.hidden = false; }
   function time(iso) {
     var d = iso ? new Date(iso) : new Date();
@@ -85,14 +93,14 @@
   function load() {
     if (!api) { say('The review page cannot reach the website right now.', true); return; }
     if (!key) {
-      block('<b>This page needs your private review link.</b><br>Please open it from the email Alex sent you. The link ends in your name.');
+      block('<b>This page needs your private review link.</b><br>Please open it from the email Alex sent you, or ' + BACKUP_LINK + '.');
       say('Not connected', true); return;
     }
     say('Opening your saved changes…');
     post({ action: 'review', key: key }).then(function (r) {
       if (!r || !r.ok) {
-        if (r && r.error === 'review') { block('<b>This review link is not working.</b><br>Please ask Alex for a new one.'); say('Not connected', true); }
-        else say((r && r.message) || 'Could not open your saved changes. Please reload the page.', true);
+        if (r && r.error === 'review') { block('<b>This review link is not working.</b><br>Please ask Alex for a new one, or ' + BACKUP_LINK + ' for now.'); say('Not connected', true); }
+        else say((r && r.message) || 'Could not open your saved changes. Please reload the page.', true, true);
         return;
       }
       reviewer = r.name || '';
@@ -120,7 +128,7 @@
       lastSaved = json(dataNow()); set(SYNCED, lastSaved); set(SYNCED_FOR, key);
       ready = true;
       say(r.saved ? 'All changes saved. Last saved ' + new Date(r.saved).toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' at ' + time(r.saved) + '.' : 'Ready. Your changes save by themselves.');
-    }, function () { say('Could not reach the website. Check your connection, then reload the page.', true); });
+    }, function () { say('Could not reach the website. Check your connection, then reload the page.', true, true); });
   }
 
   function build() {
