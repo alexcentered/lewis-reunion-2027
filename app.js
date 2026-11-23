@@ -145,6 +145,9 @@ function applySections(){
   VIEWS.filter(v => !live(v)).forEach(v => {
     $$('.nav a[href="#' + v + '"], .tile[href="#' + v + '"], [data-view="' + v + '"]').forEach(el => { el.hidden = true; el.style.display = 'none'; el.setAttribute('aria-hidden', 'true'); });
   });
+  /* The Home tiles are a way around the whole site. With one tab left to point at, the essentials above already do that job. */
+  const tiles = $('#homeTiles');
+  if (tiles) tiles.hidden = $$('#homeTiles .tile').filter(t => !t.hidden).length < 2;
 }
 $$('.subnav button').forEach(b => b.addEventListener('click', () => {
   $$('.subnav button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
@@ -213,10 +216,14 @@ function feeListHtml(deadline){
 function renderInfo(){
   const i = S.info;
   $('#roomBlock').textContent = i.roomBlock || 'Room-block details coming from the committee.';
-  if (feeSet()) $('#sFeeNote').innerHTML = feeListHtml(i.deadline);
-  else $('#sFeeNote').textContent = 'The committee will post registration fees soon. You can register now and pay later.';
+  const NO_FEES = 'The committee will post registration fees soon. You can register now and pay later.';
+  if (feeSet()){ $('#sFeeNote').innerHTML = feeListHtml(i.deadline); $('#homeFees').innerHTML = feeListHtml(i.deadline) + '<div class="fees-due">Register now and pay later.</div>'; }
+  else { $('#sFeeNote').textContent = NO_FEES; $('#homeFees').textContent = NO_FEES; }
   const p = (S.family && S.family.pay) || {};
   const ways = [p.zelle && 'Zelle: ' + p.zelle, p.cashapp && 'Cash App: ' + p.cashapp, p.venmo && 'Venmo: ' + p.venmo, p.paypal && 'PayPal: ' + p.paypal].filter(Boolean);
+  /* Home, step 2: name the ways to pay once the family code has loaded them. The handles themselves stay on My Registration. */
+  const names = [p.zelle && 'Zelle', p.cashapp && 'Cash App', p.venmo && 'Venmo', p.paypal && 'PayPal'].filter(Boolean);
+  $('#homePay').textContent = 'Send your fees ' + (names.length ? 'by ' + names.join(names.length > 2 ? ', ' : ' or ') : 'to the committee') + ', then report the payment on My Registration. The committee confirms it and emails you a receipt.';
   const how = ways.length ? 'Send payment by ' + ways.join(' · ') + '.' : 'The committee will post where to send payment.';
   $('#payHow').textContent = how + (p.verifier ? ' ' + p.verifier + ' confirms each payment.' : '') + (i.deadline ? ' Due by ' + fmtDate(i.deadline) + '.' : '');
   $('#faqPay').textContent = 'Pay the committee using the method posted on your My Registration page. Then report the payment there. Your balance updates once ' + (p.verifier || "the committee's payment verifier") + ' confirms the money arrived. Until then it shows as “awaiting confirmation.”';
@@ -224,9 +231,13 @@ function renderInfo(){
 }
 function renderCounts(){
   $('#cdDays').textContent = Math.max(0, Math.ceil((new Date('2027-07-02T12:00:00-07:00') - new Date()) / 864e5));
+  /* The two family counters only show once there is something to count: a row of zeros on opening day reads as "nobody is coming". */
   const roll = S.family ? S.family.roll : null;
-  $('#cdHouses').textContent = roll ? roll.length : '—';
-  $('#cdBranches').textContent = roll ? new Set(roll.map(r => r.branch).filter(b => b && b !== 'Not sure yet' && b !== 'Married into the family')).size : '—';
+  const houses = roll ? roll.length : 0;
+  const branches = roll ? new Set(roll.map(r => r.branch).filter(b => b && b !== 'Not sure yet' && b !== 'Married into the family')).size : 0;
+  $('#cdHouses').textContent = houses; $('#cdHousesLabel').textContent = houses === 1 ? 'household on the list' : 'households on the list';
+  $('#cdBranches').textContent = branches; $('#cdBranchesLabel').textContent = branches === 1 ? 'branch represented' : 'branches represented';
+  $('#cdHousesBox').hidden = !houses; $('#cdBranchesBox').hidden = !branches;
 }
 
 /* ---------- family data ---------- */

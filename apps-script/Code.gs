@@ -95,12 +95,13 @@ const REG_THANKS_DEFAULT = 'Thank you for registering for the Lewis Family Reuni
 const REG_NEXT_DEFAULT = 'The committee will email updates about the schedule and the venues as plans are confirmed.';
 const TPL_WELCOME = 'Welcome from the committee';
 const WELCOME_SEED = [TPL_WELCOME, 'Welcome to the Lewis Family Reunion 2027',
-  'Hi,\n\nOn behalf of the reunion committee, welcome. From Friday, July 2 to Monday, July 5, 2027, the Lewis family is gathering in Fresno, California, and we want you there.\n\n' +
-  'It is four days to connect and reconnect: a meet and greet on Friday evening, a banquet on Saturday night, family day and a picnic on Sunday with Fourth of July fireworks, and a farewell breakfast on Monday morning. The schedule on the website fills in as plans are confirmed.\n\n' +
-  'Registration is open. Your family link opens the registration page:\n{{family link}}\n\n' +
-  'Please keep the link within the family. Forward it to relatives who did not get this email, so every branch is counted.\n\n' +
-  'The reunion hotel is Home2 Suites by Hilton Fresno Northwest. Book with group code 501 for the family rate.\n\n' +
-  'Fees and payment dates are being finalized. We will email them as soon as they are set.\n\n' +
+  'Hi,\n\nOn behalf of the reunion committee, welcome. From Friday, July 2 to Monday, July 5, 2027, the Lewis family is gathering in Fresno, California, and we want you there. Registration is now open.\n\n' +
+  'Your family link opens the reunion website with our family code already in place:\n{{family link}}\n\n' +
+  'Press "Register your household" and fill in one form for everyone traveling together: who is coming, each person\u2019s age, T-shirt size and any dietary needs. It takes about five minutes. We email you a private link right away. Keep that email; it is how you come back to change your registration and to report your payment.\n\n' +
+  'The weekend: a meet and greet on Friday evening, a banquet on Saturday night, family day and a picnic on Sunday with Fourth of July fireworks, and a farewell breakfast on Monday morning. The schedule on the website fills in as plans are confirmed.\n\n' +
+  'Registration fees are per person, by age on July 2, 2027: {{fees}}. You can register now and pay later. Payment due date: {{deadline}}. {{ways to pay}} When you pay, put your household ID in the payment note. You get it as soon as you register.\n\n' +
+  'The reunion hotel is Home2 Suites by Hilton Fresno Northwest, 6965 W. Farrington Avenue, Fresno, CA 93722, (559) 512-8410. Book with group code 501 (hotel code FATNOHT) for the family rate. Fresno Yosemite International Airport (FAT) is the closest airport.\n\n' +
+  'Please keep the link within the family, and forward this email to relatives who did not get it, so every branch is counted.\n\n' +
   'Questions or ideas? Reply to this email and it reaches the committee.',
   'A welcome for the whole family. Send it with Audience everyone (registered households and the Contacts tab), after a test. Change the words freely; keep {{family link}} so people can register.'];
 const TEMPLATE_SEED = [
@@ -121,6 +122,7 @@ const MERGE_FIELDS = {
   'paid so far': r => money_(r.Confirmed),
   'balance': r => num_(r.Balance) === null ? 'to be announced' : money_(r.Balance),
   'deadline': (r, c) => longDate_(c.deadline) || 'to be announced',
+  'fees': (r, c) => feesLine_(c),
   'ways to pay': (r, c) => payLine_(c),
   'website': (r, c) => siteBase_(c),
   'my registration': (r, c) => siteBase_(c) + '#me',
@@ -1857,6 +1859,12 @@ function dueLine_(row, cfg) {
   let s = 'Estimated total: ' + money_(dueFor_(att, fees)) + (parts.length ? ' (' + parts.join(', ') + ')' : '') + '.';
   if (cfg.deadline) s += ' Due by ' + iso_(cfg.deadline) + '.';
   return s;
+}
+
+/** "23 and older $245, 16 to 22 $95, 4 to 15 $55, 3 and under free" from the Config fees, or "to be announced" until all four are set. */
+function feesLine_(cfg) {
+  const fees = feesOf_(cfg);
+  return fees ? FEE_BANDS.map(b => b.label + ' ' + (fees[b.key] ? money_(fees[b.key]) : 'free')).join(', ') : 'to be announced';
 }
 
 /** "Ways to pay: Zelle ..., Cash App ..." from the Config handles, or '' when none is set. */

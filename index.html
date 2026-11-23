@@ -122,34 +122,66 @@ hr{border:0;border-top:1px solid var(--line);margin:26px 0}
 .hero-grid{display:grid;grid-template-columns:minmax(0,1fr) clamp(280px,34vw,440px);gap:clamp(24px,4vw,56px);align-items:center}
 .hero-grid .hero-title{max-width:100%;font-size:clamp(2rem,4.6vw,3.9rem)}
 .hero-grid .hero-title h1{max-width:none}
-.hero-logo{display:block;width:100%;height:auto}
-@media(max-width:860px){.hero-grid{grid-template-columns:1fr}.hero-logo{order:-1;width:min(320px,76vw);margin:0 auto 8px}}
+/* The medallion is a 133 KB WebP with the PNG as a fallback, and lazy so a phone only fetches the copy it shows. */
+.hero-logo{display:block}
+.hero-logo img,.medal img{display:block;width:100%;height:auto}
+/* On phones the title, date and Register button come first; the round medallion moves down to the family quote (.medal). */
+@media(max-width:860px){.hero-grid{grid-template-columns:1fr}.hero-logo{display:none}.hero{padding:34px 0 26px}}
 .hero .wrap{position:relative}
 .hero .when{font:500 .8rem var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent-2)}
 .hero h1{margin:18px 0 22px;max-width:13ch}
 .hero-title{display:flex;align-items:center;gap:clamp(10px,1.7vw,18px);margin:18px 0 22px;max-width:62%;font-size:clamp(2rem,6.6vw,4.9rem)}
 .hero-title h1{margin:0;font-size:inherit}
 /* The crest matches two lines of the title at 1.04 line height. */
-.hero-crest{display:block;flex:0 0 auto;width:auto;height:2.08em}
+.hero-title picture{display:block;flex:0 0 auto}
+.hero-crest{display:block;width:auto;height:2.08em}
 @media(max-width:900px){.hero-title{max-width:100%}}
 .hero h1 i{color:var(--accent-2)}
 .lead{font-size:1.14rem;color:var(--muted);max-width:52ch}
-.count{display:flex;gap:34px;flex-wrap:wrap;margin:34px 0}
+.hero-cta{margin-top:26px}
+.hero-back{margin:14px 0 0}
+.hero-back a{color:var(--accent-text)}
+.count{display:flex;gap:14px 34px;flex-wrap:wrap;margin:30px 0 0}
 .count div b{display:block;font:600 2.6rem/1 var(--display);color:var(--text)}
 .count div span{font-size:.78rem;color:var(--faint);text-transform:uppercase;letter-spacing:.1em}
 .quote{font-family:var(--display);font-style:italic;font-size:clamp(1.5rem,3.2vw,2.2rem);line-height:1.2;max-width:28ch;margin:0;color:var(--accent-2)}
 .quote-wrap{padding:60px 0 20px;border-top:1px solid var(--line);margin-top:56px}
+.medal{display:none}
+@media(max-width:860px){.medal{display:block;width:min(250px,62vw);margin:0 auto 26px}.quote-wrap{text-align:center;padding-top:44px}.quote{margin:0 auto}}
+/* home: the essentials and the three steps */
+.facts{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr))}
+.fact{display:flex;flex-direction:column;gap:4px;padding:20px 22px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);text-decoration:none;color:inherit}
+[data-mode="light"] .fact{box-shadow:0 1px 2px rgba(0,0,0,.04)}
+a.fact{transition:border-color .2s,transform .2s}
+a.fact:hover{border-color:var(--accent-text);transform:translateY(-2px)}
+.fact .k{font:500 .72rem var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent-2);margin-bottom:4px}
+.fact b{font:600 1.4rem/1.15 var(--display)}
+.fact p{color:var(--muted);font-size:.92rem;margin:4px 0 0}
+.fact p strong{color:var(--text);font-weight:600}
+.fact .go{display:inline-block;margin-top:auto;padding-top:14px;color:var(--accent-text);font-size:.88rem;text-decoration:none}
+.fact a.go:hover{text-decoration:underline}
+.fact .fees{margin:2px 0 0;padding:0;border:0;background:none}
+.fact .fees .fees-h{font-size:.84rem;margin-bottom:6px}
+.fact .fees .feerow{font-size:.98rem;padding:5px 0;border-top:1px solid var(--line)}
+.how{list-style:none;margin:0;padding:0;display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));counter-reset:how}
+.how li{counter-increment:how;padding:18px 22px 22px;border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:var(--r);background:var(--surface)}
+.how li::before{content:"Step " counter(how);font:500 .72rem var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent-2)}
+.how h3{font:600 1.45rem/1.15 var(--display);margin:8px 0 6px}
+.how p{color:var(--muted);font-size:.94rem;margin:0}
+.section.first{padding-top:26px}
 .quote-wrap cite{display:block;margin-top:14px;font:400 .82rem var(--body);color:var(--faint);font-style:normal}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px;counter-reset:tile}
 .tile{display:block;text-decoration:none;padding:22px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);transition:border-color .2s,transform .2s}
 .tile:hover{border-color:var(--accent-text);transform:translateY(-2px)}
 .tile .n{font:500 .72rem var(--mono);color:var(--accent-2)}
+.tile .n::before{counter-increment:tile;content:counter(tile,decimal-leading-zero)}
 .tile h3{margin:10px 0 6px;font:600 1.6rem/1.1 var(--display)}
 .tile p{color:var(--muted);font-size:.92rem;margin:0}
 .tile .go{display:inline-block;margin-top:14px;color:var(--accent-text);font-size:.88rem}
 
 /* roll */
 .roll{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:10px}
+.roll .empty{grid-column:1/-1}
 .who{padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
 .who b{display:block;font-weight:600}
 .who span{font-size:.84rem;color:var(--muted)}
@@ -277,7 +309,11 @@ td.r,th.r{text-align:right}
 .done h3{font:600 1.6rem var(--display)}
 .linkbox{font-family:var(--mono);font-size:.8rem;word-break:break-all;padding:10px 12px;border:1px dashed var(--line-2);border-radius:10px;margin:10px 0;color:var(--muted)}
 .loading{opacity:.55;pointer-events:none}
-@media(max-width:760px){.top .wrap{flex-wrap:wrap;gap:6px 12px;padding-top:8px;padding-bottom:8px}.prefs{margin-left:auto}.nav{order:3;flex-basis:100%;margin:0 -8px}}
+@media(max-width:900px){.top .wrap{flex-wrap:wrap;gap:6px 12px;padding-top:8px;padding-bottom:8px}.prefs{margin-left:auto}.nav{order:3;flex-basis:100%;margin:0 -8px}}
+/* Phones: two rows instead of three. The accent dots are a nicety and step aside; the four tab names fit without being cut off. */
+@media(max-width:560px){.looks{display:none}.top .wrap{gap:2px 12px;padding-top:6px;padding-bottom:4px;min-height:0}.modes button{padding:0 10px}.nav a{padding:10px 10px}}
+@media(max-width:400px){.nav a{padding:10px 7px;font-size:.84rem}}
+@media(max-width:350px){.mark{font-size:1.2rem}.modes button{padding:0 8px;font-size:.74rem}.nav a{padding:10px 5px;font-size:.8rem}}
 .vignette{position:relative;margin:-22px -22px 16px;aspect-ratio:16/10;overflow:hidden;border-radius:var(--r) var(--r) 0 0;border-bottom:1px solid var(--line);color:var(--accent-2);background:radial-gradient(120% 95% at 50% 42%,var(--paper) 50%,var(--paper-edge))}
 .vignette svg{display:block;width:100%;height:100%}
 .vignette::after{content:"";position:absolute;inset:0;pointer-events:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35 0 0 0 0 .25 0 0 0 0 .15 0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");opacity:.22;mix-blend-mode:multiply}
@@ -440,7 +476,7 @@ td.r,th.r{text-align:right}
 .linkmode .adder,.linkmode #lostBtn{display:none!important}
 footer{border-top:1px solid var(--line);padding:34px 0;color:var(--faint);font-size:.86rem}
 footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
-@media(prefers-reduced-motion:reduce){.strip-in{animation:none}.tile{transition:none}}
+@media(prefers-reduced-motion:reduce){.strip-in{animation:none}.tile,a.fact{transition:none}}
 </style>
 </head>
 <body>
@@ -471,32 +507,65 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 
 <main>
 <!-- HOME -->
+<!-- Order on a phone: what, when, where and the Register button first; the essentials; how to register; then the family's
+     own words. The round reunion medallion sits beside the title on wide screens and with the family quote on phones. -->
 <section data-view="home">
   <div class="hero">
     <div class="wrap hero-grid">
       <div class="hero-text">
       <div class="when">July 2 – 5, 2027 · Fresno, California</div>
       <div class="hero-title">
-        <img class="hero-crest" src="assets/lewis-family-crest.png" width="288" height="335" alt="Lewis family crest" decoding="async">
+        <picture><source srcset="assets/lewis-family-crest.webp?v=20261123" type="image/webp"><img class="hero-crest" src="assets/lewis-family-crest.png" width="288" height="335" alt="Lewis family crest" decoding="async"></picture>
         <h1>Lewis Family Reunion <i>2027</i></h1>
       </div>
       <p class="lead">Come to Fresno, California, to celebrate your connection to family. Spend four days to connect, reconnect to the roots that make our family. Meet the cousins you haven't met yet, and update your branch on the family tree.</p>
-      <div class="count">
-        <div><b class="num" id="cdDays">—</b><span>days to go</span></div>
-        <div><b class="num" id="cdHouses">—</b><span>households on the list</span></div>
-        <div><b class="num" id="cdBranches">—</b><span>branches represented</span></div>
-      </div>
-      <div class="row">
+      <div class="row hero-cta">
         <a class="btn" href="#register">Register your household</a>
         <a class="btn quiet" href="#reunion">See the schedule</a>
       </div>
+      <p class="hint hero-back">Already registered? <a href="#me">Open My Registration</a></p>
+      <div class="count">
+        <div><b class="num" id="cdDays">—</b><span>days to go</span></div>
+        <div id="cdHousesBox" hidden><b class="num" id="cdHouses">—</b><span id="cdHousesLabel">households on the list</span></div>
+        <div id="cdBranchesBox" hidden><b class="num" id="cdBranches">—</b><span id="cdBranchesLabel">branches represented</span></div>
+      </div>
       <div class="banner" id="accessBanner" hidden></div>
       </div>
-      <img class="hero-logo" src="assets/site-logo.png?v=20261122d" width="640" height="640" alt="Lewis Family Reunion 2027 logo: From Their Roots, We Rise. Honoring our heritage, celebrating our journey, building our legacy." decoding="async">
+      <picture class="hero-logo"><source srcset="assets/site-logo.webp?v=20261123" type="image/webp"><img src="assets/site-logo.png?v=20261122d" width="640" height="640" alt="Lewis Family Reunion 2027 logo: From Their Roots, We Rise. Honoring our heritage, celebrating our journey, building our legacy." loading="lazy" decoding="async"></picture>
     </div>
   </div>
 
   <div class="wrap">
+    <div class="section first">
+      <div class="section-head">
+        <div><div class="kicker">The essentials</div><h2>What you need to know</h2></div>
+      </div>
+      <div class="facts">
+        <a class="fact" href="#reunion"><div class="k">When</div><b>July 2 to 5, 2027</b><p>Friday through Monday, Fourth of July weekend.</p><span class="go">See the schedule →</span></a>
+        <a class="fact" href="#reunion"><div class="k">Where</div><b>Fresno, California</b><p>A meet and greet, a banquet, a family picnic and a farewell breakfast around town.</p><span class="go">Hotel and venues →</span></a>
+        <div class="fact"><div class="k">Where to stay</div><b>Home2 Suites by Hilton Fresno Northwest</b><p>Ask for the family rate. Group code <strong>501</strong>, hotel code <strong>FATNOHT</strong>.</p><a class="go" href="tel:+15595128410">Call (559) 512-8410</a></div>
+        <div class="fact"><div class="k">What it costs</div><div class="hint fees" id="homeFees">The committee will post registration fees soon. You can register now and pay later.</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <div><div class="kicker">How it works</div><h2>Three steps to Fresno</h2></div>
+      </div>
+      <ol class="how">
+        <li><h3>Register your household</h3><p>One person signs up everyone traveling together. It takes about five minutes, and you can change it later.</p></li>
+        <li><h3>Pay when you are ready</h3><p id="homePay">Send your fees to the committee, then report the payment on My Registration. The committee confirms it and emails you a receipt.</p></li>
+        <li><h3>Book your room</h3><p>Reserve at Home2 Suites by Hilton Fresno Northwest with group code 501, and plan your travel to Fresno.</p></li>
+      </ol>
+      <div class="row" style="margin-top:22px"><a class="btn" href="#register">Register your household</a><a class="btn quiet" href="#me">My Registration</a></div>
+    </div>
+
+    <div class="quote-wrap">
+      <picture class="medal"><source srcset="assets/site-logo.webp?v=20261123" type="image/webp"><img src="assets/site-logo.png?v=20261122d" width="640" height="640" alt="Lewis Family Reunion 2027 logo: From Their Roots, We Rise. Honoring our heritage, celebrating our journey, building our legacy." loading="lazy" decoding="async"></picture>
+      <p class="quote">“Somehow, some way, your foundation is Lewis, and you belong here.”</p>
+      <cite>California cousins, Texas cousins, Mobile cousins, East Coast cousins: one family.</cite>
+    </div>
+
     <div class="section">
       <div class="split">
         <div>
@@ -526,11 +595,16 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
     </div>
 
     <div class="section">
-      <div class="tiles">
-        <a class="tile" href="#reunion"><div class="n">01</div><h3>The reunion</h3><p>Hotel, venues, the four-day schedule and things to do around Fresno.</p><span class="go">Details →</span></a>
-        <a class="tile" href="#family"><div class="n">02</div><h3>Our family</h3><p>Both lines of the tree, the names behind the nicknames, our veterans and those we've lost.</p><span class="go">Explore →</span></a>
-        <a class="tile" href="#photos"><div class="n">03</div><h3>Photos</h3><p>Grandma's albums, the 2008 reunion, last Thanksgiving. Bring them all.</p><span class="go">Share a photo →</span></a>
-        <a class="tile" href="#market"><div class="n">04</div><h3>Marketplace</h3><p>Family businesses, handmade goods and fundraisers for the reunion.</p><span class="go">Browse →</span></a>
+      <div class="split">
+        <div>
+          <div class="kicker">Why we're doing this</div>
+          <h2>Family can be ten buildings away.</h2>
+        </div>
+        <div>
+          <p class="lead" style="font-size:1rem">Two cousins spent years working on the same base in San Antonio, about ten buildings apart, without knowing they were family. By the time they found out, they had about a year together before one was transferred to Japan.</p>
+          <p class="lead" style="font-size:1rem">Another time a cousin was stranded, and a chain of relatives got her picked up at the airport and home safely. Later, family in Dallas–Fort Worth gave her a place at their Thanksgiving table.</p>
+          <p class="lead" style="font-size:1rem">Registering for this reunion is the start of a family directory we keep after July, so we always know where our people are.</p>
+        </div>
       </div>
     </div>
 
@@ -543,22 +617,12 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
       <div class="roll" id="roll"><p class="empty">No households yet. Be the first one on the list.</p></div>
     </div>
 
-    <div class="quote-wrap">
-      <p class="quote">“Somehow, some way, your foundation is Lewis, and you belong here.”</p>
-      <cite>California cousins, Texas cousins, Mobile cousins, East Coast cousins: one family.</cite>
-    </div>
-
-    <div class="section">
-      <div class="split">
-        <div>
-          <div class="kicker">Why we're doing this</div>
-          <h2>Family can be ten buildings away.</h2>
-        </div>
-        <div>
-          <p class="lead" style="font-size:1rem">Two cousins spent years working on the same base in San Antonio, about ten buildings apart, without knowing they were family. By the time they found out, they had about a year together before one was transferred to Japan.</p>
-          <p class="lead" style="font-size:1rem">Another time a cousin was stranded, and a chain of relatives got her picked up at the airport and home safely. Later, family in Dallas–Fort Worth gave her a place at their Thanksgiving table.</p>
-          <p class="lead" style="font-size:1rem">Registering for this reunion is the start of a family directory we keep after July, so we always know where our people are.</p>
-        </div>
+    <div class="section" id="homeTiles">
+      <div class="tiles">
+        <a class="tile" href="#reunion"><div class="n"></div><h3>The reunion</h3><p>Hotel, venues, the four-day schedule and things to do around Fresno.</p><span class="go">Details →</span></a>
+        <a class="tile" href="#family"><div class="n"></div><h3>Our family</h3><p>Both lines of the tree, the names behind the nicknames, our veterans and those we've lost.</p><span class="go">Explore →</span></a>
+        <a class="tile" href="#photos"><div class="n"></div><h3>Photos</h3><p>Grandma's albums, the 2008 reunion, last Thanksgiving. Bring them all.</p><span class="go">Share a photo →</span></a>
+        <a class="tile" href="#market"><div class="n"></div><h3>Marketplace</h3><p>Family businesses, handmade goods and fundraisers for the reunion.</p><span class="go">Browse →</span></a>
       </div>
     </div>
 
@@ -936,7 +1000,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 
 <script src="tree-engine.js?v=20261109"></script>
 <script src="tree.js?v=20261109"></script>
-<script src="config.js?v=20261109"></script>
-<script src="app.js?v=20261117b"></script>
+<script src="config.js?v=20261123"></script>
+<script src="app.js?v=20261123"></script>
 </body>
 </html>
