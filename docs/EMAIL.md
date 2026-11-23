@@ -188,21 +188,22 @@ A Subject or Body can use these fields. Each household gets its own values:
 | `{{last name}}` | Last name |
 | `{{household id}}` | For example `H-1A2B3C4D` |
 | `{{total due}}`, `{{paid so far}}`, `{{balance}}` | Dollar amounts; "to be announced" until fees are set |
-| `{{deadline}}` | Config `deadline` as "April 30, 2027" |
+| `{{deadline}}` | Config `deadline` as "April 30, 2027"; "to be announced" while it is blank |
+| `{{fees}}` | "23 and older $245, 16 to 22 $95, 4 to 15 $55, 3 and under free" from the four Config fees; "to be announced" until all four are set. Needs the Code.gs of November 23, 2026 or later. |
 | `{{ways to pay}}` | "Ways to pay: Zelle ..., Cash App ...." from Config |
 | `{{website}}`, `{{my registration}}` | The site, and its My Registration page (no codes) |
 | `{{family link}}` | The family link with the Family code in it (`https://lewisfamilyroots.com?c=...`), so the reader can open Register. Use it only in emails meant for the family. |
 
 With Audience `everyone`, `contacts` or `unregistered`, the fields about one household (`{{household id}}`, `{{total due}}`, `{{paid so far}}`, `{{balance}}`, `{{my registration}}`) are refused, because people on the Contacts tab have not registered. **Failed** says which field to take out.
 
-The **Welcome from the committee** template is ready for the first email to the whole family: dates, the weekend at a glance, the family link, the hotel group code, and that fees are coming. `setup` adds it once; change the words freely.
+The **Welcome from the committee** template is ready for the first email to the whole family: that registration is open, the family link, how to register, the weekend at a glance, the fees by age and how to pay, and the hotel with its group code. If the fees or the payment handles change, the plain template follows by itself (`{{fees}}`, `{{ways to pay}}`, `{{deadline}}`); in the designed HTML template the four fee amounts are typed in, so change them there too. `setup` adds it once; change the words freely.
 
 **HTML emails.** A Draft or template Body that contains `<p>` or `<br>` is sent exactly as written, so a template can be a designed email. Rules that keep it working:
 - Start with `<p>Hi,</p>`: the script swaps it for `Hi <first name>,`. Anything else first gets a greeting paragraph added above it.
 - Inline styles only (`style="..."`), tables for layout, no images, no `<style>` block. The script wraps the email in its usual frame (Georgia, the sign-off, the committee address) and adds the STOP footer.
 - Write characters, not entity names: `·`, `–` and `’` rather than `&middot;`, `&ndash;` and `&rsquo;`. The plain-text copy every email carries only decodes `&amp;`, `&lt;`, `&gt;`, `&quot;` and `&nbsp;`.
 - A field inside a tag gets the bare value, so `<a href="{{family link}}">Register now</a>` makes a working button. Written on its own, a link field becomes a link showing the address. Buttons lose their address in the plain-text copy, so keep a "copy this link" line with the field on its own.
-- [`docs/templates/welcome.html`](templates/welcome.html) is the designed welcome: an invitation card with a Register button, the weekend at a glance, the hotel, what to do now, and a fallback link. Paste the whole file into the Body of a Templates row (for example "Welcome from the committee (HTML)"), with the Subject `Welcome to the Lewis Family Reunion 2027`. Proof it with **Email me this draft** or Audience `test` before sending.
+- [`docs/templates/welcome.html`](templates/welcome.html) is the designed welcome: an invitation card with a Register button (it opens the registration form: `href="{{family link}}#register"`), how to register in three steps, the weekend at a glance, the fees by age with how to pay, the hotel and the airport, what to do now, and a fallback link. Paste the whole file into the Body of a Templates row (for example "Welcome from the committee (HTML)"), with the Subject `Welcome to the Lewis Family Reunion 2027`. Proof it with **Email me this draft** or Audience `test` before sending.
 
 A misspelt field (`{{firstname}}`) is not sent: the row's **Failed** names it and lists the fields that work, and **Email me this draft** says the same before anything goes out.
 

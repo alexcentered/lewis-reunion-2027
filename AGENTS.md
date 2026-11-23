@@ -16,17 +16,34 @@ This file is for an AI agent or a committee volunteer who opens this repo cold. 
 
 | File | What it is |
 |---|---|
-| `index.html` | The whole site in one page: markup, CSS, and section containers. Sections switch on the URL hash (`#me`, `#register`, and so on). |
+| `index.html` | The whole site in one page: markup, CSS, and section containers. Sections switch on the URL hash (`#me`, `#register`, and so on). The Home section's order is described under "Home page" below. |
 | `app.js` | Site logic: reads `?c=` and `?t=` from the link, talks to the backend, renders every section, the registration form, My Registration, the code-entry form, photo upload. |
 | `tree-engine.js`, `tree.js` | The interactive family tree (layout engine and page glue). Fed by the People and Tree notes tabs. |
 | `config.js` | `window.LR = { apiUrl, photosEnabled, sections, registerLines }`. The only file that changes when the backend URL changes. `sections` lists the live tabs (`home`, `reunion`, `register`, `family`, `photos`, `market`, `me`); a tab not listed has its nav link, section and Home tile hidden by `applySections()` in `app.js`, and its hash falls back to `#home`. Home is always live. Delete the key to show everything. `registerLines` lists the founding lines the Register branch dropdown offers (`['Lewis']` for phase 1); the Our Family line cards always show every Branches row; with one line offered the "Both lines" option is left out; delete the key to offer every line. |
 | `review/` | The private review page for committee members: `index.html` (start), `sample.html` (a homepage mock-up), `order.html` (the homepage rearranger) and `wording.html` (the email wording), plus `review.js` and `review.css`. Not linked from the site and marked noindex. The sample and the order preview show `assets/reunion-logo.png`: to try another logo, replace that file and bump the `?v=` on its two `src` attributes. The three content pages are copies of the committee's emailed pages with the send buttons hidden; `review.js` adds the bar at the top and saves their localStorage state (`lewis-homepage-order-v1`, `lewis-email-wording-v1`) to the Reviews tab. |
 | `apps-script/Code.gs` | The backend. Pasted by hand into the Apps Script editor. Not deployed by git. |
+| `share/` | The committee's outreach kit at `/share/`: `index.html` (the page and the letter-size flyer), `share.js` (the family link, three text messages, the QR code) and `qrcode.js` (QR Code Generator by Kazuhiko Arase, MIT, vendored unchanged). Not linked from the site and marked noindex. It reads the family code from this browser (`lr-share-code`, else the site's `lr-code`) or from a field on the page, and sends nothing anywhere. Fees come from the backend's public `info` answer. `BANDS` in `share.js` must match `FEE_BANDS`. Runbook: `docs/OUTREACH.md`. |
+| `assets/` | Images. `site-logo.png` (the round reunion medallion) and `lewis-family-crest.png` (the shield beside the title) each have a `.webp` copy that the homepage serves first through `<picture>`; make a new `.webp` whenever a PNG changes (Pillow: `quality=82, method=6`) and bump the `?v=` on both. `reunion-logo.png` is the same medallion for the review pages. |
 | `CNAME`, `.nojekyll` | GitHub Pages settings: custom domain, and "serve files as they are". |
 | `README.md` | Overview and committee guide. |
 | `TESTING.md` | Hands-on checklists (photos, email and codes). |
 | `AGENTS.md` | This file. |
 | `docs/EMAIL.md` | Email runbook: Brevo, DNS, routing, queue, troubleshooting, Committee Updates (how to send one, AI drafting). |
+| `docs/OUTREACH.md` | The outreach kit: the share page, the text message drafts (with a placeholder for the family link) and the flyer. |
+
+## Home page
+
+The Home section of `index.html` is ordered for a relative who taps a link in a text message on a phone:
+
+1. **Hero**: the date line, the shield crest and title, the lead, the Register and Schedule buttons, "Already registered?", then the counters. `#cdHousesBox` and `#cdBranchesBox` stay hidden until the roll has something to count (`renderCounts`), so opening day never shows a row of zeros.
+2. **The essentials** (`.facts`): when, where, where to stay, and what it costs. `#homeFees` is filled by `renderInfo` from the public `info` fees (the same list as the Register summary).
+3. **Three steps** (`.how`): register, pay, book a room. `#homePay` names the ways to pay once the family code has loaded them; the handles themselves stay on My Registration.
+4. **The family quote**, then the committee's own sections in their words: Welcome, The 2027 Family Reunion, Why we're doing this. Do not edit that wording without the committee.
+5. **Who's coming** (the roll, behind the family gate), the tiles, and the closing Register button. `applySections` hides `#homeTiles` while fewer than two tiles are live.
+
+The round medallion appears twice in the markup and once on screen: `.hero-logo` beside the title above 860 px, and `.medal` above the family quote at 860 px and below. Both are lazy, so a phone fetches only the one it shows. The phone header is two rows: the accent dots (`.looks`) are hidden at 560 px and below so the brand and the theme switch share a row.
+
+`review/sample.html` and `review/order.html` are the committee's review copies of an earlier order; they are not kept in step with the live page.
 
 ## Data model: the Sheet tabs
 
@@ -66,7 +83,7 @@ This file is for an AI agent or a committee volunteer who opens this repo cold. 
 
 **Templates** (created by `setup()` through `templatesTab_`, seeded from `TEMPLATE_SEED` when empty): `Name`, `Subject`, `Body`, `Notes`. A tab that already has rows but none named `Welcome from the committee` (`TPL_WELCOME`) gets `WELCOME_SEED` appended once; renaming that row stops `setup` from adding it again, deleting it does not.
 - An Updates row whose `Template` names a row (case and spaces ignored) takes that row's `Subject` and `Body` for a blank `Subject` and `Draft`: at once in the cells, by the simple `onEdit` (`fillFromTemplate_`, never overwriting typed text or a sent row), and again at send time (`withTemplate_`) in case the cells were left blank.
-- Merge fields, written `{{first name}}` (case and spaces ignored): `first name`, `last name`, `household id`, `total due`, `paid so far`, `balance`, `deadline` (as "April 30, 2027"), `ways to pay` (`payLine_`), `website`, `my registration` (`siteUrl#me`, no code), `family link` (`familyLink_`: `siteUrl?c=<familyCode>`, the website alone when either is blank). Defined in `MERGE_FIELDS`; amounts read "to be announced" until fees are set. `updateEmail_` fills them per household in the Subject (`mergeText_`) and in the HTML after `draftHtml_` (`mergeHtml_`: values escaped, the three link fields in `MERGE_LINKS` as links, except inside a tag, where a field such as `href="{{family link}}"` gets the bare escaped value so committee HTML buttons work). A Draft containing `<p` or `<br` is committee HTML used as written; `docs/templates/welcome.html` is the designed welcome, pasted into a Templates Body by hand (it is not seeded). An unknown field stops the row (`unknownFields_`), so no family ever gets a raw `{{...}}`. `HOUSEHOLD_FIELDS` (`household id`, `total due`, `paid so far`, `balance`, `my registration`) stop a row whose audience reaches Contacts (`householdFields_`), so a relative who has not registered is never told a balance. Updates carry no token, and carry the family code only when the committee puts `{{family link}}` in the Draft.
+- Merge fields, written `{{first name}}` (case and spaces ignored): `first name`, `last name`, `household id`, `total due`, `paid so far`, `balance`, `deadline` (as "April 30, 2027"), `fees` (`feesLine_`: "23 and older $245, 16 to 22 $95, 4 to 15 $55, 3 and under free"), `ways to pay` (`payLine_`), `website`, `my registration` (`siteUrl#me`, no code), `family link` (`familyLink_`: `siteUrl?c=<familyCode>`, the website alone when either is blank). Defined in `MERGE_FIELDS`; amounts read "to be announced" until fees are set. `updateEmail_` fills them per household in the Subject (`mergeText_`) and in the HTML after `draftHtml_` (`mergeHtml_`: values escaped, the three link fields in `MERGE_LINKS` as links, except inside a tag, where a field such as `href="{{family link}}"` gets the bare escaped value so committee HTML buttons work). A Draft containing `<p` or `<br` is committee HTML used as written; `docs/templates/welcome.html` is the designed welcome, pasted into a Templates Body by hand (it is not seeded). An unknown field stops the row (`unknownFields_`), so no family ever gets a raw `{{...}}`. `HOUSEHOLD_FIELDS` (`household id`, `total due`, `paid so far`, `balance`, `my registration`) stop a row whose audience reaches Contacts (`householdFields_`), so a relative who has not registered is never told a balance. Updates carry no token, and carry the family code only when the committee puts `{{family link}}` in the Draft.
 - The Audience `test` row and **Email me this draft** use a made-up household (`sampleRow_`: Cousin Lewis, `H-SAMPLE1`, two adults and a child, amounts from the Config fees).
 - Two reserved rows word the registration email: `Registration: thank you` (`TPL_REG_THANKS`, its opening line, read by `regThanks_`) and `Registration: what happens next` (`TPL_REG_NEXT`, extra "What happens next" bullets, one per line, read by `regNext_`; a blank Body means none). A missing row, or a Body with an unknown field, falls back to the built-in wording (`REG_THANKS_DEFAULT`, `REG_NEXT_DEFAULT`). The Household ID, codes, link, fee and payment lines and the hotel stay in code.
 
@@ -202,7 +219,7 @@ The result written into `Draft` is the joined `text` blocks, or a line starting 
 
 ## How to change the site
 
-Commit to `main`. GitHub Pages redeploys in about a minute. The four `<script src>` tags at the end of `index.html` carry a `?v=YYYYMMDD` query so phones fetch fresh copies: bump it to the day's date whenever `app.js`, `tree.js`, `tree-engine.js` or `config.js` changes (an `index.html`-only change needs no bump, because the page itself is not cached long).
+Commit to `main`. GitHub Pages redeploys in about a minute. The four `<script src>` tags at the end of `index.html` carry a `?v=YYYYMMDD` query so phones fetch fresh copies: bump it to the day's date whenever `app.js`, `tree.js`, `tree-engine.js` or `config.js` changes (an `index.html`-only change needs no bump, because the page itself is not cached long). The three script tags in `share/index.html` work the same way for `share.js`, `qrcode.js` and `config.js`.
 
 ## Conventions
 

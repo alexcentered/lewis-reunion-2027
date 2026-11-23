@@ -929,6 +929,15 @@ function longDate_(v) {
   return months[Number(m[2]) - 1] + ' ' + Number(m[3]) + ', ' + m[1];
 }
 
+/** "Fri, Jul 2" from a Date or a yyyy-mm-dd cell; the text as typed when it is not a date. */
+function shortDay_(v) {
+  const s = iso_(v), m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return str_(v).trim();
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12));
+  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ', ' +
+    ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(m[2]) - 1] + ' ' + Number(m[3]);
+}
+
 /** A made-up household for previews and tests: two adults and a child, with amounts from the Config fees when they are set. */
 function sampleRow_(cfg, email) {
   const att = 'Cousin Lewis · 23+\nPartner Lewis · 23+\nLittle Lewis · 4–15 · 8', d = dueFor_(parseAttendees_(att), feesOf_(cfg)), due = d === null ? '' : d;
@@ -1392,11 +1401,13 @@ function htmlToText_(html) {
     .replace(/\n{3,}/g, '\n\n').trim();
 }
 
-/** The shared email frame: Georgia body plus the committee sign-off. bodyHtml is already escaped HTML. */
-function mailWrap_(bodyHtml, cfg) {
+/** The shared email frame: Georgia body plus the committee sign-off. bodyHtml is already escaped HTML. smallPrint (escaped
+    HTML, optional) goes last, under the signature: the "why you are getting this, reply STOP" line on committee updates. */
+function mailWrap_(bodyHtml, cfg, smallPrint) {
   return '<div style="font-family:Georgia,serif;font-size:16px;line-height:1.6;color:#1b1b18;max-width:560px">' + bodyHtml +
     '<p>' + SIGNOFF + '</p>' +
-    '<p>The Lewis Family Reunion Committee<br>' + htmlEsc_(cfg.email || '') + '</p></div>';
+    '<p>The Lewis Family Reunion Committee<br>' + htmlEsc_(cfg.email || '') + '</p>' +
+    (smallPrint ? '<p style="font-size:13px;color:#666;border-top:1px solid #e3dccd;padding-top:12px;margin-top:22px">' + smallPrint + '</p>' : '') + '</div>';
 }
 
 /** One MailQueue row as { header: value }; appendMail_ lays it out in the tab's live header order. */
@@ -1713,12 +1724,12 @@ function audience_(value, regs, cfg, contacts) {
   return out;
 }
 
-/** One MailQueue message for a household or a Contacts row: the Draft as HTML with "Hi <name>," on top and the STOP footer
-    that says why they are getting it, inside the usual frame. */
+/** One MailQueue message for a household or a Contacts row: the Draft as HTML with "Hi <name>," on top, inside the usual frame,
+    with the STOP footer that says why they are getting it under the signature. */
 function updateEmail_(row, upd, cfg) {
   const name = str_(row.Preferred).trim() || str_(row.First).trim() || 'cousin', email = str_(row.Email).trim();
-  const body = greet_(mergeHtml_(draftHtml_(upd.Draft), row, cfg), name) + '<p style="font-size:14px;color:#555">' + htmlEsc_(row._contact ? CONTACT_FOOTER : UPDATE_FOOTER) + '</p>';
-  const html = mailWrap_(body, cfg);
+  const body = greet_(mergeHtml_(draftHtml_(upd.Draft), row, cfg), name);
+  const html = mailWrap_(body, cfg, htmlEsc_(row._contact ? CONTACT_FOOTER : UPDATE_FOOTER));
   return {
     to: email, toName: name, subject: mergeText_(str_(upd.Subject), row, cfg).replace(/\s+/g, ' ').trim() || 'An update from the Lewis Family Reunion committee', html: html, text: htmlToText_(html),
     key: 'update:' + upd.ID + ':' + email.toLowerCase(), kind: 'update', householdId: row._contact ? 'CONTACT' : String(row['Household ID'] || '')
@@ -1850,14 +1861,16 @@ function codeBox_(lines) {
   return '<p style="font-size:14px;background:#f4f1ea;padding:12px 16px;border-radius:8px">' + lines.join('<br>') + '</p>';
 }
 
-/** "Estimated total: $N (2 × $245 for 23 and older, 1 × $55 for 4 to 15). Due by YYYY-MM-DD." or the fees-pending sentence. */
+/** "Estimated total: $N (2 × $245 for 23 and older, 1 × $55 for 4 to 15). Due by April 30, 2027." or the fees-pending sentence.
+    While Config deadline is blank it says the date is still to come, so nobody wonders whether they are late. */
 function dueLine_(row, cfg) {
   const fees = feesOf_(cfg);
   if (!fees) return 'Registration fees will be announced soon; nothing is due yet.';
   const att = parseAttendees_(row.Attendees), c = bandCounts_(att);
   const parts = FEE_BANDS.filter(b => c[b.key]).map(b => c[b.key] + (fees[b.key] ? ' × ' + money_(fees[b.key]) : ' free') + ' for ' + b.label);
   let s = 'Estimated total: ' + money_(dueFor_(att, fees)) + (parts.length ? ' (' + parts.join(', ') + ')' : '') + '.';
-  if (cfg.deadline) s += ' Due by ' + iso_(cfg.deadline) + '.';
+  const due = longDate_(cfg.deadline);
+  s += due ? ' Due by ' + due + '.' : ' You can pay any time; the committee will announce the due date.';
   return s;
 }
 
@@ -1881,7 +1894,7 @@ function payLine_(cfg) {
  */
 function regDetails_(row, cfg, live) {
   const id = str_(row['Household ID']).trim(), people = attendeeNames_(row);
-  const travel = [iso_(row.Arrive) ? 'arriving ' + iso_(row.Arrive) : '', iso_(row.Depart) ? 'leaving ' + iso_(row.Depart) : ''].filter(String).join(', ');
+  const travel = [iso_(row.Arrive) ? 'arriving ' + shortDay_(row.Arrive) : '', iso_(row.Depart) ? 'leaving ' + shortDay_(row.Depart) : ''].filter(String).join(', ');
   const mine = [
     id ? ['Household ID', '<b>' + htmlEsc_(id) + '</b>'] : null,
     people.length ? ['Coming', htmlEsc_(people.join(', '))] : null,
@@ -1941,7 +1954,7 @@ function receiptEmail_(row, pay, cfg) {
   const base = siteBase_(cfg), code = String(cfg.familyCode || ''), link = base + '?c=' + encodeURIComponent(code) + '#me';
   const feesSet = row.Due !== '' && row.Due !== null && row.Due !== undefined;
   const details = [
-    'Amount: ' + htmlEsc_(money_(pay.Amount)), 'Method: ' + htmlEsc_(str_(pay.Method) || 'not given'), 'Date sent: ' + htmlEsc_(iso_(pay['Date sent']) || 'not given'),
+    'Amount: ' + htmlEsc_(money_(pay.Amount)), 'Method: ' + htmlEsc_(str_(pay.Method) || 'not given'), 'Date sent: ' + htmlEsc_(longDate_(pay['Date sent']) || 'not given'),
     str_(pay.Reference) ? 'Reference: ' + htmlEsc_(str_(pay.Reference)) : ''
   ].filter(String);
   const html = mailWrap_(
