@@ -20,6 +20,7 @@ This file is for an AI agent or a committee volunteer who opens this repo cold. 
 | `app.js` | Site logic: reads `?c=` and `?t=` from the link, talks to the backend, renders every section, the registration form, My Registration, the code-entry form, photo upload. |
 | `tree-engine.js`, `tree.js` | The interactive family tree (layout engine and page glue). Fed by the People and Tree notes tabs. |
 | `config.js` | `window.LR = { apiUrl, photosEnabled, sections, registerLines }`. The only file that changes when the backend URL changes. `sections` lists the live tabs (`home`, `reunion`, `register`, `family`, `photos`, `market`, `me`); a tab not listed has its nav link, section and Home tile hidden by `applySections()` in `app.js`, and its hash falls back to `#home`. Home is always live. Delete the key to show everything. `registerLines` lists the founding lines the Register branch dropdown offers (`['Lewis']` for phase 1); the Our Family line cards always show every Branches row; with one line offered the "Both lines" option is left out; delete the key to offer every line. |
+| `review/` | The private review page for committee members: `index.html` (start), `sample.html` (a homepage mock-up), `order.html` (the homepage rearranger) and `wording.html` (the email wording), plus `review.js` and `review.css`. Not linked from the site and marked noindex. The three content pages are copies of the committee's emailed pages with the send buttons hidden; `review.js` adds the bar at the top and saves their localStorage state (`lewis-homepage-order-v1`, `lewis-email-wording-v1`) to the Reviews tab. |
 | `apps-script/Code.gs` | The backend. Pasted by hand into the Apps Script editor. Not deployed by git. |
 | `CNAME`, `.nojekyll` | GitHub Pages settings: custom domain, and "serve files as they are". |
 | `README.md` | Overview and committee guide. |
@@ -69,6 +70,8 @@ This file is for an AI agent or a committee volunteer who opens this repo cold. 
 - The Audience `test` row and **Email me this draft** use a made-up household (`sampleRow_`: Cousin Lewis, `H-SAMPLE1`, two adults and a child, amounts from the Config fees).
 - Two reserved rows word the registration email: `Registration: thank you` (`TPL_REG_THANKS`, its opening line, read by `regThanks_`) and `Registration: what happens next` (`TPL_REG_NEXT`, extra "What happens next" bullets, one per line, read by `regNext_`; a blank Body means none). A missing row, or a Body with an unknown field, falls back to the built-in wording (`REG_THANKS_DEFAULT`, `REG_NEXT_DEFAULT`). The Household ID, codes, link, fee and payment lines and the hotel stay in code.
 
+**Reviews** (created by `setup()` and by the menu "Make review links", `reviewLinks`; `REVIEW_HEADERS`): `Name`, `Key`, `Link`, `Saved`, `Homepage order`, `Email wording`, `Data`, `Notes`. One row per reviewer. The committee types a Name and runs "Make review links", which fills a blank `Key` (32 hex, `newToken_`) and `Link` (`siteUrl/review/#k=<Key>`). The review page writes `Saved`, the two readable columns (the pages' own `compose()` text, with the reviewer's Name on the first line) and `Data` (the page state as JSON, read back when the reviewer opens the link on any device). Clearing or changing a Key retires that link. `Notes` is the committee's. A save carries the readable text only for the page it came from, so the other column keeps its last text.
+
 **Dashboard** is a committee tab of plain spreadsheet formulas. The code never touches it.
 
 **Money tabs** (created by `setup()` through `moneyTabs_`; the treasurer's tabs). Every dollar names the person holding it, because payments land in different committee members' own accounts.
@@ -117,7 +120,7 @@ These are the only secrets. Neither is ever in the repo, in `config.js`, or logg
 The site calls the `/exec` URL with `POST` and a JSON body: `{ action, code, ...payload }` (see `api()` in `app.js`, which sends `Content-Type: text/plain` to avoid a CORS preflight). `doPost` parses the body and hands it to `handle_`, which:
 
 1. Reads Config.
-2. Answers `info` without a code (public data: agenda, fees, deadline, room block, committee email).
+2. Answers `info` without a code (public data: agenda, fees, deadline, room block, committee email), and `review` / `reviewSave` with a review key instead of the family code (`review_`: the key must be 32 hex characters and match a Reviews `Key`; every failure answers the same `error:'review'`; `reviewSave` runs inside `locked_` and refuses `Data` over `REVIEW_TEXT_MAX`).
 3. Checks `code` against `familyCode` with `codeOk_`. A wrong code returns `{ ok:false, error:'code' }`.
 4. Dispatches on `action`: `family`, `tree`, `mine`, `register`, `report`, `post`, `resend`. Writers run inside `locked_` (a script lock, 20 s wait).
 
@@ -132,6 +135,7 @@ The site calls the `/exec` URL with `POST` and a JSON body: `{ action, code, ...
 - Public without a code: dates, agenda, hotel, FAQ, fees. Family code: tree, roll call, stories, photos, marketplace, registration form. Token: that household's contact details, attendees and payments.
 - Photos: the Drive folder is private (cannot be listed); each visible photo is "anyone with the link"; hidden photos are made private by `onEntriesEdit`. Uploads are checked by bytes (`sniffImage_`), capped at `PHOTO_MAX_BYTES`, and rate-limited site-wide (`PHOTO_UPLOADS_PER_HOUR`).
 - `handle_` logs only the error, never the request body, because the body carries the code and the photo.
+- Review links: the key rides after `#`, which browsers never send to a server; `review.js` keeps it in localStorage (`lr-review-key`), takes it out of the address bar, and sends it only in the POST body. A key reads and writes only its own Reviews row, holds no family data, and sends no mail.
 - Committee updates go only to addresses the committee put in the Sheet (Registrations, or the Contacts tab), carry no token, and are gated by a checkbox a committee member ticks. They carry the family code only through `{{family link}}`, which the committee types on purpose (the welcome template uses it): that is the same link the committee already shares by hand, and changing `familyCode` retires it. Opt-out is a hand-set column on either tab, not a link, so there is no unsubscribe endpoint to abuse; an address marked on either tab is skipped by every audience.
 
 ## Email flow
@@ -174,7 +178,7 @@ Installed by `setup()` through `installTriggers_` and `ensureTrigger_` (one per 
 
 The simple `onEdit(e)` (no install needed) stamps `Confirmed on` and `Confirmed by` on Payments, fills `Household ID` and `Received by` on hand-typed Payments rows (`fillPayments_`), fills a blank Subject and Draft on Updates from the chosen `Template` (`fillFromTemplate_`), runs `recompute_` after Payments, Config or Registrations edits, and `moneySummary_` after Expenses, Transfers, Budget or Holders edits. It cannot call the network, which is why receipts need the installable trigger.
 
-The **Reunion** menu (`onOpen`), in this order: "Refresh balances and status" (`recompute_`), "Send queued mail now" (`drainMailQueue`), "Send me a test email" (`testSendMail`), "Send approved updates now" (`sendUpdates`), "Send the money report now" (`moneyReportNow`: the same email, sent even if one went out today), "Draft update with AI" (`draftUpdate`), "Email me this draft" (`emailMeDraft`: the clicked Updates or Templates row, filled in for `sampleRow_`, to the person clicking, subject `[Draft] ...`, kind `test`; a registration template row sends the registration email instead), "Sync photo privacy" (`syncPhotoSharing`), "Run setup" (`setup`).
+The **Reunion** menu (`onOpen`), in this order: "Refresh balances and status" (`recompute_`), "Send queued mail now" (`drainMailQueue`), "Send me a test email" (`testSendMail`), "Send approved updates now" (`sendUpdates`), "Send the money report now" (`moneyReportNow`: the same email, sent even if one went out today), "Draft update with AI" (`draftUpdate`), "Email me this draft" (`emailMeDraft`: the clicked Updates or Templates row, filled in for `sampleRow_`, to the person clicking, subject `[Draft] ...`, kind `test`; a registration template row sends the registration email instead), "Sync photo privacy" (`syncPhotoSharing`), "Make review links" (`reviewLinks`), "Run setup" (`setup`).
 
 ## Claude API call
 

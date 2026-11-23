@@ -1,0 +1,25 @@
+/* The review bar on every review page, and what the review hides from the committee pages it reuses. */
+.rv-bar { position:sticky; top:0; z-index:50; background:#173d2a; color:#f7f2e7; font:15px/1.3 Georgia, 'Times New Roman', serif; box-shadow:0 1px 0 rgba(0,0,0,.15); }
+.rv-in { max-width:1180px; margin:0 auto; padding:8px 14px; display:flex; flex-wrap:wrap; align-items:center; gap:6px 14px; }
+.rv-brand { font-weight:bold; white-space:nowrap; }
+.rv-tabs { display:flex; flex-wrap:wrap; gap:4px; }
+.rv-tabs a { color:#f7f2e7; text-decoration:none; padding:6px 10px; border-radius:999px; border:1px solid transparent; white-space:nowrap; }
+.rv-tabs a:hover { border-color:#9fbba9; }
+.rv-tabs a[aria-current="page"] { background:#f7f2e7; color:#173d2a; }
+.rv-status { margin-left:auto; font-size:13.5px; color:#cfe0d3; }
+.rv-status.bad { color:#ffd9c2; font-weight:bold; }
+.rv-cover { position:fixed; inset:0; z-index:60; background:rgba(243,238,227,.94); display:flex; align-items:center; justify-content:center; padding:24px; font:18px/1.45 Georgia, serif; color:#211a13; text-align:center; }
+.rv-cover[hidden] { display:none; }
+.rv-cover div { max-width:30em; }
+@media (max-width:640px) {
+  .rv-in { padding:6px 10px; gap:4px 8px; }
+  .rv-brand { display:none; }
+  .rv-tabs { flex-wrap:nowrap; }
+  .rv-tabs a { padding:4px 8px; font-size:14px; }
+  .rv-long { display:none; }
+  .rv-status { margin-left:0; width:100%; font-size:12.5px; }
+}
+/* No sending in a review: the page saves by itself. */
+[data-review] #send, [data-review] label.name[for="who"], [data-review] #who { display:none !important; }
+/* The sample's own site header scrolls away, so it never hides under the review bar. */
+[data-review="sample"] .top { position:static; }
