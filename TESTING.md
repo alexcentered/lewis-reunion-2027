@@ -7,7 +7,7 @@ Photo uploads are off until **two switches** are both on:
 | 1. Server | Google Sheet → **Config** tab → row `photosEnabled` | `No` | `Yes` |
 | 2. Website | `config.js` in this repo → `photosEnabled` | `false` | `true` |
 
-Either order is safe. If only one is on, nobody can upload: the website either hides the form or the server politely refuses. **One switch also covers the optional photos on tributes, veterans, the directory and the marketplace**, not just the Photos page.
+The Photos tab is a separate step: it shows only when `'photos'` is in the `sections` line of `config.js` (see "Turning tabs on" in README.md). For the two switches, either order is safe. If only one is on, nobody can upload: the website either hides the form or the server politely refuses. **One switch also covers the optional photos on tributes, veterans, the directory and the marketplace**, not just the Photos page.
 
 ---
 
@@ -88,19 +88,19 @@ Use Safari on an iPhone, since that's what most of the family uses. Tick each bo
 
 - Paste → Save → **Deploy → Manage deployments → Edit → New version → Deploy**. Never "New deployment", which would change the URL.
 - Run `setup` again only when a change adds new Google permissions (Google will prompt you), like this one did.
-- The **Reunion** menu in the Sheet: *Refresh balances and status*, *Send queued mail now*, *Send me a test email*, *Send approved updates now*, *Draft update with AI*, *Sync photo privacy*, *Run setup*.
+- The **Reunion** menu in the Sheet: *Refresh balances and status*, *Send queued mail now*, *Send me a test email*, *Send approved updates now*, *Send the money report now*, *Draft update with AI*, *Email me this draft*, *Sync photo privacy*, *Make review links*, *Run setup*.
 - Keep `PHOTO_MAX_BYTES` in `Code.gs` and `PHOTO.maxUpload` in `app.js` the same (6 MB).
 
 ---
 
 # Email and codes
 
-Checks for the registration email, the two codes, and payment receipts. Do them after the email setup in **[docs/EMAIL.md](EMAIL.md)** is done, `BREVO_API_KEY` is in Script Properties, `setup` has been run, the deployment has a new version, and the Config tab has `siteLive` = `Yes`, `email`, `siteUrl` and (if known) the fees.
+Checks for the registration email, the two codes, and payment receipts. Do them after the email setup in **[docs/EMAIL.md](docs/EMAIL.md)** is done, `BREVO_API_KEY` is in Script Properties, `setup` has been run, the deployment has a new version, and the Config tab has `siteLive` = `Yes`, `email`, `siteUrl` and (if known) the fees.
 
 Use your phone for the inbox checks and a computer for the Sheet. Use an email address you can read on the phone. Tick each box as you go.
 
 **Register a test household**
-- [ ] Open the family link on your phone → **Register**. Fill in a made-up household with your own email, two adults and one child, pick at least one day, tick the travel box → **Send**.
+- [ ] Open the family link on your phone → **Register**. Fill in a made-up household with your own email, two adults and one child, pick at least one day, tick the travel box → **Save registration**.
 - [ ] The success panel shows "You're registered. Welcome home.", your private link, and under it **Family code** and **Registration code** with Copy buttons. The registration code is 32 letters and numbers in groups of 4.
 - [ ] Within a minute an email arrives **from committee@lewisfamilyroots.com**, subject "You are registered: Lewis Family Reunion 2027". It is in the inbox, not spam. Check a Gmail, a Yahoo and an iCloud address if you can.
 - [ ] The email has a green **Open my registration** button, a grey box with the link, the website, the Family code and the Registration code, who is coming, and either "Total due: $…" or "Registration fees will be announced soon".
@@ -118,7 +118,7 @@ Use your phone for the inbox checks and a computer for the Sheet. Use an email a
 - [ ] Press **Email my link** again straight away. The site says the same thing, but no second email arrives for 10 minutes. That is on purpose.
 
 **Register twice**
-- [ ] Register again with the same email. The site says "That email is already registered. We just emailed you a private link to view and change it." An email arrives. There is no "Something went wrong" message.
+- [ ] Wait until ten minutes have passed since the first registration. Close the private window and open a new one, so the browser does not remember the household. Open the family link there and register again with the same email. The site says "That email is already registered. We just emailed you a private link to view and change it." An email arrives. There is no "Something went wrong" message.
 
 **Payment receipt (on a computer)**
 - [ ] On your phone, **My Registration** → report a payment of $1 by Zelle.
@@ -144,7 +144,7 @@ Use your phone for the inbox checks and a computer for the Sheet. Use an email a
 | What you see | What to do |
 |---|---|
 | No email at all | Sheet → **MailQueue**. No row: look at Apps Script → **Executions**. Row `Queued`: read **Last error** and run **Send queued mail now**. |
-| Email in spam | Mark it "Not spam". Then check the DNS records in [docs/EMAIL.md](EMAIL.md). |
+| Email in spam | Mark it "Not spam". Then check the DNS records in [docs/EMAIL.md](docs/EMAIL.md). |
 | "Brevo 401" or "403" in Last error | The key is missing or wrong. Fix Script Properties. Mail is using Gmail meanwhile. |
 | Receipt did not send | Apps Script → **Triggers** (clock icon): `onPaymentsEdit` must be listed. If not, run `setup`. |
 | Codes do not open the household | Check `siteLive` is `Yes` and the deployment was updated. Then use **Email my link** for fresh codes. |
@@ -161,7 +161,7 @@ Checks for a committee update to every household. Do them after `setup` has been
 - [ ] Apps Script → **Executions**: the `sendUpdates` run ends with `1 queued; Brevo allows about 300 a day, and the hourly drain carries the rest.`
 
 **Check the committee inbox**
-- [ ] Within a minute an email arrives at the Config `email` address from `committee@lewisfamilyroots.com` with your subject. It opens `Hi committee,`, shows your two paragraphs, then "Somehow, some way, your foundation is Lewis — and you belong here.", the committee address, and in small grey text "You are getting this because your household is registered for the Lewis Family Reunion. To stop these updates, reply with the word STOP."
+- [ ] Within a minute an email arrives at the Config `email` address from `committee@lewisfamilyroots.com` with your subject. It opens `Hi committee,`, shows your two paragraphs, then "Somehow, some way, your foundation is Lewis, and you belong here.", the committee address, and in small grey text "You are getting this because your household is registered for the Lewis Family Reunion. To stop these updates, reply with the word STOP."
 - [ ] The sign-off appears once, not twice. There is no link, no Family code and no Registration code in the email.
 
 **Check MailQueue**
@@ -205,7 +205,7 @@ Checks for a committee update to every household. Do them after `setup` has been
 |---|---|
 | **Sent at** stays blank after the menu item | Approved is not ticked, or the Sheet was busy. Tick it and run again. Check Executions. |
 | **Sent at** stuck on `sending…` | A big list needs another run, or the run died. **Failed** says which. Run **Send approved updates now** again; households already queued are skipped. |
-| **Failed** has words in it | Read them: blank Draft, misspelt Audience, blank Config `email`, an empty Contacts tab, or a household field such as `{{balance}}` sent to Contacts. Fix, clear **Sent at**, run again. |
+| **Failed** has words in it | Read them: blank Draft, misspelled Audience, blank Config `email`, an empty Contacts tab, or a household field such as `{{balance}}` sent to Contacts. Fix, clear **Sent at**, run again. |
 | Email says `Hi cousin,` | The household has no Preferred or First name on Registrations. |
 | **Draft** starts with `ERROR:` | The AI call failed; the text says why. Fix the key or credit, clear the cell, try again, or write the email by hand. |
 | Only some households got it today | Normal for a big list. Brevo allows about 300 a day; the hourly drain sends the rest tomorrow. |
