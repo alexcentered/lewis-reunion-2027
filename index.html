@@ -6,14 +6,30 @@
 <title>Lewis Family Reunion 2027</title>
 <meta name="description" content="Lewis Family Reunion · Fresno, California · July 2–5, 2027">
 <meta name="robots" content="noindex">
+<!-- What a text message or a chat shows when someone shares the link. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Lewis Family Roots">
+<meta property="og:title" content="Lewis Family Reunion 2027">
+<meta property="og:description" content="July 2–5, 2027 in Fresno, California. Register your household.">
+<meta property="og:url" content="https://lewisfamilyroots.com/">
+<meta property="og:image" content="https://lewisfamilyroots.com/assets/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Lewis Family Reunion 2027 medallion: From Their Roots, We Rise">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#173d2a">
+<link rel="icon" type="image/png" href="assets/icon-64.png">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- The fonts load without holding up the page: on a slow or blocked connection the text shows at once in a system font. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap"></noscript>
 <style>
 /* Layout: slim top bar, one view at a time (hash routes), generous whitespace; tree-ring canvas behind the hero. */
 :root{
   --bg:#07110b;--surface:rgba(236,226,206,.04);--surface-2:rgba(236,226,206,.075);--line:rgba(236,226,206,.1);--line-2:rgba(236,226,206,.18);
-  --text:#efe8d9;--paper:#122019;--paper-edge:#07110b;--muted:#b3ab98;--faint:#7f7a6c;--accent:#2a5a3f;--accent-text:#9dc6aa;--on-accent:#f1ebdf;--accent-2:#a88d73;
+  --text:#efe8d9;--paper:#122019;--paper-edge:#07110b;--muted:#b3ab98;--faint:#9a9585;--accent:#2a5a3f;--accent-text:#9dc6aa;--on-accent:#f1ebdf;--accent-2:#a88d73;
   --ok:#5fc48a;--warn:#e2b25a;--bad:#ef7a6e;
   --display:'Playfair Display',Georgia,'Times New Roman',serif;
   --body:'Geist',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
@@ -25,7 +41,7 @@
 [data-mode="dark"][data-ground="espresso"]{--bg:#100906;--paper:#21150d;--paper-edge:#100906}
 [data-mode="light"]{
   --bg:#f3eee3;--surface:#fbf8f1;--surface-2:#e9e2d3;--line:rgba(58,40,24,.12);--line-2:rgba(58,40,24,.22);
-  --text:#211a13;--paper:#f1e7d0;--paper-edge:#d8c4a0;--muted:#5c5145;--faint:#8a7f70;--accent:#173d2a;--accent-text:#173d2a;--on-accent:#f7f2e7;--accent-2:#5b4433;
+  --text:#211a13;--paper:#f1e7d0;--paper-edge:#d8c4a0;--muted:#5c5145;--faint:#6b6154;--accent:#173d2a;--accent-text:#173d2a;--on-accent:#f7f2e7;--accent-2:#5b4433;
   --ok:#1f7a48;--warn:#94600b;--bad:#b3352a;color-scheme:light;
 }
 [data-mode="light"][data-look="harvest"]{--accent:#93600f;--accent-text:#93600f}
@@ -79,7 +95,16 @@ em{font-family:var(--display);font-style:italic;font-size:1.08em}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 label{display:block;font-size:.84rem;color:var(--muted);margin-bottom:6px}
 input,select,textarea{font:inherit;font-size:1rem;color:var(--text);background:var(--surface);border:1px solid var(--line-2);border-radius:10px;padding:11px 13px;width:100%;min-height:48px}
-[data-mode="light"] input,[data-mode="light"] select,[data-mode="light"] textarea{background:#fffdf8}
+[data-mode="light"] input,[data-mode="light"] select,[data-mode="light"] textarea{background:#fffdf8;border-color:rgba(58,40,24,.5)}
+/* a field the form still needs, and the bar that says what is missing wherever the page has scrolled to */
+.bad-field{border-color:var(--bad)!important;box-shadow:0 0 0 3px color-mix(in oklab,var(--bad) 22%,transparent)}
+#dayChecks.bad-field{border-radius:14px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:max(16px,env(safe-area-inset-bottom));z-index:40;width:min(560px,calc(100vw - 28px));padding:14px 18px;border-radius:14px;background:var(--text);color:var(--bg);font-size:.95rem;line-height:1.4;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+/* things scrolled into view must clear the sticky header */
+#regDone,#regSwitch,#regEditing,[data-gate]{scroll-margin-top:120px}
+.linkish{font:inherit;color:var(--accent-text);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+#regEditing{margin:0 0 22px}
+#regSwitch{margin:10px 0 0;padding:14px;border:1px solid color-mix(in oklab,var(--warn) 55%,transparent);border-radius:12px;background:color-mix(in oklab,var(--warn) 9%,transparent);font-size:.92rem}
 input[type=checkbox],input[type=radio]{width:20px;height:20px;min-height:0;accent-color:var(--accent);flex:none;margin:2px 0 0}
 input[type=file]{padding:9px}
 textarea{min-height:110px;resize:vertical}
@@ -670,6 +695,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
     <div class="section">
       <div class="section-head"><div><div class="kicker">Questions</div><h2>Good to know</h2></div></div>
       <div>
+        <details><summary>What does it cost?</summary><div class="hint fees" id="faqFees" style="max-width:420px">The committee will post registration fees soon. You can register now and pay later.</div></details>
         <details><summary>How do I pay?</summary><p id="faqPay">Pay the committee using the method they post here. Then go to My Registration and report the payment. Your balance updates once the committee's payment verifier confirms the money arrived. A reported payment shows as “awaiting confirmation” until then.</p></details>
         <details><summary>I married into the family. Should I register?</summary><p>Yes. Choose “Married into the family” for your branch, and list your spouse so we can place you on the tree together.</p></details>
         <details><summary>I'm not sure which branch I'm from.</summary><p>Choose “Not sure yet” and tell us your parents' and grandparents' names. A family tree captain will help you find your place.</p></details>
@@ -691,6 +717,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
       </div>
       <div class="gate" data-gate hidden></div>
       <div class="card done" id="regDone" hidden></div>
+      <div class="banner" id="regEditing" hidden></div>
       <form id="regForm" class="split" novalidate>
         <div class="steps">
           <div class="card step">
@@ -756,6 +783,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
             <div class="sumrow"><span>Estimated total</span><span class="num" id="sTotal">TBA</span></div>
             <div class="hint fees" id="sFeeNote">The committee will post registration fees soon. You can register now and pay later.</div>
             <p class="hint" id="sGift">A free gift goes to the first 10 adults who pay in full.</p>
+            <div id="regSwitch" hidden></div>
             <button class="btn" type="submit" style="width:100%;margin-top:10px" id="regSubmit">Save registration</button>
             <div class="msg" id="regMsg" aria-live="polite"></div>
           </div>
@@ -945,6 +973,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
   <div class="wrap">
     <div class="section">
       <div class="section-head"><div><div class="kicker">My registration</div><h2 id="meTitle">Your household</h2></div><span id="meStatus"></span></div>
+      <div id="meWait" class="card" style="max-width:640px" hidden><h3 style="font:600 1.5rem var(--display)">Opening your registration…</h3><p class="hint">One moment while we find your household.</p></div>
       <div id="meEmpty" class="card" style="max-width:640px">
         <h3 style="font:600 1.5rem var(--display)">Find your registration</h3>
         <p class="hint">Open the private link we emailed you when you registered. If the link will not open, type the two codes from that email below.</p>
@@ -984,7 +1013,8 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
             <div class="msg" id="payMsg" aria-live="polite"></div>
           </div>
         </div>
-        <p style="margin-top:18px"><a class="btn quiet sm" href="#register">Edit my registration</a></p>
+        <div class="row" style="margin-top:18px"><a class="btn quiet sm" href="#register">Edit my registration</a><button type="button" class="btn quiet sm" data-new-household>Register a different household</button></div>
+        <p class="hint" style="margin-top:8px">Registering someone else too, such as a parent? Use “Register a different household”. This one stays saved, and its private link is in your email.</p>
       </div>
     </div>
   </div>
@@ -995,12 +1025,14 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 <footer>
   <div class="wrap">
     <div>Lewis Family Reunion 2027 · Fresno, California · July 2 – 5<br>Presented by the Lewis Family Reunion Committee</div>
+    <div>Questions? <a href="mailto:committee@lewisfamilyroots.com">committee@lewisfamilyroots.com</a></div>
   </div>
 </footer>
 
+<div class="toast" id="toast" role="alert" hidden></div>
 <script src="tree-engine.js?v=20261109"></script>
 <script src="tree.js?v=20261109"></script>
-<script src="config.js?v=20261123"></script>
-<script src="app.js?v=20261123"></script>
+<script src="config.js?v=20261124"></script>
+<script src="app.js?v=20261124"></script>
 </body>
 </html>
