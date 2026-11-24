@@ -466,11 +466,19 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 .lc-dot{width:9px;height:9px;border-radius:50%;border:0;padding:0;background:var(--line-2);cursor:pointer}
 .lc-dot[aria-current="true"]{background:var(--accent)}
 @media(max-width:860px){.lc-bar{max-width:340px;margin-left:auto;margin-right:auto}.lc-label{min-width:0;flex:1;line-height:1.35}.lc-label b{display:block}.lc-sep{display:none}}
+.rv-note{margin:0 auto 22px;max-width:720px;padding:10px 14px;border:1px dashed var(--accent-2);border-radius:10px;background:var(--surface);color:var(--muted);font:400 .9rem/1.45 var(--body);font-style:normal;text-align:left}
+.rv-note b{color:var(--text)}
+.sample-note .rv-off{display:block;margin-top:6px}
+.sample-card h3{margin:8px 0 0;font:600 1.25rem/1.2 var(--display)}
+.sample-card p{color:var(--muted);margin:.5em 0 0}
+.sample-fee{font:600 2rem/1.1 var(--display);color:var(--text)}
+.sample-faq div{padding:14px 0;border-bottom:1px solid var(--line)}
+.sample-empty{color:var(--muted)}
 </style>
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="review.css">
 <script src="../config.js"></script>
-<script src="review.js"></script>
+<script src="review.js?v=live1"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="ink" x="-2%" y="-2%" width="104%" height="104%"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="4" result="t"/><feDisplacementMap in="SourceGraphic" in2="t" scale="1.3" xChannelSelector="R" yChannelSelector="G"/></filter></svg>
@@ -493,91 +501,156 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
     </div>
   </div>
 </header>
-<div class="sample-note"><div class="wrap"><b>Sample only.</b> This is the homepage in the order you saved on the review page, with the Lewis crest centered above the Welcome section and the new reunion logo in place of the water tower drawing. Nothing on the live website has changed. The buttons open the live site. To change anything, go to <b>2. Homepage order</b>.</div></div>
+<div class="sample-note"><div class="wrap" id="sampleNote"><b>Sample only.</b> This is the homepage in the order you saved on the review page, with the Lewis crest centered above the Welcome section and the new reunion logo in place of the water tower drawing. Nothing on the live website has changed. The buttons open the live site. To change anything, go to <b>2. Homepage order</b>.</div></div>
 <main>
 <section data-view="home" class="on">
-  <div class="wrap">
+  <div class="wrap" data-sec="welcome">
     <div class="section welcome">
       <img class="welcome-crest" src="../assets/lewis-family-crest.png" width="288" height="335" alt="Lewis family crest" decoding="async">
       <div class="split">
         <div>
-          <div class="kicker">Welcome</div>
-          <h2>Welcome to the Lewis Family Roots Website.</h2>
+          <div class="kicker" data-w="welcome.kicker">Welcome</div>
+          <h2 data-w="welcome.heading">Welcome to the Lewis Family Roots Website.</h2>
         </div>
         <div>
-          <p class="lead" style="font-size:1rem">A website rooted in our family legacy and its generational strengths… If you are here, it's because you belong. If you are here, it is because you matter, and your presence is a testament to the branch of the Lewis Family roots you are part of and have contributed to.</p>
-          <p class="lead" style="font-size:1rem">A place that is rooted in “The Bottom” of Mobile, Alabama, that has spanned the globe. A place with humble beginnings, born of John and Anna Mary Lewis and the 13 children they brought into this world. This place is designed to be generational in nature, with a torch passing to maintain our legacy through the generations of aunts, uncles, and the vast number of cousins, 1st, 2nd, 3rd, removed, and beyond. We are the Lewis family.</p>
-          <p class="lead" style="font-size:1rem">Please continue to come back, as this website will evolve to include your pictures, your stories, an interactive family tree, and a marketplace. Its design is to grow through the years with videos, testimonials, and memorials of our past loved ones. Its design is intentional because you matter!</p>
-          <p class="lead" style="font-size:1rem">Thank you for stopping by.</p>
-        </div>
-      </div>
-    </div>
-    <div class="opening">
-      <p class="quote">“Somehow, some way, your foundation is Lewis, and you belong here.”</p>
-      <cite>California cousins, Texas cousins, Mobile cousins, East Coast cousins: one family.</cite>
-    </div>
-    <div class="section">
-      <div class="split">
-        <div>
-          <div class="kicker">The 2027 Family Reunion</div>
-          <h2>Our first order of business.</h2>
-        </div>
-        <div>
-          <p class="lead" style="font-size:1rem">Our first order of business for this site is to intentionally plan a get-together, but not just any get-together, a Reunion. A reunion that is internal in its purpose. It's true, we as a family have gotten together for a funeral and made some memories there, but those get-togethers we respectfully designed to send our loved ones off to heaven, where we know a Lewis party is continually being held. But this reunion is to reach the family members on all coasts, and all countries, with the one purpose of gathering, sharing our stories, meeting the old and new generations of our families, to learn from each other, to share the successes and failures, to plant seeds for our legacy, and to purposefully unite our family to make us strong. It's true that pictures are an amazing way to see the triumphs of our family, but nothing, and I say nothing, takes away the physical presence of seeing your family member, being able to hug them, cry with them, and love them, and that’s the purpose of the 2027 Family Reunion.</p>
-          <p class="lead" style="font-size:1rem">It is planned in Fresno, California, where our oldest living Lewis resides. It will span 4 days, from Friday, 2 July 2027 through Monday, 5 July 2027, and will offer plenty of opportunities to connect, share, laugh, and pay homage to the roots of the 13 generations of families who have contributed to the hundreds of branches that make up the Lewis Family.</p>
-        </div>
-      </div>
-    </div>
-    <div class="section">
-      <div class="split">
-        <div>
-          <div class="kicker">Why we're doing this</div>
-          <h2>Family can be ten buildings away.</h2>
-        </div>
-        <div>
-          <p class="lead" style="font-size:1rem">Two cousins spent years working on the same base in San Antonio, about ten buildings apart, without knowing they were family. By the time they found out, they had about a year together before one was transferred to Japan.</p>
-          <p class="lead" style="font-size:1rem">Another time a cousin was stranded, and a chain of relatives got her picked up at the airport and home safely. Later, family in Dallas–Fort Worth gave her a place at their Thanksgiving table.</p>
-          <p class="lead" style="font-size:1rem">Registering for this reunion is the start of a family directory we keep after July, so we always know where our people are.</p>
+          <p class="lead" data-w="welcome.p1" style="font-size:1rem">A website rooted in our family legacy and its generational strengths… If you are here, it's because you belong. If you are here, it is because you matter, and your presence is a testament to the branch of the Lewis Family roots you are part of and have contributed to.</p>
+          <p class="lead" data-w="welcome.p2" style="font-size:1rem">A place that is rooted in “The Bottom” of Mobile, Alabama, that has spanned the globe. A place with humble beginnings, born of John and Anna Mary Lewis and the 13 children they brought into this world. This place is designed to be generational in nature, with a torch passing to maintain our legacy through the generations of aunts, uncles, and the vast number of cousins, 1st, 2nd, 3rd, removed, and beyond. We are the Lewis family.</p>
+          <p class="lead" data-w="welcome.p3" style="font-size:1rem">Please continue to come back, as this website will evolve to include your pictures, your stories, an interactive family tree, and a marketplace. Its design is to grow through the years with videos, testimonials, and memorials of our past loved ones. Its design is intentional because you matter!</p>
+          <p class="lead" data-w="welcome.p4" style="font-size:1rem">Thank you for stopping by.</p>
         </div>
       </div>
     </div>
   </div>
-  <div class="hero">
+  <div class="wrap" data-sec="quote">
+    <div class="opening">
+      <p class="quote" data-w="quote.quote" data-fmt="quote">“Somehow, some way, your foundation is Lewis, and you belong here.”</p>
+      <cite data-w="quote.cite">California cousins, Texas cousins, Mobile cousins, East Coast cousins: one family.</cite>
+    </div>
+  </div>
+  <div class="wrap" data-sec="reunion">
+    <div class="section">
+      <div class="split">
+        <div>
+          <div class="kicker" data-w="reunion.kicker">The 2027 Family Reunion</div>
+          <h2 data-w="reunion.heading">Our first order of business.</h2>
+        </div>
+        <div>
+          <p class="lead" data-w="reunion.p1" style="font-size:1rem">Our first order of business for this site is to intentionally plan a get-together, but not just any get-together, a Reunion. A reunion that is internal in its purpose. It's true, we as a family have gotten together for a funeral and made some memories there, but those get-togethers we respectfully designed to send our loved ones off to heaven, where we know a Lewis party is continually being held. But this reunion is to reach the family members on all coasts, and all countries, with the one purpose of gathering, sharing our stories, meeting the old and new generations of our families, to learn from each other, to share the successes and failures, to plant seeds for our legacy, and to purposefully unite our family to make us strong. It's true that pictures are an amazing way to see the triumphs of our family, but nothing, and I say nothing, takes away the physical presence of seeing your family member, being able to hug them, cry with them, and love them, and that’s the purpose of the 2027 Family Reunion.</p>
+          <p class="lead" data-w="reunion.p2" style="font-size:1rem">It is planned in Fresno, California, where our oldest living Lewis resides. It will span 4 days, from Friday, 2 July 2027 through Monday, 5 July 2027, and will offer plenty of opportunities to connect, share, laugh, and pay homage to the roots of the 13 generations of families who have contributed to the hundreds of branches that make up the Lewis Family.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap" data-sec="why">
+    <div class="section">
+      <div class="split">
+        <div>
+          <div class="kicker" data-w="why.kicker">Why we're doing this</div>
+          <h2 data-w="why.heading">Family can be ten buildings away.</h2>
+        </div>
+        <div>
+          <p class="lead" data-w="why.p1" style="font-size:1rem">Two cousins spent years working on the same base in San Antonio, about ten buildings apart, without knowing they were family. By the time they found out, they had about a year together before one was transferred to Japan.</p>
+          <p class="lead" data-w="why.p2" style="font-size:1rem">Another time a cousin was stranded, and a chain of relatives got her picked up at the airport and home safely. Later, family in Dallas–Fort Worth gave her a place at their Thanksgiving table.</p>
+          <p class="lead" data-w="why.p3" style="font-size:1rem">Registering for this reunion is the start of a family directory we keep after July, so we always know where our people are.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hero" data-sec="hero">
     <div class="wrap hero-grid">
       <div class="hero-text">
-      <div class="when">July 2 – 5, 2027 · Fresno, California</div>
+      <div class="when" data-w="hero.when">July 2 – 5, 2027 · Fresno, California</div>
       <div class="hero-title">
-        <h1>Lewis Family Reunion <i>2027</i></h1>
+        <h1 data-w="hero.title" data-fmt="title">Lewis Family Reunion <i>2027</i></h1>
       </div>
-      <p class="lead">Come to Fresno, California, to celebrate your connection to family. Spend four days to connect, reconnect to the roots that make our family. Meet the cousins you haven't met yet, and update your branch on the family tree.</p>
+      <p class="lead" data-w="hero.lead">Come to Fresno, California, to celebrate your connection to family. Spend four days to connect, reconnect to the roots that make our family. Meet the cousins you haven't met yet, and update your branch on the family tree.</p>
       <div class="count">
         <div><b class="num" id="cdDays">—</b><span>days to go</span></div>
         <div><b class="num" id="cdHouses">—</b><span>households on the list</span></div>
         <div><b class="num" id="cdBranches">—</b><span>branches represented</span></div>
       </div>
       <div class="row">
-        <a class="btn" href="https://lewisfamilyroots.com/#register" target="_blank" rel="noopener">Register your household</a>
-        <a class="btn quiet" href="https://lewisfamilyroots.com/#reunion" target="_blank" rel="noopener">See the schedule</a>
+        <a class="btn" href="https://lewisfamilyroots.com/#register" target="_blank" rel="noopener"><span data-w="hero.btn1">Register your household</span></a>
+        <a class="btn quiet" href="https://lewisfamilyroots.com/#reunion" target="_blank" rel="noopener"><span data-w="hero.btn2">See the schedule</span></a>
       </div>
       <div class="banner" id="accessBanner" hidden></div>
       </div>
       <img class="hero-logo" src="../assets/reunion-logo.png?v=20261122d" width="640" height="640" alt="From Their Roots, We Rise. Honoring our heritage, celebrating our journey, building our legacy. Lewis Family Reunion 2027.">
     </div>
   </div>
-  <div class="wrap">
+  <div class="wrap" data-sec="roll">
     <div class="section">
       <div class="section-head">
-        <div><div class="kicker">Who's coming</div><h2>Households on the list</h2>
-        <p>Families who chose to show their name here when they registered. Contact details are never shown.</p></div>
+        <div><div class="kicker" data-w="roll.kicker">Who's coming</div><h2 data-w="roll.heading">Households on the list</h2>
+        <p data-w="roll.text">Families who chose to show their name here when they registered. Contact details are never shown.</p></div>
       </div>
       <div class="gate-sample"><h3>Family members only</h3><p style="margin:0">On the real site, visitors enter the family code here, and then the households that chose to be listed appear in this spot.</p></div>
       
     </div>
+  </div>
+  <div class="wrap" data-sec="cta">
     <div class="section">
-      <h2>Let's get you registered.</h2>
-      <div class="row" style="margin-top:14px"><a class="btn" href="https://lewisfamilyroots.com/#register" target="_blank" rel="noopener">Register your household</a></div>
+      <h2 data-w="cta.heading">Let's get you registered.</h2>
+      <div class="row" style="margin-top:14px"><a class="btn" href="https://lewisfamilyroots.com/#register" target="_blank" rel="noopener"><span data-w="cta.btn">Register your household</span></a></div>
     </div>
   </div>
+  <!-- Sections that are off the homepage in this order. They show when a reviewer adds them on 2. Homepage order. -->
+  <div class="wrap" data-sec="tiles" hidden>
+    <div class="section">
+      <div class="tiles">
+        <a class="tile" data-tile="t-reunion" href="https://lewisfamilyroots.com/#reunion" target="_blank" rel="noopener"><div class="n">01</div><h3 data-w="t-reunion.title">The reunion</h3><p data-w="t-reunion.text">Hotel, venues, the four-day schedule and things to do around Fresno.</p><span class="go" data-w="t-reunion.go">Details →</span></a>
+        <a class="tile" data-tile="t-family" href="https://lewisfamilyroots.com/#family" target="_blank" rel="noopener"><div class="n">02</div><h3 data-w="t-family.title">Our family</h3><p data-w="t-family.text">Both lines of the tree, the names behind the nicknames, our veterans and those we’ve lost.</p><span class="go" data-w="t-family.go">Explore →</span></a>
+        <a class="tile" data-tile="t-photos" href="https://lewisfamilyroots.com/#photos" target="_blank" rel="noopener"><div class="n">03</div><h3 data-w="t-photos.title">Photos</h3><p data-w="t-photos.text">Grandma’s albums, the 2008 reunion, last Thanksgiving. Bring them all.</p><span class="go" data-w="t-photos.go">Share a photo →</span></a>
+        <a class="tile" data-tile="t-market" href="https://lewisfamilyroots.com/#market" target="_blank" rel="noopener"><div class="n">04</div><h3 data-w="t-market.title">Marketplace</h3><p data-w="t-market.text">Family businesses, handmade goods and fundraisers for the reunion.</p><span class="go" data-w="t-market.go">Browse →</span></a>
+      </div>
+    </div>
+  </div>
+  <div class="wrap" data-sec="fees" hidden>
+    <div class="section">
+      <div class="section-head"><div><div class="kicker" data-w="fees.kicker">Fees</div><h2 data-w="fees.heading">Fees by age at the reunion</h2>
+        <p data-w="fees.text">Ages on July 2, 2027. Register once for your whole household; the website adds up your total.</p></div></div>
+      <div class="grid tight">
+        <div class="card sample-card"><div class="kicker">23 and older</div><div class="sample-fee">$245</div></div>
+        <div class="card sample-card"><div class="kicker">16 to 22</div><div class="sample-fee">$95</div></div>
+        <div class="card sample-card"><div class="kicker">4 to 15</div><div class="sample-fee">$55</div></div>
+        <div class="card sample-card"><div class="kicker">3 and under</div><div class="sample-fee">Free</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap" data-sec="glance" hidden>
+    <div class="section">
+      <div class="section-head"><div><div class="kicker" data-w="glance.kicker">The weekend</div><h2 data-w="glance.heading">Four days in Fresno</h2></div></div>
+      <div class="grid tight">
+        <div class="card sample-card"><div class="kicker">Fri, July 2</div><h3 data-w="glance.d1">Check-in and Meet &amp; Greet</h3></div>
+        <div class="card sample-card"><div class="kicker">Sat, July 3</div><h3 data-w="glance.d2">Reunion day and Banquet</h3></div>
+        <div class="card sample-card"><div class="kicker">Sun, July 4</div><h3 data-w="glance.d3">Family day and fireworks</h3></div>
+        <div class="card sample-card"><div class="kicker">Mon, July 5</div><h3 data-w="glance.d4">Farewell breakfast</h3></div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap" data-sec="hotel" hidden>
+    <div class="section">
+      <div class="section-head"><div><div class="kicker" data-w="hotel.kicker">Where to stay</div><h2 data-w="hotel.heading">The reunion hotel</h2></div></div>
+      <div class="card sample-card" style="max-width:560px"><h3>Home2 Suites by Hilton Fresno Northwest</h3><p>6965 W. Farrington Avenue, Fresno, CA 93722 · (559) 512-8410</p><p data-w="hotel.text">Group rate: group code 501, hotel code FATNOHT.</p></div>
+    </div>
+  </div>
+  <div class="wrap" data-sec="news" hidden>
+    <div class="section">
+      <div class="section-head"><div><div class="kicker" data-w="news.kicker">From the committee</div><h2 data-w="news.heading">News</h2></div></div>
+      <div class="grid">
+        <div class="card sample-card"><div class="kicker">Sample</div><h3>Fees are set</h3><p>Register your whole household and the website adds up your total.</p></div>
+        <div class="card sample-card"><div class="kicker">Sample</div><h3>Book your hotel room</h3><p>Use group code 501 for the family rate.</p></div>
+        <div class="card sample-card"><div class="kicker">Sample</div><h3>Registration is open</h3><p>Forward your family link so every branch is counted.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap" data-sec="faq" hidden>
+    <div class="section">
+      <div class="section-head"><div><div class="kicker" data-w="faq.kicker">Questions</div><h2 data-w="faq.heading">Questions and answers</h2></div></div>
+      <div class="sample-faq" data-w="faq.qs" data-fmt="lines"><div>How do I pay?</div><div>Who can register?</div><div>Can I change my registration later?</div><div>What should I bring?</div></div>
+    </div>
+  </div>
+  <div class="wrap" data-sec="empty" hidden><div class="section"><p class="sample-empty">Nothing is on the homepage in this order yet.</p></div></div>
 </section>
 </main>
 <footer>
@@ -606,6 +679,98 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
   var x0 = null, stage = lc.querySelector('.lc-stage');
   stage.addEventListener('touchstart', function(e){ x0 = e.touches[0].clientX; }, { passive: true });
   stage.addEventListener('touchend', function(e){ if (x0 === null) return; var dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 40) show(at + (dx < 0 ? 1 : -1)); });
+})();
+</script>
+<script>
+/* The live sample. review.js reads the reviewer's saved review when this page opens, again every 20 seconds while it is on
+   screen and whenever the reviewer comes back to it, and tells this page with an lr-review-data event. This draws it:
+   the homepage order, sections taken off, the tile order, any words typed under Edit words, and the notes. Until a review
+   arrives the page shows the order it was built with. The Lewis crest stays centered above Welcome (Vincent's note, Nov 23). */
+(function(){
+  var STORE = 'lewis-homepage-order-v1';
+  var home = document.querySelector('section[data-view="home"]'); if (!home) return;
+  var BLOCKS = {};
+  [].forEach.call(home.querySelectorAll(':scope > [data-sec]'), function(el){ BLOCKS[el.getAttribute('data-sec')] = el; });
+  var BUILT = Object.keys(BLOCKS).filter(function(id){ return !BLOCKS[id].hidden; });
+  var tiles = home.querySelector('[data-sec="tiles"] .tiles');
+  var DEF = {};
+  [].forEach.call(home.querySelectorAll('[data-w]'), function(el){ DEF[el.getAttribute('data-w')] = el.innerHTML; });
+  var bar = document.getElementById('sampleNote'), barBuilt = bar ? bar.innerHTML : '';
+  var NAMES = { welcome: 'Welcome', quote: 'The family quote', reunion: 'The 2027 Family Reunion', why: 'Why we’re doing this', hero: 'Welcome banner',
+    tiles: 'The four tiles', roll: 'Households on the list', cta: 'Let’s get you registered', fees: 'Fees', glance: 'The weekend', hotel: 'The reunion hotel',
+    news: 'News', faq: 'Questions and answers' };
+  var drawn = null;
+
+  function esc(t){ return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function parse(v){
+    try { var st = typeof v === 'string' ? JSON.parse(v) : v; return st && Array.isArray(st.page) ? st : null; } catch (e) { return null; }
+  }
+
+  function words(st){
+    [].forEach.call(home.querySelectorAll('[data-w]'), function(el){
+      var k = el.getAttribute('data-w'), p = k.split('.'), w = st && st.words && st.words[p[0]], typed = w ? w[p[1]] : null;
+      if (typed == null) { el.innerHTML = DEF[k]; el.hidden = false; return; }
+      var t = String(typed).trim(), fmt = el.getAttribute('data-fmt'), h = esc(t).replace(/\n+/g, '<br>');
+      if (fmt === 'quote') h = '“' + h + '”';
+      if (fmt === 'title' && /\s\d{4}$/.test(t)) h = esc(t).replace(/(\d{4})$/, '<i>$1</i>');
+      if (fmt === 'lines') h = t.split('\n').filter(function(x){ return x.trim(); }).map(function(x){ return '<div>' + esc(x.trim()) + '</div>'; }).join('');
+      el.innerHTML = h;
+      el.hidden = !t;   // a box typed empty means "leave it out", as on 2. Homepage order
+    });
+  }
+
+  function order(st){
+    var page = st ? st.page.filter(function(id){ return BLOCKS[id] && id !== 'empty'; }) : BUILT;
+    Object.keys(BLOCKS).forEach(function(id){ BLOCKS[id].hidden = page.indexOf(id) < 0; });
+    if (!page.length) BLOCKS.empty.hidden = false;
+    page.forEach(function(id){ home.appendChild(BLOCKS[id]); });
+    if (!tiles) return;
+    ((st && st.tiles) || ['t-reunion', 't-family', 't-photos', 't-market']).forEach(function(id){
+      var t = tiles.querySelector('[data-tile="' + id + '"]'); if (t) tiles.appendChild(t);
+    });
+    [].forEach.call(tiles.children, function(t, i){ var n = t.querySelector('.n'); if (n) n.textContent = '0' + (i + 1); });
+  }
+
+  function notes(st, name){
+    [].forEach.call(home.querySelectorAll('.rv-note'), function(n){ n.parentNode.removeChild(n); });
+    var who = (name ? name + '’s' : 'Reviewer’s') + ' note', all = (st && st.notes) || {}, off = [];
+    Object.keys(all).forEach(function(id){
+      var t = String(all[id] || '').trim(); if (!t) return;
+      var host = BLOCKS[id];
+      if (!host || host.hidden) { off.push((NAMES[id] || id) + ': ' + t); return; }
+      var box = document.createElement('div'); box.className = 'rv-note';
+      box.innerHTML = '<b>' + esc(who) + ':</b> ' + esc(t);
+      var inner = host.querySelector('.hero-text, .section, .opening') || host;
+      inner.insertBefore(box, inner.firstChild);
+    });
+    return off;
+  }
+
+  function note(st, name, saved, off){
+    if (!bar) return;
+    if (!st) { bar.innerHTML = barBuilt; return; }
+    var when = '';
+    if (saved) { var d = new Date(saved); if (!isNaN(d)) when = ', last saved ' + d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' at ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+    var h = '<b>Sample only.</b> This is the homepage as ' + (name ? esc(name) + '’s review' : 'the review') + ' has it on <b>2. Homepage order</b>' + esc(when) +
+      '. It updates by itself within about 20 seconds of each change. The Lewis crest is centered above the Welcome section. Nothing on the live website has changed, and the buttons open the live site.';
+    off.forEach(function(t){ h += '<span class="rv-off"><b>Note on a section that is off the homepage:</b> ' + esc(t) + '</span>'; });
+    if (st.other && String(st.other).trim()) h += '<span class="rv-off"><b>Anything else:</b> ' + esc(String(st.other).trim()) + '</span>';
+    bar.innerHTML = h;
+  }
+
+  function draw(raw, name, saved){
+    var st = parse(raw), key = JSON.stringify([raw, name, saved]);
+    if (key === drawn) return;
+    drawn = key;
+    order(st); words(st); note(st, name, saved, notes(st, name));
+  }
+
+  var stored = null; try { stored = localStorage.getItem(STORE); } catch (e) {}
+  if (parse(stored)) draw(stored, '', null);
+  document.addEventListener('lr-review-data', function(e){
+    var d = (e && e.detail) || {};
+    draw(d.data && d.data.order, d.name || '', d.saved);
+  });
 })();
 </script>
 </body>

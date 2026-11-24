@@ -59,6 +59,12 @@
   }
 
   var lastSaved = null, saving = false, changedAt = 0, retryAt = 0, ready = false;
+  // The sample (1. Sample) has nothing to edit: it only shows the saved review, so it never saves on its own.
+  var readOnly = page === 'sample';
+  /* Tells the page what the review holds now (lr-review-data), so the sample can draw it. */
+  function emit(saved) {
+    try { document.dispatchEvent(new CustomEvent('lr-review-data', { detail: { name: reviewer, data: dataNow(), saved: saved || null } })); } catch (e) {}
+  }
   function save() {
     var d = dataNow(), j = json(d), body = { action: 'reviewSave', key: key, data: d };
     var text = readable();
@@ -75,7 +81,7 @@
     });
   }
   function tick() {
-    if (!ready || saving) return;
+    if (!ready || saving || readOnly) return;
     var j = json(dataNow());
     if (j === lastSaved) return;
     if (!changedAt) { changedAt = Date.now(); say('Saving…'); }
@@ -83,7 +89,7 @@
     changedAt = 0; save();
   }
   function beacon() {
-    if (!ready || json(dataNow()) === lastSaved || !navigator.sendBeacon) return;
+    if (readOnly || !ready || json(dataNow()) === lastSaved || !navigator.sendBeacon) return;
     var body = { action: 'reviewSave', key: key, data: dataNow() }, text = readable();
     if (page === 'order' && text != null) body.order = text;
     if (page === 'wording' && text != null) body.wording = text;
@@ -113,7 +119,7 @@
       var justReloaded = Date.now() - Number(sessionStorage.getItem(RELOADED) || 0) < 15000;
       if (synced != null && json(local) !== synced && !justReloaded) {
         // Changes made here that never reached the Sheet (for example offline): this device wins.
-        ready = true; save(); return;
+        ready = true; save(); emit(); return;
       }
       // A page the reviewer has not saved yet (null on the server) keeps what this device shows.
       var newer = Object.keys(STATE).filter(function (k) { return server[k] != null && server[k] !== get(STATE[k]); });
@@ -128,7 +134,29 @@
       lastSaved = json(dataNow()); set(SYNCED, lastSaved); set(SYNCED_FOR, key);
       ready = true;
       say(r.saved ? 'All changes saved. Last saved ' + new Date(r.saved).toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' at ' + time(r.saved) + '.' : 'Ready. Your changes save by themselves.');
+      emit(r.saved);
     }, function () { say('Could not reach the website. Check your connection, then reload the page.', true, true); });
+  }
+
+  /* The sample checks the Sheet again every 20 seconds while it is on screen, and as soon as the reviewer comes back to
+     it, so it follows the review as it is saved from 2. Homepage order on any device. It only reads. */
+  var POLL_MS = 20000, polledAt = 0, polling = false;
+  function poll() {
+    if (!readOnly || !ready || !key || polling || document.visibilityState === 'hidden' || Date.now() - polledAt < 3000) return;
+    polling = true; polledAt = Date.now();
+    post({ action: 'review', key: key }).then(function (r) {
+      polling = false;
+      if (!r || !r.ok) return;
+      if (r.name) reviewer = r.name;
+      var server = r.data || {};
+      // Changes made on this device that have not reached the Sheet yet (offline) stay; 2. Homepage order saves them.
+      var pending = get(SYNCED_FOR) === key && get(SYNCED) != null && get(SYNCED) !== json(dataNow());
+      if (!pending) Object.keys(STATE).forEach(function (k) { if (server[k] != null) { base[k] = server[k]; set(STATE[k], server[k]); } });
+      lastSaved = json(dataNow());
+      if (!pending) { set(SYNCED, lastSaved); set(SYNCED_FOR, key); }
+      say('Up to date with the saved review. Checked at ' + time() + '.');
+      emit(r.saved);
+    }, function () { polling = false; say('Could not check for new changes. Trying again in a moment.', true); });
   }
 
   function build() {
@@ -143,13 +171,20 @@
     document.body.appendChild(cover);
     // Save before moving to another review page, so nothing is lost between pages.
     bar.addEventListener('click', function (e) {
-      var a = e.target.closest && e.target.closest('a'); if (!a || !ready || json(dataNow()) === lastSaved) return;
+      var a = e.target.closest && e.target.closest('a'); if (!a || !ready || readOnly || json(dataNow()) === lastSaved) return;
       e.preventDefault(); save();
       var go = a.href, t0 = Date.now();
       (function wait() { if (!saving || Date.now() - t0 > 4000) location.href = go; else setTimeout(wait, 150); })();
     });
     load();
     setInterval(tick, 400);
+    if (readOnly) {
+      setInterval(poll, POLL_MS);
+      document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') poll(); });
+      window.addEventListener('focus', poll);
+      // 2. Homepage order open in another tab of this browser: show each change at once, before it reaches the Sheet.
+      window.addEventListener('storage', function (e) { if (ready && e.key === STATE.order) emit(); });
+    }
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') beacon(); });
     window.addEventListener('pagehide', beacon);
   }
