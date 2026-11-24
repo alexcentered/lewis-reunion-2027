@@ -52,6 +52,21 @@ This keeps the same `/exec` URL while deploying the updated code.
 
 Photo sharing has an on/off switch in two places (Config tab `photosEnabled` and `config.js`). See **[TESTING.md](TESTING.md)** for how to turn it on and check it, for the email and codes checklist, and for checking a committee update.
 
+## Opening day checklist
+
+Do these once, in order, before telling the family that registration is open.
+
+1. **Backend up to date.** In the Sheet: Extensions, Apps Script. Paste the current `apps-script/Code.gs` over what is there and save. Then Deploy, Manage deployments, the pencil, Version: New version, Deploy. Never "New deployment".
+2. **Config tab.** `siteLive` is `Yes`. The four fees are numbers. `zelle` and `cashapp` (or the handles you use) are filled in. Set `deadline` when the committee has a payment date; until then the site and the emails say it will be announced.
+3. **Holders tab.** One row for each person who receives reunion money, with the ways they take it (for example `Zelle, Cash App`), so every payment names who has it.
+4. **Test data.** Delete test households from Registrations and their rows from Payments. Leave MailQueue alone: it is the record.
+5. **One real test.** Open the family link on your phone, register yourself, and check that the email arrives and that its button opens My Registration.
+6. **Welcome email.** Put the relatives you have email addresses for on the Contacts tab (`First`, `Last`, `Email`). On the Updates tab add a row with Template `Welcome from the committee (HTML)`, Audience `test`, Approved ticked, and choose Reunion, Send approved updates now. Read the proof in the committee inbox. Then a second row with Audience `everyone`. Brevo's free plan sends 300 emails a day; anything over that waits in MailQueue and goes out the next day by itself.
+7. **Texts and the flyer.** Open `https://lewisfamilyroots.com/share/`, copy a message, attach the flyer. See [docs/OUTREACH.md](docs/OUTREACH.md).
+8. **During the day.** Watch the Registrations tab fill. On MailQueue, anything not `Sent` says why in `Last error`. When a payment arrives, set its Status to `Confirmed` on the Payments tab; the household gets a receipt.
+
+If the family link gets out, change `familyCode` on the Config tab and share the new link. Households that already registered keep their own private links.
+
 ## Committee guide
 
 - **Dashboard tab:** households, adults, children, room nights, paid / partial / unpaid, confirmed dollars, dollars awaiting a check, and households by branch.
@@ -67,6 +82,7 @@ Photo sharing has an on/off switch in two places (Config tab `photosEnabled` and
 - **Entries tab:** untick **Visible** to hide a story, photo or listing. A hidden photo is also made private in Drive.
 - **Sending an update to everyone:** the **Updates** tab holds one row per committee email. Write the **Subject** and the **Draft** (plain paragraphs are fine; start with `Hi,` and each household gets its own name), set **Audience** to `all`, `unpaid`, `paid`, `test` (only the committee address), a branch name, or, to reach relatives who have not registered, `everyone`, `contacts` or `unregistered` (see **Contacts** below), and tick the **Approved** box. The script sends it at 9 the next morning, or right away from **Reunion → Send approved updates now**; to hold it for a later day, put the date in **Send on** (it goes out at 9 that morning, and **Failed** says "Scheduled" until then), one MailQueue row per household; **Sent**, **Failed** and **Skipped** fill in. Proof it with Audience `test` first. Every update ends "To stop these updates, reply with the word STOP"; when someone does, type `Yes` in their **Mail opt-out** column on **Registrations** (or **Contacts**) and they are left out of future updates (receipts and links still go). To reuse wording, pick a **Template** in the last column: the Subject and Draft fill in from the **Templates** tab, with fields such as `{{first name}}`, `{{balance}}` and `{{deadline}}` filled in per household. Click any row and choose **Reunion → Email me this draft** to get it yourself first, as a family would see it. The Templates tab also holds the two editable lines of the registration email ("Registration: thank you" and "Registration: what happens next"). If you would rather not write it yourself, put bullet points in **Notes** and choose **Reunion → Draft update with AI**; read and edit the draft before approving. Full steps in [docs/EMAIL.md](docs/EMAIL.md).
 - **Contacts tab and the welcome email:** list relatives who have not registered yet, one per row (`First`, `Last`, `Email`, optional `Branch` and `Notes`). Pasting from another sheet is fine. Then send the **Welcome from the committee** template: an Updates row with that Template, Audience `test` first, then `everyone` (every registered household and everyone on Contacts, one copy per email). Its `{{family link}}` is the family link with the code, so people can register; keep it in the family. `unregistered` reaches only Contacts who have not registered yet, which suits a reminder. Fields about money or a household (`{{balance}}`, `{{household id}}` and similar) are refused for these audiences, because a relative who has not registered has none.
+- **Telling the family by text, and the flyer:** open **https://lewisfamilyroots.com/share/** on a device that has opened the family link (or type the family code there). It gives the family link, three text messages with Copy buttons, and a flyer with a QR code to print or save. Family only: do not post the link, the QR code or the flyer publicly. Details in [docs/OUTREACH.md](docs/OUTREACH.md).
 - **MailQueue tab:** one row per email, sent or waiting. `Status` is `Sent`, `Queued` or `Failed`; `Last error` says why. To retry a Failed row, type `Queued` in its Status cell. See [docs/EMAIL.md](docs/EMAIL.md).
 - **Reunion menu** (in the Sheet's menu bar): **Refresh balances and status**, **Send queued mail now** (sends waiting MailQueue rows without waiting for the hourly run), **Send me a test email** (a sample registration email to you, so you can see the route and the wording), **Send approved updates now** (sends ticked Updates rows without waiting for 9 am), **Send the money report now** (emails the money report to `treasurerEmail` right away), **Draft update with AI** (turns Notes into a Draft; needs the optional key), **Email me this draft** (the row you clicked on Updates or Templates, to you, filled in for a made-up household), **Sync photo privacy** (re-match every photo's Drive sharing to its Visible box), **Run setup**.
 
@@ -76,6 +92,6 @@ Photo sharing has an on/off switch in two places (Config tab `photosEnabled` and
 https://lewisfamilyroots.com/?c=FAMILY-CODE
 ```
 
-Replace `FAMILY-CODE` with the value on the Config tab. Don't post this link anywhere public.
+Replace `FAMILY-CODE` with the value on the Config tab. Don't post this link anywhere public. Add `#register` to the end to open the registration form directly; the share page (`/share/`) builds that link, the text messages and the flyer for you.
 
 *Note: The old `alexcentered.github.io/lewis-reunion-2027` address redirects to the custom domain.*

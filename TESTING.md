@@ -103,7 +103,7 @@ Use your phone for the inbox checks and a computer for the Sheet. Use an email a
 - [ ] Open the family link on your phone → **Register**. Fill in a made-up household with your own email, two adults and one child, pick at least one day, tick the travel box → **Send**.
 - [ ] The success panel shows "You're registered. Welcome home.", your private link, and under it **Family code** and **Registration code** with Copy buttons. The registration code is 32 letters and numbers in groups of 4.
 - [ ] Within a minute an email arrives **from committee@lewisfamilyroots.com**, subject "You are registered: Lewis Family Reunion 2027". It is in the inbox, not spam. Check a Gmail, a Yahoo and an iCloud address if you can.
-- [ ] The email has a green **Open my registration** button, a grey box with the link, the website, the Family code and the Registration code, who is coming, and either "Estimated total: $…" or "Registration fees will be announced soon".
+- [ ] The email has a green **Open my registration** button, a grey box with the link, the website, the Family code and the Registration code, who is coming, and either "Total due: $…" or "Registration fees will be announced soon".
 - [ ] Tap the button. The site opens on **My Registration** with your household loaded.
 
 **Type the codes**

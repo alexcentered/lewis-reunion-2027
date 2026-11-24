@@ -95,19 +95,20 @@ const REG_THANKS_DEFAULT = 'Thank you for registering for the Lewis Family Reuni
 const REG_NEXT_DEFAULT = 'The committee will email updates about the schedule and the venues as plans are confirmed.';
 const TPL_WELCOME = 'Welcome from the committee';
 const WELCOME_SEED = [TPL_WELCOME, 'Welcome to the Lewis Family Reunion 2027',
-  'Hi,\n\nOn behalf of the reunion committee, welcome. From Friday, July 2 to Monday, July 5, 2027, the Lewis family is gathering in Fresno, California, and we want you there.\n\n' +
-  'It is four days to connect and reconnect: a meet and greet on Friday evening, a banquet on Saturday night, family day and a picnic on Sunday with Fourth of July fireworks, and a farewell breakfast on Monday morning. The schedule on the website fills in as plans are confirmed.\n\n' +
-  'Registration is open. Your family link opens the registration page:\n{{family link}}\n\n' +
-  'Please keep the link within the family. Forward it to relatives who did not get this email, so every branch is counted.\n\n' +
-  'The reunion hotel is Home2 Suites by Hilton Fresno Northwest. Book with group code 501 for the family rate.\n\n' +
-  'Fees and payment dates are being finalized. We will email them as soon as they are set.\n\n' +
+  'Hi,\n\nOn behalf of the reunion committee, welcome. From Friday, July 2 to Monday, July 5, 2027, the Lewis family is gathering in Fresno, California, and we want you there. Registration is now open.\n\n' +
+  'Your family link opens the reunion website with our family code already in place:\n{{family link}}\n\n' +
+  'Press "Register your household" and fill in one form for everyone traveling together: who is coming, each person\u2019s age, T-shirt size and any dietary needs. It takes about five minutes. We email you a private link right away. Keep that email; it is how you come back to change your registration and to report your payment.\n\n' +
+  'The weekend: a meet and greet on Friday evening, a banquet on Saturday night, family day and a picnic on Sunday with Fourth of July fireworks, and a farewell breakfast on Monday morning. The schedule on the website fills in as plans are confirmed.\n\n' +
+  'Registration fees are per person, by age on July 2, 2027: {{fees}}. You can register now and pay later. Payment due date: {{deadline}}. {{ways to pay}} When you pay, put your household ID in the payment note. You get it as soon as you register.\n\n' +
+  'The reunion hotel is Home2 Suites by Hilton Fresno Northwest, 6965 W. Farrington Avenue, Fresno, CA 93722, (559) 512-8410. Book with group code 501 (hotel code FATNOHT) for the family rate. Fresno Yosemite International Airport (FAT) is the closest airport.\n\n' +
+  'Please keep the link within the family, and forward this email to relatives who did not get it, so every branch is counted.\n\n' +
   'Questions or ideas? Reply to this email and it reaches the committee.',
   'A welcome for the whole family. Send it with Audience everyone (registered households and the Contacts tab), after a test. Change the words freely; keep {{family link}} so people can register.'];
 const TEMPLATE_SEED = [
   [TPL_REG_THANKS, '', REG_THANKS_DEFAULT, 'The first line of every registration email. Keep it to one or two sentences. Leave it blank to use the built-in line.'],
   [TPL_REG_NEXT, '', REG_NEXT_DEFAULT, 'Extra lines under "What happens next" in the registration email, one per line. The fee, payment and household ID lines are added by the script and cannot be changed here.'],
   ['Example: payment reminder', 'Lewis Reunion: your balance',
-    'Hi,\n\nA reminder about the Lewis Family Reunion, July 2–5, 2027 in Fresno.\n\nYour household ID is {{household id}}. Your total is {{total due}}, you have paid {{paid so far}}, and your balance is {{balance}}, due by {{deadline}}.\n\n{{ways to pay}} Please put your household ID in the payment note.\n\nYou can see your registration at {{my registration}}.',
+    'Hi,\n\nA reminder about the Lewis Family Reunion, July 2–5, 2027 in Fresno.\n\nYour household ID is {{household id}}. Your total is {{total due}}, you have paid {{paid so far}}, and your balance is {{balance}}. Payment due date: {{deadline}}.\n\n{{ways to pay}} Please put your household ID in the payment note.\n\nYou can see your registration at {{my registration}}.',
     'An example to copy. Pick a template in the Template column of the Updates tab, or use Reunion, Email me this draft, to see it as a family will.'],
   WELCOME_SEED
 ];
@@ -121,6 +122,7 @@ const MERGE_FIELDS = {
   'paid so far': r => money_(r.Confirmed),
   'balance': r => num_(r.Balance) === null ? 'to be announced' : money_(r.Balance),
   'deadline': (r, c) => longDate_(c.deadline) || 'to be announced',
+  'fees': (r, c) => feesLine_(c),
   'ways to pay': (r, c) => payLine_(c),
   'website': (r, c) => siteBase_(c),
   'my registration': (r, c) => siteBase_(c) + '#me',
@@ -307,7 +309,8 @@ function register_(p, cfg) {
   const days = (Array.isArray(r.days) ? r.days : []).filter(d => DAY_LABELS[d]);
   const miss = [];
   if (!v.first) miss.push('first name'); if (!v.last) miss.push('last name');
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) miss.push('a valid email');
+  // Letters, digits and the usual marks only, starting with a letter or digit: an address shaped like a formula is refused.
+  if (!/^[a-z0-9][a-z0-9._%+'-]*@[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(v.email)) miss.push('a valid email');
   if (v.phone.replace(/\D/g, '').length < 10) miss.push('a cell phone number');   // required since Nov 2026; the site checks the same
   if (!v.city || !v.state) miss.push('city and state'); if (!v.branch) miss.push('branch');
   if (!att.length) miss.push('at least one person attending'); if (!days.length) miss.push('at least one day');
@@ -320,6 +323,13 @@ function register_(p, cfg) {
   else {
     const dupe = rows_(TAB.reg).find(x => String(x.Email || '').toLowerCase() === v.email);
     if (dupe) {
+      // One fresh link per address every ten minutes. Inside that window nothing is rotated or sent: a cousin whose first try
+      // reached us on a weak signal and who pressed Save again keeps the link from the email they already have, and nobody
+      // holding only the family code can flood a household with emails or keep retiring its link.
+      let recent = false;
+      const dupeKey = 'regdupe:' + v.email;
+      try { const cache = CacheService.getScriptCache(); recent = !!cache.get(dupeKey); if (!recent) cache.put(dupeKey, '1', 600); } catch (err) {}
+      if (recent) return { ok: false, error: 'exists', message: 'That email is already registered. We emailed its private link a few minutes ago. Check your inbox and spam folder, and open the link to see or change the registration.' };
       // A mail failure here must not turn into a server error: the answer is the same either way.
       try { sendLink_(dupe, cfg, true); } catch (err) { console.warn('email failed', err); }
       return { ok: false, error: 'exists', message: 'That email is already registered. We just emailed you a private link to view and change it.' };
@@ -345,6 +355,7 @@ function register_(p, cfg) {
     sh.appendRow(H.names.map(n => data[n] !== undefined ? data[n] : ''));
     rowIndex = sh.getLastRow();
     ['Arrive', 'Depart'].forEach(n => sh.getRange(rowIndex, H.col[n] + 1).setNumberFormat('@').setValue(v[n.toLowerCase()]));
+    try { CacheService.getScriptCache().put('regdupe:' + v.email, '1', 600); } catch (err) {}   // see the duplicate branch above
   }
   if (existing) ['Arrive', 'Depart'].forEach(n => sh.getRange(rowIndex, H.col[n] + 1).setNumberFormat('@').setValue(v[n.toLowerCase()]));
   // The row is saved at this point. A renamed header or a mail problem must not lose the confirmation.
@@ -368,7 +379,7 @@ function report_(p, cfg) {
   const row = found.row, sh = sheet_(TAB.pay), H = headers_(sh);
   const data = {
     'Payment ID': 'P-' + Utilities.getUuid().slice(0, 8).toUpperCase(), 'Household ID': row['Household ID'],
-    'Household': (row.Preferred || row.First) + ' ' + row.Last, 'Reported': new Date(), 'Amount': amount,
+    'Household': clean_(str_(row.Preferred || row.First) + ' ' + str_(row.Last), 130), 'Reported': new Date(), 'Amount': amount,
     'Method': clean_(pm.method, 40), 'Date sent': clean_(pm.date, 10), 'Reference': clean_(pm.ref, 80), 'Note': clean_(pm.note, 300), 'Status': 'Reported'
   };
   data[PAY_RECEIVED_BY] = holderFor_(data.Method, rowsIf_(TAB.holders));
@@ -566,7 +577,16 @@ function paymentReceipts_(sh, first, last) {
     const pay = rowAt_(sh, H, r), st = String(pay.Status || '');
     if (st !== 'Confirmed' && st !== 'Not received') continue;
     if (String(pay['Receipt sent'] || '').indexOf(st) === 0) continue;
-    const reg = regs.find(x => x['Household ID'] && x['Household ID'] === pay['Household ID']);
+    let reg = regs.find(x => x['Household ID'] && x['Household ID'] === pay['Household ID']);
+    if (!reg) {   // the ID was typed by hand in another shape: fix the cell, count the payment, then send the receipt with fresh totals
+      const loose = regByLooseId_(pay['Household ID'], regs);
+      if (loose) {
+        pay['Household ID'] = loose['Household ID'];
+        sh.getRange(r, H.col['Household ID'] + 1).setValue(loose['Household ID']);
+        try { recompute_(); } catch (err) { console.warn('recompute failed', err); }
+        reg = rows_(TAB.reg).find(x => x['Household ID'] === loose['Household ID']) || loose;
+      }
+    }
     if (!reg || !reg.Email) { console.warn('Payment receipts: no registration with an email for row ' + r); continue; }
     // A row the committee typed by hand has no Payment ID. Give it one (same shape as report_) and store it first,
     // so the receipt key 'receipt:<Payment ID>:<Status>' is unique to this row instead of shared by every blank one.
@@ -927,6 +947,15 @@ function longDate_(v) {
   return months[Number(m[2]) - 1] + ' ' + Number(m[3]) + ', ' + m[1];
 }
 
+/** "Fri, Jul 2" from a Date or a yyyy-mm-dd cell; the text as typed when it is not a date. */
+function shortDay_(v) {
+  const s = iso_(v), m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return str_(v).trim();
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12));
+  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ', ' +
+    ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(m[2]) - 1] + ' ' + Number(m[3]);
+}
+
 /** A made-up household for previews and tests: two adults and a child, with amounts from the Config fees when they are set. */
 function sampleRow_(cfg, email) {
   const att = 'Cousin Lewis · 23+\nPartner Lewis · 23+\nLittle Lewis · 4–15 · 8', d = dueFor_(parseAttendees_(att), feesOf_(cfg)), due = d === null ? '' : d;
@@ -1054,13 +1083,22 @@ function fillPayments_(sh, first, last) {
   let regs = null, holders = null;
   for (let r = first; r <= last; r++) {
     const row = rowAt_(sh, H, r), who = nameKey_(row.Household);
+    // The treasurer copied the ID from a Zelle note ("h-1a2b3c4d", no dash, a stray space): write it the way Registrations has it,
+    // or the payment would match nobody and count toward nothing.
+    if (str_(row['Household ID']).trim()) {
+      regs = regs || rowsIf_(TAB.reg);
+      if (!regs.some(x => x['Household ID'] && x['Household ID'] === row['Household ID'])) {
+        const hit = regByLooseId_(row['Household ID'], regs);
+        if (hit) sh.getRange(r, H.col['Household ID'] + 1).setValue(hit['Household ID']);
+      }
+    }
     if (!str_(row['Household ID']).trim() && who) {
       regs = regs || rowsIf_(TAB.reg);
       const hits = regs.filter(x => str_(x['Household ID']).trim() && (nameKey_(x.Email) === who ||
         nameKey_((x.Preferred || x.First) + ' ' + x.Last) === who || nameKey_(x.First + ' ' + x.Last) === who));
       if (hits.length === 1) sh.getRange(r, H.col['Household ID'] + 1).setValue(hits[0]['Household ID']);
       else if (H.col.Note !== undefined && String(row.Note || '').indexOf(NO_MATCH_NOTE) < 0) {
-        sh.getRange(r, H.col.Note + 1).setValue((str_(row.Note).trim() ? str_(row.Note).trim() + ' · ' : '') + NO_MATCH_NOTE);
+        sh.getRange(r, H.col.Note + 1).setValue(cell_((str_(row.Note).trim() ? str_(row.Note).trim() + ' · ' : '') + NO_MATCH_NOTE));
       }
     }
     if (H.col[PAY_RECEIVED_BY] !== undefined && !str_(row[PAY_RECEIVED_BY]).trim() && str_(row.Method).trim()) {
@@ -1190,7 +1228,7 @@ function moneySummary_() {
   d.noReceipt.forEach(x => add(['No receipt link: ' + (str_(x.What).trim() || str_(x.Vendor).trim() || 'expense'), money_(x.Amount), '', str_(x['Paid by']), iso_(x.Date)]));
   if (!d.stale.length && !d.noReceipt.length) add(['Nothing. Every payment older than ' + MONEY_STALE_DAYS + ' days is settled and every paid expense has a receipt link.']);
   sh.clear();
-  sh.getRange(1, 1, rows.length, W).setValues(rows.map(r => r.concat(Array(W - r.length).fill('')).slice(0, W)));
+  sh.getRange(1, 1, rows.length, W).setValues(rows.map(r => r.concat(Array(W - r.length).fill('')).slice(0, W).map(cell_)));
   titles.forEach(r => sh.getRange(r, 1, 1, W).setFontWeight('bold'));
 }
 
@@ -1377,12 +1415,20 @@ function brevoSend_(msg, cfg) {
   try { body = JSON.parse(resp.getContentText() || '{}') || {}; } catch (err) {}
   if (status >= 200 && status < 300) return { ok: true, id: String(body.messageId || '') };
   const error = 'Brevo ' + status + (body.code ? ' ' + body.code : '') + (body.message ? ': ' + String(body.message).slice(0, 200) : '');
-  return { ok: false, error: error, config: status === 401 || status === 403, quota: status === 402 || status === 429 };
+  // "not_enough_credits" is the daily limit; it must wait for tomorrow like any other quota answer, not use up the 20 attempts.
+  const credits = body.code === 'not_enough_credits';
+  return { ok: false, error: error, config: !credits && (status === 401 || status === 403), quota: credits || status === 402 || status === 429 };
 }
 
 /** Plain-text version of simple HTML (paragraphs, lists, line breaks, links). Used for email text parts and page_. */
 function htmlToText_(html) {
   return String(html == null ? '' : html)
+    // A link whose words are not its address keeps the address ("Register now: https://..."); a button would otherwise be a dead label.
+    .replace(/<a\b[^>]*\bhref="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g, (m, href, label) => {
+      const t = label.replace(/<[^>]+>/g, '').trim(), bare = href.replace(/^(mailto|tel):/i, '');
+      if (bare !== href) return t || bare;   // an email address or phone number: the words are enough
+      return !t || t === href ? href : t + ': ' + href;
+    })
     .replace(/<li[^>]*>/g, '  • ').replace(/<\/li>/g, '\n').replace(/<ul[^>]*>/g, '').replace(/<\/ul>/g, '\n')
     .replace(/<h2[^>]*>/g, '\n').replace(/<\/h2>/g, '\n').replace(/<\/p>/g, '\n\n').replace(/<br\s*\/?>/g, '\n')
     .replace(/<[^>]+>/g, '')
@@ -1390,11 +1436,13 @@ function htmlToText_(html) {
     .replace(/\n{3,}/g, '\n\n').trim();
 }
 
-/** The shared email frame: Georgia body plus the committee sign-off. bodyHtml is already escaped HTML. */
-function mailWrap_(bodyHtml, cfg) {
+/** The shared email frame: Georgia body plus the committee sign-off. bodyHtml is already escaped HTML. smallPrint (escaped
+    HTML, optional) goes last, under the signature: the "why you are getting this, reply STOP" line on committee updates. */
+function mailWrap_(bodyHtml, cfg, smallPrint) {
   return '<div style="font-family:Georgia,serif;font-size:16px;line-height:1.6;color:#1b1b18;max-width:560px">' + bodyHtml +
     '<p>' + SIGNOFF + '</p>' +
-    '<p>The Lewis Family Reunion Committee<br>' + htmlEsc_(cfg.email || '') + '</p></div>';
+    '<p>The Lewis Family Reunion Committee<br>' + htmlEsc_(cfg.email || '') + '</p>' +
+    (smallPrint ? '<p style="font-size:13px;color:#666;border-top:1px solid #e3dccd;padding-top:12px;margin-top:22px">' + smallPrint + '</p>' : '') + '</div>';
 }
 
 /** One MailQueue row as { header: value }; appendMail_ lays it out in the tab's live header order. */
@@ -1408,7 +1456,7 @@ function mailRow_(msg, status, attempts, error, sent, via) {
 /** Appends a MailQueue row by header name (the register_ pattern), so a moved or deleted column cannot misalign it. */
 function appendMail_(data) {
   const sh = ensureTab_(TAB.mail, MAIL_HEADERS), H = headers_(sh);
-  sh.appendRow(H.names.map(n => data[n] !== undefined ? data[n] : ''));
+  sh.appendRow(H.names.map(n => cell_(data[n] !== undefined ? data[n] : '')));
 }
 /** Parks an email for drainMailQueue(). lastError says why the direct send did not happen. */
 function enqueue_(msg, lastError) { appendMail_(mailRow_(msg, 'Queued', 0, lastError, '', '')); }
@@ -1711,12 +1759,12 @@ function audience_(value, regs, cfg, contacts) {
   return out;
 }
 
-/** One MailQueue message for a household or a Contacts row: the Draft as HTML with "Hi <name>," on top and the STOP footer
-    that says why they are getting it, inside the usual frame. */
+/** One MailQueue message for a household or a Contacts row: the Draft as HTML with "Hi <name>," on top, inside the usual frame,
+    with the STOP footer that says why they are getting it under the signature. */
 function updateEmail_(row, upd, cfg) {
   const name = str_(row.Preferred).trim() || str_(row.First).trim() || 'cousin', email = str_(row.Email).trim();
-  const body = greet_(mergeHtml_(draftHtml_(upd.Draft), row, cfg), name) + '<p style="font-size:14px;color:#555">' + htmlEsc_(row._contact ? CONTACT_FOOTER : UPDATE_FOOTER) + '</p>';
-  const html = mailWrap_(body, cfg);
+  const body = greet_(mergeHtml_(draftHtml_(upd.Draft), row, cfg), name);
+  const html = mailWrap_(body, cfg, htmlEsc_(row._contact ? CONTACT_FOOTER : UPDATE_FOOTER));
   return {
     to: email, toName: name, subject: mergeText_(str_(upd.Subject), row, cfg).replace(/\s+/g, ' ').trim() || 'An update from the Lewis Family Reunion committee', html: html, text: htmlToText_(html),
     key: 'update:' + upd.ID + ':' + email.toLowerCase(), kind: 'update', householdId: row._contact ? 'CONTACT' : String(row['Household ID'] || '')
@@ -1848,15 +1896,32 @@ function codeBox_(lines) {
   return '<p style="font-size:14px;background:#f4f1ea;padding:12px 16px;border-radius:8px">' + lines.join('<br>') + '</p>';
 }
 
-/** "Estimated total: $N (2 × $245 for 23 and older, 1 × $55 for 4 to 15). Due by YYYY-MM-DD." or the fees-pending sentence. */
+/** "Total due: $N (2 × $245 for 23 and older, 1 × $55 for 4 to 15). Due by April 30, 2027." or the fees-pending sentence.
+    While Config deadline is blank it says the date is still to come, so nobody wonders whether they are late. */
 function dueLine_(row, cfg) {
   const fees = feesOf_(cfg);
   if (!fees) return 'Registration fees will be announced soon; nothing is due yet.';
   const att = parseAttendees_(row.Attendees), c = bandCounts_(att);
   const parts = FEE_BANDS.filter(b => c[b.key]).map(b => c[b.key] + (fees[b.key] ? ' × ' + money_(fees[b.key]) : ' free') + ' for ' + b.label);
-  let s = 'Estimated total: ' + money_(dueFor_(att, fees)) + (parts.length ? ' (' + parts.join(', ') + ')' : '') + '.';
-  if (cfg.deadline) s += ' Due by ' + iso_(cfg.deadline) + '.';
+  const total = dueFor_(att, fees), paid = cents_(num_(row.Confirmed) || 0), left = cents_(total - paid);
+  let s = 'Total due: ' + money_(total) + (parts.length ? ' (' + parts.join(', ') + ')' : '') + '.';
+  // A link asked for again months later goes to households that have paid: say what was paid, not only what the total is.
+  if (paid > 0) s += ' Paid so far: ' + money_(paid) + '.' + (left > 0 ? ' Balance: ' + money_(left) + '.' : ' Paid in full. Thank you.');
+  if (left <= 0) return s + (paid > 0 ? '' : ' There is nothing to pay.');
+  const due = longDate_(cfg.deadline);
+  s += due ? ' Due by ' + due + '.' : ' You can pay any time; the committee will announce the due date.';
   return s;
+}
+/** True while the household still owes something: fees are set and its confirmed payments do not cover its total. */
+function owes_(row, cfg) {
+  const fees = feesOf_(cfg);
+  return !!fees && cents_(dueFor_(parseAttendees_(row.Attendees), fees) - (num_(row.Confirmed) || 0)) > 0;
+}
+
+/** "23 and older $245, 16 to 22 $95, 4 to 15 $55, 3 and under free" from the Config fees, or "to be announced" until all four are set. */
+function feesLine_(cfg) {
+  const fees = feesOf_(cfg);
+  return fees ? FEE_BANDS.map(b => b.label + ' ' + (fees[b.key] ? money_(fees[b.key]) : 'free')).join(', ') : 'to be announced';
 }
 
 /** "Ways to pay: Zelle ..., Cash App ..." from the Config handles, or '' when none is set. */
@@ -1873,7 +1938,7 @@ function payLine_(cfg) {
  */
 function regDetails_(row, cfg, live) {
   const id = str_(row['Household ID']).trim(), people = attendeeNames_(row);
-  const travel = [iso_(row.Arrive) ? 'arriving ' + iso_(row.Arrive) : '', iso_(row.Depart) ? 'leaving ' + iso_(row.Depart) : ''].filter(String).join(', ');
+  const travel = [iso_(row.Arrive) ? 'arriving ' + shortDay_(row.Arrive) : '', iso_(row.Depart) ? 'leaving ' + shortDay_(row.Depart) : ''].filter(String).join(', ');
   const mine = [
     id ? ['Household ID', '<b>' + htmlEsc_(id) + '</b>'] : null,
     people.length ? ['Coming', htmlEsc_(people.join(', '))] : null,
@@ -1882,7 +1947,7 @@ function regDetails_(row, cfg, live) {
     str_(row.Lodging) ? ['Staying', htmlEsc_(str_(row.Lodging))] : null
   ].filter(Boolean).map(l => l[0] + ': ' + l[1]);
   const fees = !!feesOf_(cfg), pay = payLine_(cfg);
-  const next = fees ? [
+  const next = fees && !owes_(row, cfg) ? [htmlEsc_(dueLine_(row, cfg))] : fees ? [   // paid in full: no "ways to pay", no "after you pay"
     htmlEsc_(dueLine_(row, cfg) + (pay ? ' ' + pay : '')),
     (live ? 'After you pay, report the payment on your My Registration page.' : 'After you pay, reply to this email with the amount, the method and the date.') +
       (id ? ' Please put your household ID, ' + htmlEsc_(id) + ', in the payment note so we can match it to you.' : ''),
@@ -1909,7 +1974,7 @@ function linkEmail_(row, cfg, token, rotate) {
     '<p>' + (rotate ? 'Here is a fresh private link to your registration. Older links and codes no longer work.' : regThanks_(row, cfg)) + '</p>' +
     linkButton_(link, 'Open my registration') +
     codeBox_([
-      'Link: <a href="' + htmlEsc_(link) + '">' + htmlEsc_(link) + '</a>',
+      'Link: <a href="' + htmlEsc_(link) + '" style="word-break:break-all">' + htmlEsc_(link) + '</a>',   // a long address must wrap inside the box on a phone
       'Website: ' + htmlEsc_(base),
       'Family code: <b>' + htmlEsc_(code) + '</b>',
       'Registration code: <b>' + htmlEsc_(groups_(token)) + '</b>',
@@ -1932,19 +1997,21 @@ function receiptEmail_(row, pay, cfg) {
   const name = row.Preferred || row.First || 'cousin', st = String(pay.Status || ''), ok = st === 'Confirmed';
   const base = siteBase_(cfg), code = String(cfg.familyCode || ''), link = base + '?c=' + encodeURIComponent(code) + '#me';
   const feesSet = row.Due !== '' && row.Due !== null && row.Due !== undefined;
-  const details = [
-    'Amount: ' + htmlEsc_(money_(pay.Amount)), 'Method: ' + htmlEsc_(str_(pay.Method) || 'not given'), 'Date sent: ' + htmlEsc_(iso_(pay['Date sent']) || 'not given'),
-    str_(pay.Reference) ? 'Reference: ' + htmlEsc_(str_(pay.Reference)) : ''
+  const hid = str_(row['Household ID']).trim();
+  const details = [   // a line the committee left blank is left out, rather than printed as "not given"
+    'Amount: ' + htmlEsc_(money_(pay.Amount)), str_(pay.Method).trim() ? 'Method: ' + htmlEsc_(str_(pay.Method).trim()) : '',
+    longDate_(pay['Date sent']) ? 'Date sent: ' + htmlEsc_(longDate_(pay['Date sent'])) : '',
+    str_(pay.Reference) ? 'Reference: ' + htmlEsc_(str_(pay.Reference)) : '', hid ? 'Household ID: ' + htmlEsc_(hid) : ''
   ].filter(String);
   const html = mailWrap_(
     '<p>Hi ' + htmlEsc_(name) + ',</p>' +
-    '<p>' + (ok ? 'The committee has confirmed the payment you reported. Thank you!'
+    '<p>' + (ok ? 'The committee has confirmed your payment. Thank you!'
       : 'The committee has not found the payment you reported yet. Please check the details below and reply to this email so we can sort it out together.') + '</p>' +
     '<p>' + details.join('<br>') + '</p>' +
     '<p>Confirmed so far: ' + htmlEsc_(money_(row.Confirmed)) + '<br>' + (feesSet ? 'Remaining balance: ' + htmlEsc_(money_(row.Balance)) : 'Fees to be announced') + '</p>' +
     linkButton_(link, 'Open the reunion website') +
     codeBox_([
-      'Website: <a href="' + htmlEsc_(link) + '">' + htmlEsc_(link) + '</a>',
+      'Website: <a href="' + htmlEsc_(link) + '" style="word-break:break-all">' + htmlEsc_(link) + '</a>',
       'Family code: <b>' + htmlEsc_(code) + '</b>',
       'To open your registration, use the private link from your registration email, or choose Email my link on the My Registration page.'
     ]), cfg);
@@ -1959,7 +2026,7 @@ function committeeEmail_(row, cfg) {
   const who = ((row.Preferred || row.First || '') + ' ' + (row.Last || '')).trim(), id = String(row['Household ID'] || '');
   const lines = [
     ['Household', who + (id ? ' (' + id + ')' : '')], ['Branch', row.Branch], ['Adults', row.Adults], ['Children', row.Children], ['Days', row.Days],
-    ['From', [row.City, row.State].filter(String).join(', ')], ['Email', row.Email], ['Phone', row.Phone], ['Dietary needs', row.Diet]
+    ['From', [row.City, row.State].filter(String).join(', ')], ['Email', row.Email], ['Phone', row.Phone], ['Dietary needs', row.Diet], ['Other needs', row.Needs]
   ].filter(l => String(l[1] == null ? '' : l[1]).trim()).map(l => '<b>' + l[0] + ':</b> ' + htmlEsc_(str_(l[1])));
   const html = mailWrap_('<p>A new household registered on the website.</p><p>' + lines.join('<br>') + '</p><p>Details are in the Registrations tab.</p>', cfg);
   return {
@@ -2098,14 +2165,24 @@ function firstEmptyRow_(sh, H) {
   return last + 1;
 }
 function writeRow_(sh, H, index, obj) {
-  sh.getRange(index, 1, 1, H.names.length).setValues([H.names.map(n => obj[n] !== undefined ? obj[n] : '')]);
+  sh.getRange(index, 1, 1, H.names.length).setValues([H.names.map(n => cell_(obj[n] !== undefined ? obj[n] : ''))]);
 }
 function locked_(fn) {
   const lock = LockService.getScriptLock();
-  if (!lock.tryLock(20000)) return { ok: false, error: 'busy', message: 'Lots of cousins at once! Please try again in a moment.' };
+  if (!lock.tryLock(25000)) return { ok: false, error: 'busy', message: 'Lots of cousins at once! Please try again in a moment.' };
   try { return fn(); } finally { lock.releaseLock(); }
 }
 function out_(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
+
+/** A Household ID as letters and digits only, so "h-1a2b3c4d", "H1A2B3C4D" and "H-1A2B3C4D " all mean the same household. */
+function idKey_(v) { return str_(v).toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+/** The one registration whose Household ID matches v once case, spaces and the dash are ignored, or null. */
+function regByLooseId_(v, regs) {
+  const k = idKey_(v);
+  if (!k) return null;
+  const hits = regs.filter(x => idKey_(x['Household ID']) === k);
+  return hits.length === 1 ? hits[0] : null;
+}
 
 /** Trims, caps length, and stops text from being read as a spreadsheet formula. */
 function clean_(v, max) {
@@ -2113,6 +2190,11 @@ function clean_(v, max) {
   if (/^[=+\-@\t\r|]/.test(s)) s = "'" + s;
   return s;
 }
+/** A value that is safe to put in a cell. clean_ guards what a visitor types, but a name read back from the Sheet has lost
+    its leading apostrophe; written again as it is, "=IMAGE(...)" would run as a formula and could send family data elsewhere.
+    Every write of text that came out of the Sheet (MailQueue rows, the Payments "Household", a rewritten row, the Money tab)
+    goes through this. */
+function cell_(v) { return typeof v === 'string' && /^[=+\-@\t\r|]/.test(v) ? "'" + v : v; }
 function str_(v) { return v instanceof Date ? iso_(v) : String(v == null ? '' : v).replace(/^'/, ''); }
 function num_(v) { return v === '' || v === null || v === undefined || isNaN(Number(v)) ? null : Number(v); }
 function yes_(v) { return v === true || /^(yes|true|y|1)$/i.test(String(v).trim()); }
@@ -2120,11 +2202,14 @@ function iso_(v) {
   if (v instanceof Date) return Utilities.formatDate(v, Session.getScriptTimeZone() || 'America/Los_Angeles', 'yyyy-MM-dd');
   return String(v == null ? '' : v).replace(/^'/, '').slice(0, 10);
 }
-/** A band key from a band key or short label, else from the age, else from the old Adult/Child word. */
+/** A band key from a plain-number age, else from a band key or short label, else from a looser age, else from the old Adult/Child word. */
 function bandOf_(band, age) {
+  const a = str_(age).trim();
+  // Fees go by age. An age given as a plain number decides the group, whatever group came with it; "6 months" does not, so the group is used.
+  if (/^\d{1,3}$/.test(a) && Number(a) < 130) return FEE_BANDS.filter(x => Number(a) >= x.min)[0].key;
   const b = str_(band).trim(), hit = FEE_BANDS.filter(x => x.key === b || x.short === b)[0];
   if (hit) return hit.key;
-  const n = parseInt(str_(age), 10);
+  const n = parseInt(a, 10);
   if (!isNaN(n) && n >= 0 && n < 130) return FEE_BANDS.filter(x => n >= x.min)[0].key;
   return /child/i.test(b) ? 'c4' : 'a23';
 }

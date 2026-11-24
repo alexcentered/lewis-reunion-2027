@@ -104,9 +104,11 @@ const S = {
 
 /* ---------- API ---------- */
 /* The family code always travels in the POST body, never in a URL. opt.timeout (ms) gives up on very slow connections. */
+/* Every call gives up after API_WAIT, so a button never says "Saving…" for ever on a dead signal. Photo posts pass a longer wait. */
+const API_WAIT = 45000;
 async function api(action, payload, opt){
   if (!API) throw Object.assign(new Error('The site is not connected to its spreadsheet yet.'), { code: 'noapi' });
-  const ms = opt && opt.timeout, ctl = ms && typeof AbortController === 'function' ? new AbortController() : null;
+  const ms = (opt && opt.timeout) || API_WAIT, ctl = typeof AbortController === 'function' ? new AbortController() : null;
   const timer = ctl ? setTimeout(() => ctl.abort(), ms) : 0;
   try {
     let res;
@@ -121,8 +123,12 @@ async function api(action, payload, opt){
   } finally { clearTimeout(timer); }
 }
 const failText = e => (e && e.code === 'noapi') ? e.message
-  : (e && e.code === 'timeout') ? 'This is taking too long, which usually means a weak signal. Your post may still arrive. Press the button again when you have a better connection. It will not post twice.'
+  : (e && e.code === 'timeout') ? 'This is taking too long, which usually means a weak signal. Please try again when you have a better connection.'
   : 'We could not reach the reunion server. Check your connection and try again.';
+/* What "too slow" means depends on what was being sent: a story can be sent again safely, a payment report cannot. */
+const POST_SLOW = 'This is taking too long, which usually means a weak signal. Your post may still arrive. Press the button again when you have a better connection. It will not post twice.';
+const REG_SLOW = 'This is taking too long, which usually means a weak signal. Wait a moment and press the button again. If your registration already reached us, we will say so, and your private link will be in your email.';
+const PAY_SLOW = 'This is taking too long, which usually means a weak signal. Before you report it again, reload this page: if the payment is in the list, it reached us.';
 
 /* ---------- routing ---------- */
 const VIEWS = ['home','reunion','register','family','photos','market','me'];
@@ -145,6 +151,9 @@ function applySections(){
   VIEWS.filter(v => !live(v)).forEach(v => {
     $$('.nav a[href="#' + v + '"], .tile[href="#' + v + '"], [data-view="' + v + '"]').forEach(el => { el.hidden = true; el.style.display = 'none'; el.setAttribute('aria-hidden', 'true'); });
   });
+  /* The Home tiles are a way around the whole site. With one tab left to point at, the essentials above already do that job. */
+  const tiles = $('#homeTiles');
+  if (tiles) tiles.hidden = $$('#homeTiles .tile').filter(t => !t.hidden).length < 2;
 }
 $$('.subnav button').forEach(b => b.addEventListener('click', () => {
   $$('.subnav button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
@@ -154,26 +163,42 @@ $$('.subnav button').forEach(b => b.addEventListener('click', () => {
 
 /* ---------- family-code gate ---------- */
 const hasFamily = () => !!S.family;
+/* Who to ask for the family code. The committee address comes with the public info, so it may arrive a moment after the gate is drawn. */
+function gateContact(){
+  const e = S.info && S.info.email;
+  return 'Do not have the code? Ask the relative who told you about the reunion' + (e ? `, or email the committee at <a href="mailto:${esc(e)}">${esc(e)}</a>.` : '.');
+}
+function fillGateContact(){ $$('[data-gate-contact]').forEach(el => { el.innerHTML = gateContact(); }); }
 function renderGates(){
   const show = !hasFamily();
   $$('[data-gate]').forEach((g, i) => {
     g.hidden = !show;
     if (!show) return;
     if (S.loadingFamily){ g.innerHTML = `<h3>Opening the family pages…</h3><p class="hint">One moment while we check your family code.</p>`; return; }
+    /* The code is on this device but the server did not answer: say that, rather than asking for a code they already have. */
+    if (S.code && S.familyErr && !S.codeBad){
+      g.innerHTML = `<h3>We could not reach the reunion server</h3><p>Your family code is saved on this device, so there is nothing to type. Check your connection, then try again.</p>
+        <div class="row"><button type="button" class="btn" data-gate-retry>Try again</button></div>`;
+      return;
+    }
     g.innerHTML = `<h3>Family members only</h3><p>${S.codeBad ? 'That family code did not work. ' : ''}This part of the site is for Lewis family. Open the link the reunion committee sent you, or enter the family code from it.</p>
       <div class="row"><input type="text" id="gate-in-${i}" placeholder="Family code" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Family code" style="flex:1;min-width:200px;max-width:340px"><button type="button" class="btn" data-gate-go="${i}">Continue</button></div>
-      <p class="hint" style="margin:12px 0 0">Have a registration code too? Enter it on <a href="#me">My Registration</a>.</p>`;
+      <div class="msg err" data-gate-msg role="alert"></div>
+      <p class="hint" style="margin:4px 0 0" data-gate-contact>${gateContact()}</p>
+      <p class="hint" style="margin:8px 0 0">Have a registration code too? Enter it on <a href="#me">My Registration</a>.</p>`;
   });
   $('#regForm').hidden = show;
   $('.subnav').hidden = show;
   $$('[data-subview]').forEach(d => { if (show) d.hidden = true; });
   if (!show){ const on = $('.subnav [aria-pressed="true"]'); $$('[data-subview]').forEach(d => d.hidden = d.dataset.subview !== (on ? on.dataset.sub : 'tree')); }
   $$('.adder').forEach(a => a.hidden = show);
-  renderPhotosGate();
+  renderPhotosGate(); renderMeEntry();
 }
 document.addEventListener('click', e => {
+  if (e.target.closest('[data-gate-retry]')){ S.familyTries = 0; loadFamily(); return; }
   const b = e.target.closest('[data-gate-go]'); if (!b) return;
-  const v = $('#gate-in-' + b.dataset.gateGo).value.trim(); if (!v) return;
+  const input = $('#gate-in-' + b.dataset.gateGo), v = input.value.trim();
+  if (!v){ const m = b.closest('[data-gate]').querySelector('[data-gate-msg]'); if (m) m.textContent = 'Type the family code first.'; input.focus(); return; }
   S.code = v; S.codeBad = false; store.set('lr-code', v); loadFamily();
 });
 document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id && e.target.id.startsWith('gate-in-')){ e.preventDefault(); $(`[data-gate-go="${e.target.id.slice(8)}"]`).click(); } });
@@ -213,10 +238,18 @@ function feeListHtml(deadline){
 function renderInfo(){
   const i = S.info;
   $('#roomBlock').textContent = i.roomBlock || 'Room-block details coming from the committee.';
-  if (feeSet()) $('#sFeeNote').innerHTML = feeListHtml(i.deadline);
-  else $('#sFeeNote').textContent = 'The committee will post registration fees soon. You can register now and pay later.';
+  const NO_FEES = 'The committee will post registration fees soon. You can register now and pay later.';
+  /* The Home pieces (#homeFees, #homePay, the counter boxes) are optional: a page without them, such as the link-mode page, still works. */
+  const homeFees = $('#homeFees'), homePay = $('#homePay');
+  if (feeSet()){ $('#sFeeNote').innerHTML = feeListHtml(i.deadline); if (homeFees) homeFees.innerHTML = feeListHtml(i.deadline) + '<div class="fees-due">Register now and pay later.</div>'; }
+  else { $('#sFeeNote').textContent = NO_FEES; if (homeFees) homeFees.textContent = NO_FEES; }
+  const faqFees = $('#faqFees');
+  if (faqFees){ if (feeSet()) faqFees.innerHTML = feeListHtml(i.deadline) + '<div class="fees-due">You can register now and pay later.</div>'; else faqFees.textContent = NO_FEES; }
   const p = (S.family && S.family.pay) || {};
   const ways = [p.zelle && 'Zelle: ' + p.zelle, p.cashapp && 'Cash App: ' + p.cashapp, p.venmo && 'Venmo: ' + p.venmo, p.paypal && 'PayPal: ' + p.paypal].filter(Boolean);
+  /* Home, step 2: name the ways to pay once the family code has loaded them. The handles themselves stay on My Registration. */
+  const names = [p.zelle && 'Zelle', p.cashapp && 'Cash App', p.venmo && 'Venmo', p.paypal && 'PayPal'].filter(Boolean);
+  if (homePay) homePay.textContent = 'Send your fees ' + (names.length ? 'by ' + names.join(names.length > 2 ? ', ' : ' or ') : 'to the committee') + ', then report the payment on My Registration. The committee confirms it and emails you a receipt.';
   const how = ways.length ? 'Send payment by ' + ways.join(' · ') + '.' : 'The committee will post where to send payment.';
   $('#payHow').textContent = how + (p.verifier ? ' ' + p.verifier + ' confirms each payment.' : '') + (i.deadline ? ' Due by ' + fmtDate(i.deadline) + '.' : '');
   $('#faqPay').textContent = 'Pay the committee using the method posted on your My Registration page. Then report the payment there. Your balance updates once ' + (p.verifier || "the committee's payment verifier") + ' confirms the money arrived. Until then it shows as “awaiting confirmation.”';
@@ -224,9 +257,18 @@ function renderInfo(){
 }
 function renderCounts(){
   $('#cdDays').textContent = Math.max(0, Math.ceil((new Date('2027-07-02T12:00:00-07:00') - new Date()) / 864e5));
+  /* The two family counters only show once there is something to count: a row of zeros on opening day reads as "nobody is coming". */
   const roll = S.family ? S.family.roll : null;
-  $('#cdHouses').textContent = roll ? roll.length : '—';
-  $('#cdBranches').textContent = roll ? new Set(roll.map(r => r.branch).filter(b => b && b !== 'Not sure yet' && b !== 'Married into the family')).size : '—';
+  const houses = roll ? roll.length : 0;
+  const branches = roll ? new Set(roll.map(r => r.branch).filter(b => b && b !== 'Not sure yet' && b !== 'Married into the family')).size : 0;
+  const put = (id, n, one, many) => {
+    const num = $('#' + id), label = $('#' + id + 'Label'), box = $('#' + id + 'Box');
+    if (num) num.textContent = box ? n : (roll ? n : '—');
+    if (label) label.textContent = n === 1 ? one : many;
+    if (box) box.hidden = !n;
+  };
+  put('cdHouses', houses, 'household on the list', 'households on the list');
+  put('cdBranches', branches, 'branch represented', 'branches represented');
 }
 
 /* ---------- family data ---------- */
@@ -251,7 +293,7 @@ function renderFamily(){
   $('#meet').textContent = meet ? MEET + ': ' + meet.note : '';
   $('#names').innerHTML = (F.names || []).filter(n => n.name !== MEET).map(n => `<div class="card name"><h3>${esc(n.name)}</h3><p>${esc(n.note)}</p>${n.question ? `<div class="q">${esc(n.question)}</div>` : ''}</div>`).join('');
   const roll = (F.roll || []).slice().sort((a, b) => String(a.household).localeCompare(String(b.household)));
-  $('#roll').innerHTML = roll.length ? roll.map(r => `<div class="who"><b>${esc(r.household)}</b><span>${esc(r.branch)}${r.place ? ' · ' + esc(r.place) : ''}${r.count ? ' · ' + r.count + (r.count == 1 ? ' person' : ' people') : ''}</span></div>`).join('') : `<p class="empty">${LINKMODE ? 'Registrations are coming in. The list of households will appear here on the full website.' : 'No households yet. Be the first one on the list.'}</p>`;
+  $('#roll').innerHTML = roll.length ? roll.map(r => `<div class="who"><b>${esc(r.household)}</b><span>${esc(r.branch)}${r.place ? ' · ' + esc(r.place) : ''}${Number(r.count) > 0 ? ' · ' + Number(r.count) + (Number(r.count) === 1 ? ' person' : ' people') : ''}</span></div>`).join('') : `<p class="empty">${LINKMODE ? 'Registrations are coming in. The list of households will appear here on the full website.' : 'No households yet. Be the first one on the list.'}</p>`;
   const groups = { stories: 'story', memoriam: 'memoriam', veterans: 'veteran', directory: 'directory', photos: 'photo', market: 'market' };
   Object.entries(groups).forEach(([list, type]) => {
     const items = (F.entries || []).filter(e => e.type === type);
@@ -301,6 +343,8 @@ function renderAttendees(){
   const t = e.target; if (t.dataset.i == null) return;
   const a = attendees[+t.dataset.i]; a[t.dataset.k] = t.value;
   if (t.dataset.k === 'age' && /^\d{1,3}$/.test(t.value.trim())){ a.band = bandOf('', t.value); const sel = $('#a-b' + t.dataset.i); if (sel) sel.value = a.band; }
+  /* Fees go by age. Picking a group that the typed age does not belong to clears the age, so the two never disagree. */
+  if (t.dataset.k === 'band' && /^\d{1,3}$/.test(String(a.age || '').trim()) && bandOf('', a.age) !== t.value){ a.age = ''; const box = $('#a-a' + t.dataset.i); if (box) box.value = ''; }
   updateSummary();
 }));
 $('#attendees').addEventListener('click', e => { const r = e.target.dataset && e.target.dataset.rm; if (r != null){ attendees.splice(+r, 1); renderAttendees(); } });
@@ -336,7 +380,57 @@ function fillReg(r){
   renderAttendees();
   $('#regTitle').textContent = 'Update your registration';
   $('#regSubmit').textContent = 'Save changes';
+  renderEditing();
 }
+/* One phone often signs up more than one household (a daughter registers her mother too). While this device remembers a
+   household, the form changes that household. These say so plainly and give a way to start a new one, so one family's
+   registration is never saved over another's by accident. */
+const householdName = () => S.mine ? ((S.mine.reg.preferred || S.mine.reg.first) + ' ' + S.mine.reg.last).trim() + ' household' : '';
+function renderEditing(){
+  const box = $('#regEditing'); if (!box) return;
+  box.hidden = !S.mine;
+  if (S.mine) box.innerHTML = `You are changing the registration of the <b>${esc(householdName())}</b>. Signing up a different household on this device? <button type="button" class="linkish" data-new-household>Start a new registration</button>.`;
+}
+function newHousehold(keepForm){
+  const old = householdName();
+  if (S.mine) S.prev = { email: String(S.mine.reg.email || '').toLowerCase(), name: old };   // each household needs its own email
+  S.token = ''; S.mine = null; S.emailOk = false; store.set('lr-token', null);
+  if (!keepForm){ $('#regForm').reset(); attendees = [NEW_PERSON()]; renderAttendees(); }
+  $('#regTitle').textContent = 'Register your household'; $('#regSubmit').textContent = 'Save registration';
+  $('#regDone').hidden = true; const sw = $('#regSwitch'); if (sw) sw.hidden = true;
+  markMissing([]); renderEditing(); renderMe(); updateSummary();
+  if (!keepForm) say($('#regMsg'), old ? 'Ready for a new household. The ' + old + ' is still saved: open it again with the private link in its email.' : '', true);
+}
+document.addEventListener('click', e => {
+  if (e.target.closest('[data-new-household]')){
+    newHousehold(false);
+    if (location.hash !== '#register') location.hash = '#register'; else window.scrollTo(0, 0);
+    setTimeout(() => { try { $('#fFirst').focus({ preventScroll: true }); } catch (_) {} }, 100);
+  } else if (e.target.closest('[data-save-new]')){ S.saveAsNew = true; $('#regSwitch').hidden = true; $('#regSubmit').click(); }   // the remembered household is let go only once the new one is saved
+  else if (e.target.closest('[data-save-same]')){ S.emailOk = true; $('#regSwitch').hidden = true; $('#regSubmit').click(); }
+});
+/* A failed save scrolls to the first thing missing, which on a phone can be several screens from the message under the
+   Save button. So the message also shows in a bar fixed to the bottom of the screen, and each missing field is outlined. */
+let toastTimer = 0;
+function toast(text){
+  const t = $('#toast'); if (!t) return;
+  clearTimeout(toastTimer); t.textContent = text || ''; t.hidden = !text;
+  if (text) toastTimer = setTimeout(() => { t.hidden = true; }, 9000);
+}
+function markMissing(sels){
+  $$('#regForm .bad-field').forEach(el => { el.classList.remove('bad-field'); el.removeAttribute('aria-invalid'); });
+  sels.forEach(sel => {
+    const el = document.querySelector(sel); if (!el) return;
+    const box = el.type === 'checkbox' ? (el.name === 'day' ? $('#dayChecks') : el.closest('.check')) : el;
+    if (!box) return;
+    box.classList.add('bad-field'); if (box === el) el.setAttribute('aria-invalid', 'true');
+  });
+}
+['input', 'change'].forEach(ev => $('#regForm').addEventListener(ev, e => {
+  const b = e.target.closest && e.target.closest('.bad-field');
+  if (b){ b.classList.remove('bad-field'); e.target.removeAttribute('aria-invalid'); }
+}));
+let lostTry = '';   // the email of a registration whose answer never came back: the retry may find it already saved
 function say(el, text, ok){ el.className = 'msg ' + (ok ? 'ok' : 'err'); el.textContent = text; }
 function privateLink(){ return location.origin + location.pathname + '?c=' + encodeURIComponent(S.code) + '&t=' + encodeURIComponent(S.token) + '#me'; }
 /* The registration code is printed in groups of 4, the same way the email shows it. */
@@ -358,16 +452,69 @@ $('#regForm').addEventListener('submit', async e => {
   need(!r.days.length, 'at least one day', '#regForm input[name="day"], #regForm [data-day]'); need(!r.travelAck, 'the travel box', '#fTravel');
   if (miss.length){
     say(msg, 'Still needed: ' + miss.join(', ') + '.', false);
+    toast('Still needed: ' + miss.join(', ') + '.'); markMissing(at);
     const el = document.querySelector(at[0]);   // take them straight to the first thing missing
     if (el){ el.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => { try { el.focus({ preventScroll: true }); } catch (_) {} }, 350); }
     return;
   }
+  markMissing([]); toast('');
   if (LINKMODE){ linkOutSubmit(r); return; }
-  const btn = $('#regSubmit'); btn.disabled = true; say(msg, 'Saving…', true);
+  const btn = $('#regSubmit'), asNew = !!S.saveAsNew; S.saveAsNew = false;
+  /* This device remembers a household whose details did not load (a weak signal when the page opened). Saving now would
+     write over it without anyone seeing whose it is, so fetch it first; if it cannot be fetched, save nothing. */
+  if (S.token && !S.mine){
+    btn.disabled = true; say(msg, 'Checking this device’s saved registration…', true);
+    try {
+      const d = await api('mine', { token: S.token });
+      if (d.ok){ S.mine = d.mine; renderEditing(); renderMe(); }
+      else if (d.error === 'token'){ S.token = ''; store.set('lr-token', null); }
+      else { say(msg, d.message || 'We could not check this device’s saved registration. Please try again in a moment.', false); btn.disabled = false; return; }
+    } catch (err) { say(msg, failText(err), false); btn.disabled = false; return; }
+    btn.disabled = false;
+  }
+  /* Each household needs its own email: the address is how a household is found again. */
+  if (!S.token && S.prev && S.prev.email && r.email.toLowerCase() === S.prev.email){
+    const text = 'The ' + S.prev.name + ' already uses this email address. Each household needs its own. If this person has no email of their own, add them to your own registration instead, or email the committee. To change the ' + S.prev.name + ' itself, open the private link in its email, or use Email my link on My Registration.';
+    say(msg, text, false); toast(text); markMissing(['#fEmail']);
+    const el = $('#fEmail'); el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+    return;
+  }
+  /* A different email on a remembered household is how one household gets saved over another. Ask which was meant. */
+  const sw = $('#regSwitch');
+  if (S.mine && !S.emailOk && !asNew && sw && r.email.toLowerCase() !== String(S.mine.reg.email || '').toLowerCase()){
+    sw.hidden = false;
+    sw.innerHTML = `<p style="margin:0 0 10px"><b>Is this a different household?</b> This device is signed in to the ${esc(householdName())} (${esc(S.mine.reg.email)}), and you typed a different email.</p>
+      <div class="row"><button type="button" class="btn sm" data-save-new>Save as a new household</button><button type="button" class="btn quiet sm" data-save-same>Change the ${esc(householdName())}</button></div>`;
+    say(msg, 'Choose one of the two buttons above.', false);
+    sw.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+    return;
+  }
+  if (sw) sw.hidden = true;
+  btn.disabled = true; say(msg, 'Saving…', true);
+  const sendToken = asNew ? '' : S.token;   // "Save as a new household" sends no token; the remembered one is kept until the save succeeds
   try {
-    const was = !!S.mine;
-    const res = await api('register', { token: S.token, reg: r });
-    if (!res.ok){ say(msg, res.message || 'That did not save. Please try again.', false); btn.disabled = false; return; }
+    const was = !asNew && !!S.mine;
+    let res = await api('register', { token: sendToken, reg: r });
+    /* "busy" means the server was saving other registrations and wrote nothing of ours, so trying again is safe. */
+    for (let i = 0; i < 3 && res && res.error === 'busy'; i++){
+      say(msg, 'Lots of cousins are registering right now. Holding your place and trying again…', true);
+      await new Promise(done => setTimeout(done, 4000));
+      res = await api('register', { token: sendToken, reg: r });
+    }
+    if (!res.ok){
+      if (res.error === 'exists' && lostTry === r.email.toLowerCase()){
+        /* The first try reached the server but its answer never reached this phone. They are registered; say so. */
+        lostTry = '';
+        const d = $('#regDone'); d.hidden = false;
+        d.innerHTML = `<h3>You're registered. Welcome home.</h3><p class="hint">We have a registration under ${esc(r.email)}: your first try reached us after all. We emailed its private link to that address. Open that email and press <b>Open my registration</b> to see the household, change it and report payments. If you have two emails from us, use the newest one.</p>
+          <p class="hint" style="margin-top:10px">No email after a few minutes? Check your spam folder, then use Email my link on <a href="#me">My Registration</a>.</p>`;
+        say(msg, 'You are registered. Your private link is in your email.', true);
+        d.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      } else say(msg, res.message || 'That did not save. Please try again.', false);
+      btn.disabled = false; return;
+    }
+    lostTry = ''; S.emailOk = false;
+    if (asNew && S.mine) S.prev = { email: String(S.mine.reg.email || '').toLowerCase(), name: householdName() };
     if (res.token){ S.token = res.token; store.set('lr-token', res.token); }
     S.mine = res.mine; fillReg(S.mine.reg); renderMe();
     say(msg, was ? 'Saved.' : 'You are registered.', true);
@@ -383,7 +530,10 @@ $('#regForm').addEventListener('submit', async e => {
       d.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
     }
     loadFamily(true);
-  } catch (err) { say(msg, failText(err), false); }
+  } catch (err) {
+    if ((asNew || !S.mine) && err && (err.code === 'timeout' || err.code === 'network')) lostTry = r.email.toLowerCase();
+    say(msg, err && err.code === 'timeout' ? REG_SLOW : failText(err), false);
+  }
   btn.disabled = false;
 });
 
@@ -416,11 +566,12 @@ const TOKEN_BAD = 'That registration code did not match. Check it against your e
    does not know the family code yet (no link opened, nothing typed at a gate). */
 function renderMeEntry(){
   const wrap = $('#meCodeWrap');
-  if (wrap) wrap.hidden = !!S.code;
+  if (wrap) wrap.hidden = !!S.code && !S.codeBad;   // a code the server refused does not count as having one
 }
 function renderMe(){
-  const m = S.mine;
-  $('#meEmpty').hidden = !!m; $('#meBody').hidden = !m;
+  const m = S.mine, wait = !m && !!S.mineLoading;   // a remembered household is on its way: do not show the "find it" form meanwhile
+  $('#meEmpty').hidden = !!m || wait; $('#meBody').hidden = !m;
+  const waitBox = $('#meWait'); if (waitBox) waitBox.hidden = !wait;
   renderMeEntry();
   if (!m){
     $('#meStatus').innerHTML = ''; $('#meTitle').textContent = 'Your household';
@@ -452,24 +603,49 @@ $('#payBtn').addEventListener('click', async () => {
     const res = await api('report', { token: S.token, payment: { amount, method: $('#pMethod').value, date: $('#pDate').value, ref: $('#pRef').value.trim(), note: $('#pNote').value.trim() } });
     if (!res.ok) say(msg, res.message || 'That did not save.', false);
     else { S.mine = res.mine; renderMe(); ['#pAmount', '#pRef', '#pNote'].forEach(s => $(s).value = ''); say(msg, 'Reported. It shows as confirmed once the committee sees it arrive.', true); }
-  } catch (err) { say(msg, failText(err), false); }
+  } catch (err) { say(msg, err && err.code === 'timeout' ? PAY_SLOW : failText(err), false); }
   $('#payBtn').disabled = false;
 });
 $('#lostBtn').addEventListener('click', async () => {
   const msg = $('#lostMsg'), email = $('#lostEmail').value.trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ say(msg, 'Enter the email you registered with.', false); return; }
-  if (!S.code){ say(msg, 'Open the link the committee sent you first, so we know you are family.', false); return; }
+  /* No family code on this device yet: the one typed in the Family code box just above counts. */
+  if (S.codeBad){ S.code = ''; renderMeEntry(); }   // a refused code in memory must not be sent again in place of the one typed now
+  const typed = $('#meCode') ? $('#meCode').value.trim().toLowerCase() : '', hadCode = !!S.code;
+  if (!S.code && typed) S.code = typed;
+  if (!S.code){ say(msg, 'Type the family code in the box above first, or open the link the committee sent you, so we know you are family.', false); if ($('#meCode')) $('#meCode').focus(); return; }
   $('#lostBtn').disabled = true;
-  try { const res = await api('resend', { email }); say(msg, res.message || 'Check your inbox.', !!res.ok); } catch (err) { say(msg, failText(err), false); }
+  try {
+    const res = await api('resend', { email });
+    if (res && res.error === 'code'){ S.code = ''; renderMeEntry(); say(msg, 'That family code is not right. Type it in the Family code box above, as it is in the message the committee sent you.', false); if ($('#meCode')) $('#meCode').focus(); }
+    else { say(msg, res.message || 'Check your inbox.', !!res.ok); if (res.ok && !hadCode){ store.set('lr-code', S.code); loadFamily(true); } }
+  } catch (err) { if (!hadCode) S.code = ''; say(msg, failText(err), false); }
   $('#lostBtn').disabled = false;
 });
 /* Typed codes from the email: the family code opens the family pages, the registration code opens this household.
    The registration code loses spaces and hyphens (the email shows it in groups of 4); the family code is only trimmed and
    lowercased, the same as the gates and codeOk_ on the server, so a code with a hyphen in it still matches. */
 const normCode = v => String(v || '').replace(/[\s-]/g, '').toLowerCase();
+/* People paste more than the code: the whole link, the words in front of it, a full stop after it. Find the code inside. */
+function pickToken(v){
+  const s = String(v || '').trim().toLowerCase(), link = /[?&]t=([a-f0-9]{32,64})/.exec(s);
+  if (link) return link[1];
+  const groups = /(?:^|[^a-f0-9])((?:[a-f0-9]{4}[\s-]+){7}[a-f0-9]{4})(?![a-f0-9])/.exec(s);   // eight groups of four, as the email prints it
+  if (groups) return normCode(groups[1]);
+  const flat = normCode(s), runs = flat.match(/[a-f0-9]{32,}/g);
+  if (!runs) return flat;
+  const run = runs[runs.length - 1];
+  return run.length >= 64 ? run.slice(-64) : run.slice(-32);
+}
+function pickCode(v){
+  const m = /[?&]c(?:ode)?=([^&#\s]+)/i.exec(String(v || ''));
+  if (!m) return '';
+  try { return decodeURIComponent(m[1]).trim().toLowerCase(); } catch (_) { return m[1].trim().toLowerCase(); }
+}
 async function openByCodes(){
   const msg = $('#meMsg'), btn = $('#meGo');
-  const code = $('#meCode').value.trim().toLowerCase() || S.code, token = normCode($('#meToken').value);
+  const raw = $('#meToken').value, token = pickToken(raw);
+  const code = $('#meCode').value.trim().toLowerCase() || pickCode(raw) || S.code;
   if (!code){ say(msg, 'Enter the family code from your email.', false); $('#meCode').focus(); return; }
   if (token.length < 32 || !/^[a-f0-9]+$/.test(token)){ say(msg, 'That registration code looks incomplete. It is 32 letters and numbers, usually shown in groups of 4.', false); $('#meToken').focus(); return; }
   S.code = code; S.token = token; store.set('lr-code', code); store.set('lr-token', token);
@@ -687,6 +863,7 @@ $$('[data-add]').forEach(btn => btn.addEventListener('click', async () => {
     let res;
     try { res = await api('post', body, { timeout: photo ? PHOTO.timeout : 60000 }); }
     catch (err) {
+      if (err.code === 'timeout') throw userErr(POST_SLOW);
       if (err.code !== 'network') throw err;
       setProgress(key, 'send', 'The connection dropped. Trying once more…');   // safe: same submission id
       await new Promise(r => setTimeout(r, 3000));
@@ -717,7 +894,7 @@ $$('[data-add]').forEach(btn => btn.addEventListener('click', async () => {
 async function loadInfo(){
   if (EMB){ S.info = { ...S.info, ...(EMB.info || {}) }; renderInfo(); return; }
   if (!API) return;
-  try { const res = await fetch(API + '?action=info'); const d = await res.json(); if (d.ok){ S.info = { ...S.info, ...d.info }; renderInfo(); } } catch (e) {}
+  try { const res = await fetch(API + '?action=info'); const d = await res.json(); if (d.ok){ S.info = { ...S.info, ...d.info }; renderInfo(); fillGateContact(); } } catch (e) {}
 }
 async function loadFamily(quiet){
   if (EMB){
@@ -729,12 +906,19 @@ async function loadFamily(quiet){
   S.loadingFamily = !S.family; if (S.loadingFamily) renderGates();
   try {
     const d = await api('family', {});
-    if (d.ok){ S.family = d; S.codeBad = false; store.set('lr-code', S.code); }
-    else if (d.error === 'code'){ S.family = null; store.set('lr-code', null); }
-  } catch (e) { if (!quiet) setBanner('We could not reach the reunion server just now. Some sections will appear when the connection returns.'); }
+    if (d.ok){ if (S.familyErr) setBanner(); S.family = d; S.codeBad = false; S.familyErr = ''; S.familyTries = 0; store.set('lr-code', S.code); }
+    else if (d.error === 'code'){ S.family = null; S.familyErr = ''; store.set('lr-code', null); }
+    else S.familyErr = 'server';   // busy, or a problem on the server: not a wrong code
+  } catch (e) { S.familyErr = 'net'; if (!quiet) setBanner('We could not reach the reunion server just now. Some sections will appear when the connection returns.'); }
   S.loadingFamily = false;
   renderGates(); renderFamily();
+  /* Two quiet tries a few seconds apart cover a blip; after that the gate offers "Try again". */
+  if (S.familyErr && !S.family){
+    S.familyTries = (S.familyTries || 0) + 1;
+    if (S.familyTries < 3) setTimeout(() => { if (!S.family && !S.loadingFamily) loadFamily(true); }, 5000 * S.familyTries);
+  }
   const mine = (S.family && S.token && !S.mine) ? loadMine() : null;   // awaited by callers that need the household (openByCodes)
+  if (!mine && S.mineLoading){ S.mineLoading = false; renderMe(); }
   if (S.family && live('family')) loadTree(quiet);
   return mine;
 }
@@ -747,11 +931,13 @@ async function loadTree(quiet){
   if (S.treeData && window.LRTree){ const sig = (S.treeData.tree || []).length + ':' + JSON.stringify((S.treeData.tree || []).slice(-1)); if (sig !== S.treeSig){ S.treeSig = sig; LRTree.load(S.treeData.tree || [], S.treeData.treeNotes || []); } }
 }
 async function loadMine(){
+  S.mineLoading = true; renderMe();
   try {
     const d = await api('mine', { token: S.token });
     if (d.ok){ S.mine = d.mine; S.tokenBad = false; fillReg(S.mine.reg); renderFamily(); }
     else if (d.error === 'token'){ S.token = ''; S.tokenBad = S.tokenTyped; store.set('lr-token', null); }
   } catch (e) {}
+  S.mineLoading = false;
   renderMe();
 }
 function setBanner(text){
@@ -778,7 +964,9 @@ function renderPhotosGate(){
 setLook(LOOKS.includes(store.get('lr-look')) ? store.get('lr-look') : 'sequoia');
 setMode(store.get('lr-theme') || 'light');
 if (LINKMODE) $('#meEmpty').innerHTML = '<h3 style="font:400 1.5rem var(--display)">Coming soon</h3><p class="hint">Checking your registration and reporting payments will open here on the full website. Until then, the committee will email you about fees and payment.</p><p class="hint" style="margin-top:14px">Not registered yet? <a href="#register">Register your household</a>.</p>';
+S.mineLoading = !LINKMODE && !!(API && S.code && S.token);   // a remembered household: show "opening" until it arrives or fails
 applySections(); renderAttendees(); renderInfo(); renderMe(); renderFamily(); renderGates(); route(); setBanner(); renderPhotosGate(); renderUploadFields();
+addEventListener('online', () => { if (!S.family && S.code && !S.codeBad && !S.loadingFamily){ S.familyTries = 0; loadFamily(true); } });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && currentView === 'home') drawRings(false); });
 addEventListener('lr-refresh', () => { loadFamily(true); if (S.token) loadMine(); });
 loadInfo(); loadFamily();

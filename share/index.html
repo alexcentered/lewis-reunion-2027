@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Share the reunion: Lewis Family Reunion 2027</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap"></noscript>
+<link rel="icon" type="image/png" href="../assets/icon-64.png">
+<style>
+/* The committee's outreach kit: the family link, text messages ready to copy, and a flyer with a QR code.
+   Not linked from the site. Nothing here is sent anywhere: the family code stays in this browser. */
+:root{
+  --bg:#0b0b0c;--bg2:#141416;--fg:#f3f3f1;--muted:#a9a9a6;--faint:#77777a;--glass:rgba(255,255,255,.055);--glass-2:rgba(255,255,255,.1);
+  --line:rgba(255,255,255,.14);--line-2:rgba(255,255,255,.26);--ok:#58c98a;--warn:#e0b25c;
+  --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;--display:'Playfair Display',Georgia,'Times New Roman',serif;
+  color-scheme:dark;
+}
+[data-theme="light"]{
+  --bg:#f1f1ef;--bg2:#e6e6e3;--fg:#0e0e0f;--muted:#4f4f52;--faint:#7a7a7d;--glass:rgba(255,255,255,.62);--glass-2:rgba(255,255,255,.9);
+  --line:rgba(0,0,0,.12);--line-2:rgba(0,0,0,.26);--ok:#1c7a48;--warn:#8a5a08;color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:radial-gradient(1200px 700px at 12% -10%,var(--bg2),transparent 60%),radial-gradient(900px 600px at 100% 20%,var(--bg2),transparent 55%),var(--bg);background-attachment:fixed;color:var(--fg);font:400 15px/1.6 var(--mono);-webkit-font-smoothing:antialiased;min-height:100vh}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--fg);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 18px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 0 8px}
+.top a.back{font-size:.84rem;color:var(--muted);text-decoration:none}
+.top a.back:hover{color:var(--fg)}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:99px;overflow:hidden;background:var(--glass)}
+.seg button{font:inherit;font-size:.78rem;min-height:36px;padding:0 13px;border:0;background:transparent;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg);font-weight:500}
+h1{font:700 clamp(1.9rem,5.4vw,3rem)/1.08 var(--display);margin:18px 0 10px;letter-spacing:-.01em}
+h2{font:600 1.5rem/1.15 var(--display);margin:0 0 4px}
+.kicker{font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.lead{color:var(--muted);max-width:66ch;margin:0 0 26px}
+.card{background:var(--glass);-webkit-backdrop-filter:blur(18px) saturate(1.2);backdrop-filter:blur(18px) saturate(1.2);border:1px solid var(--line);border-radius:18px;padding:22px;margin:0 0 16px;box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 18px 40px -28px rgba(0,0,0,.6)}
+.card > p.sub{color:var(--muted);font-size:.86rem;margin:2px 0 16px;max-width:70ch}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+label{display:block;font-size:.76rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+input[type=text]{font:inherit;color:var(--fg);background:var(--glass);border:1px solid var(--line-2);border-radius:12px;padding:11px 13px;width:100%;min-height:46px}
+.btn{font:500 .86rem var(--mono);display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:99px;border:1px solid var(--fg);background:var(--fg);color:var(--bg);cursor:pointer;text-decoration:none}
+.btn.quiet{background:transparent;color:var(--fg);border-color:var(--line-2)}
+.btn:hover{opacity:.88}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.linkbox{font-size:.84rem;word-break:break-all;padding:12px 14px;border:1px dashed var(--line-2);border-radius:12px;margin:0 0 12px;background:var(--glass)}
+.note{font-size:.8rem;color:var(--muted);margin:10px 0 0}
+.note.warn{color:var(--warn)}
+.msg{display:flex;flex-direction:column}
+.msg h3{font:500 .78rem var(--mono);letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}
+.msg p.sub{color:var(--muted);font-size:.8rem;margin:0 0 12px;min-height:2.6em}
+.msg pre{font:400 .82rem/1.55 var(--mono);white-space:pre-wrap;word-break:break-word;margin:0 0 12px;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--glass);flex:1}
+.msg .meta{font-size:.74rem;color:var(--faint)}
+.status{font-size:.8rem;color:var(--ok);min-height:1.4em}
+
+/* ---------- the flyer: its own two looks, the same on screen and on paper ---------- */
+.stage{overflow:hidden;border-radius:14px;border:1px solid var(--line);background:var(--glass);max-width:816px}
+.scaler{transform-origin:top left}
+.flyer{width:816px;height:1056px;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;text-align:center;padding:44px 56px 34px;
+  --f-bg:#0b0b0c;--f-fg:#f4f4f2;--f-muted:#b4b4b0;--f-line:rgba(255,255,255,.22);--f-panel:rgba(255,255,255,.06);
+  background:radial-gradient(620px 420px at 50% 16%,#26262a,transparent 70%),var(--f-bg);color:var(--f-fg);font-family:var(--mono);
+  -webkit-print-color-adjust:exact;print-color-adjust:exact}
+.flyer.paper{--f-bg:#ffffff;--f-fg:#0d0d0e;--f-muted:#4a4a4d;--f-line:rgba(0,0,0,.2);--f-panel:rgba(0,0,0,.035);background:radial-gradient(620px 420px at 50% 16%,#ececea,transparent 70%),var(--f-bg)}
+.flyer .ring{position:absolute;inset:16px;border:1px solid var(--f-line);border-radius:6px;pointer-events:none}
+.flyer .medal{width:250px;height:250px;display:block}
+.flyer .open{margin-top:14px;font-size:13px;letter-spacing:.34em;text-transform:uppercase;border:1px solid var(--f-line);border-radius:99px;padding:6px 18px 6px 22px}
+.flyer h2{font:700 52px/1.04 var(--display);margin:14px 0 6px;letter-spacing:-.01em}
+.flyer h2 i{font-weight:600}
+.flyer .when{font-size:17px;letter-spacing:.14em;text-transform:uppercase}
+.flyer .line{width:120px;height:1px;background:var(--f-line);margin:16px 0 14px}
+.flyer .days{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:100%}
+.flyer .days div{border:1px solid var(--f-line);border-radius:10px;padding:10px 8px;background:var(--f-panel)}
+.flyer .days b{display:block;font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px}
+.flyer .days span{font-size:12.5px;line-height:1.35;color:var(--f-muted);display:block}
+.flyer .scan{display:grid;grid-template-columns:214px 1fr;gap:26px;align-items:center;width:100%;margin-top:18px;text-align:left;border:1px solid var(--f-line);border-radius:14px;padding:18px 22px;background:var(--f-panel)}
+.flyer .qr{width:214px;height:214px;background:#fff;border-radius:10px;padding:10px;display:block}
+.flyer .qr svg{display:block;width:100%;height:100%}
+.flyer .scan h3{font:700 30px/1.1 var(--display);margin:0 0 8px}
+.flyer .scan p{margin:0 0 6px;font-size:14px;line-height:1.5;color:var(--f-muted)}
+.flyer .scan p b{color:var(--f-fg);font-weight:700}
+.flyer .scan .url{font-size:17px;color:var(--f-fg);font-weight:500}
+.flyer .facts{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-top:12px;text-align:left}
+.flyer .facts div{border:1px solid var(--f-line);border-radius:10px;padding:11px 14px;background:var(--f-panel);font-size:12.5px;line-height:1.5;color:var(--f-muted)}
+.flyer .facts b{display:block;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--f-fg);margin-bottom:3px}
+.flyer .facts strong{color:var(--f-fg);font-weight:700}
+.flyer .facts span{white-space:nowrap}
+.flyer .foot{margin-top:auto;padding-top:12px}
+.flyer .foot q{display:block;font:italic 600 19px/1.3 var(--display);quotes:"“" "”"}
+.flyer .foot span{display:block;margin-top:6px;font-size:11.5px;letter-spacing:.08em;color:var(--f-muted)}
+.flyer .foot .private{margin-top:4px;text-transform:uppercase;letter-spacing:.16em;font-size:10px}
+
+@media print{
+  @page{size:letter;margin:0}
+  html,body{background:#fff!important}
+  body > *:not(#printRoot){display:none!important}
+  #printRoot{display:block!important}
+  #printRoot .flyer{width:8.5in;height:11in;padding:.46in .58in .36in}
+}
+#printRoot{display:none}
+footer{color:var(--faint);font-size:.76rem;padding:22px 0 44px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="back" href="../">← The website</a>
+    <div class="seg" role="group" aria-label="Page theme">
+      <button type="button" data-theme-pick="auto" aria-pressed="true">Auto</button><button type="button" data-theme-pick="dark" aria-pressed="false">Dark</button><button type="button" data-theme-pick="light" aria-pressed="false">Light</button>
+    </div>
+  </div>
+
+  <div class="kicker">Lewis Family Reunion 2027 · committee tools</div>
+  <h1>Share the reunion</h1>
+  <p class="lead">The family link, three text messages ready to copy, and a flyer with a QR code. Everything on this page is made in your browser; nothing is sent anywhere.</p>
+
+  <div class="card">
+    <h2>1. The family link</h2>
+    <p class="sub">The link that opens the registration page. It carries the family code, so share it with Lewis family only. If the code ever changes, come back here and everything below updates.</p>
+    <div class="grid" style="align-items:end">
+      <div><label for="code">Family code</label><input id="code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="From the Config tab of the Sheet"></div>
+      <div class="row"><button type="button" class="btn" id="copyLink">Copy the family link</button></div>
+    </div>
+    <div class="linkbox" id="link" style="margin-top:14px"></div>
+    <p class="note" id="codeNote"></p>
+  </div>
+
+  <div class="card">
+    <h2>2. Text messages</h2>
+    <p class="sub">Copy one, paste it into a text or a group chat, and send. The plain ones use only characters every phone shows the same way. The styled one looks best in iMessage, WhatsApp and Messenger.</p>
+    <div class="grid">
+      <div class="msg"><h3>Plain</h3><p class="sub">The whole story in one message.</p><pre id="m-plain"></pre><div class="row"><button type="button" class="btn quiet" data-copy="m-plain">Copy</button><span class="meta" id="c-plain"></span></div></div>
+      <div class="msg"><h3>Short</h3><p class="sub">One line and the link. Good for a reminder.</p><pre id="m-short"></pre><div class="row"><button type="button" class="btn quiet" data-copy="m-short">Copy</button><span class="meta" id="c-short"></span></div></div>
+      <div class="msg"><h3>Styled</h3><p class="sub">The same news with some flourish. No emojis.</p><pre id="m-cool"></pre><div class="row"><button type="button" class="btn quiet" data-copy="m-cool">Copy</button><span class="meta" id="c-cool"></span></div></div>
+    </div>
+    <div class="status" id="copyStatus" role="status" aria-live="polite"></div>
+  </div>
+
+  <div class="card">
+    <h2>3. The flyer</h2>
+    <p class="sub">Print it, save it as a PDF, or take a screenshot to text. The QR code opens the registration page. In the print window choose Letter size and turn on "Background graphics" for the dark version.</p>
+    <div class="row" style="margin-bottom:14px">
+      <div class="seg" role="group" aria-label="Flyer look"><button type="button" data-flyer="ink" aria-pressed="true">Dark</button><button type="button" data-flyer="paper" aria-pressed="false">Light</button></div>
+      <button type="button" class="btn" id="print">Print or save as PDF</button>
+      <a class="btn quiet" id="qrPng" download="lewis-reunion-qr.png" href="#">Download the QR code</a>
+    </div>
+    <div class="stage" id="stage"><div class="scaler" id="scaler">
+      <div class="flyer ink" id="flyer">
+        <div class="ring"></div>
+        <img class="medal" src="../assets/site-logo.png?v=20261122d" width="640" height="640" alt="Lewis Family Reunion 2027 medallion: From Their Roots, We Rise">
+        <div class="open">Registration is open</div>
+        <h2>Lewis Family Reunion <i>2027</i></h2>
+        <div class="when">July 2 – 5, 2027 · Fresno, California</div>
+        <div class="line"></div>
+        <div class="days">
+          <div><b>Fri · Jul 2</b><span>Check-in and Meet &amp; Greet</span></div>
+          <div><b>Sat · Jul 3</b><span>Reunion day and Banquet</span></div>
+          <div><b>Sun · Jul 4</b><span>Family day and fireworks</span></div>
+          <div><b>Mon · Jul 5</b><span>Farewell breakfast</span></div>
+        </div>
+        <div class="scan">
+          <div class="qr" id="qr" role="img" aria-label="QR code that opens the registration page"></div>
+          <div>
+            <h3>Scan to register your household</h3>
+            <p>Point your phone camera at the square. One person signs up everyone traveling together.</p>
+            <p class="url">lewisfamilyroots.com</p>
+            <p id="flyerCode"></p>
+          </div>
+        </div>
+        <div class="facts">
+          <div id="flyerFees"><b>Registration fees</b>See the website for fees by age.</div>
+          <div><b>Where to stay</b><strong>Home2 Suites by Hilton Fresno Northwest</strong><br>(559) 512-8410 · group code <strong>501</strong></div>
+        </div>
+        <div class="foot">
+          <q>Somehow, some way, your foundation is Lewis, and you belong here.</q>
+          <span>Questions: committee@lewisfamilyroots.com</span>
+          <span class="private" id="flyerPrivate"></span>
+        </div>
+      </div>
+    </div></div>
+  </div>
+
+  <footer>For the reunion committee. This page is not linked from the website and search engines are asked not to list it.</footer>
+</div>
+<div id="printRoot"></div>
+
+<script src="../config.js?v=20261123"></script>
+<script src="qrcode.js?v=20261123"></script>
+<script src="share.js?v=20261123"></script>
+</body>
+</html>
