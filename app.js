@@ -192,7 +192,7 @@ function renderGates(){
   $$('[data-subview]').forEach(d => { if (show) d.hidden = true; });
   if (!show){ const on = $('.subnav [aria-pressed="true"]'); $$('[data-subview]').forEach(d => d.hidden = d.dataset.subview !== (on ? on.dataset.sub : 'tree')); }
   $$('.adder').forEach(a => a.hidden = show);
-  renderPhotosGate();
+  renderPhotosGate(); renderMeEntry();
 }
 document.addEventListener('click', e => {
   if (e.target.closest('[data-gate-retry]')){ S.familyTries = 0; loadFamily(); return; }
@@ -393,6 +393,7 @@ function renderEditing(){
 }
 function newHousehold(keepForm){
   const old = householdName();
+  if (S.mine) S.prev = { email: String(S.mine.reg.email || '').toLowerCase(), name: old };   // each household needs its own email
   S.token = ''; S.mine = null; S.emailOk = false; store.set('lr-token', null);
   if (!keepForm){ $('#regForm').reset(); attendees = [NEW_PERSON()]; renderAttendees(); }
   $('#regTitle').textContent = 'Register your household'; $('#regSubmit').textContent = 'Save registration';
@@ -405,7 +406,7 @@ document.addEventListener('click', e => {
     newHousehold(false);
     if (location.hash !== '#register') location.hash = '#register'; else window.scrollTo(0, 0);
     setTimeout(() => { try { $('#fFirst').focus({ preventScroll: true }); } catch (_) {} }, 100);
-  } else if (e.target.closest('[data-save-new]')){ newHousehold(true); $('#regSubmit').click(); }
+  } else if (e.target.closest('[data-save-new]')){ S.saveAsNew = true; $('#regSwitch').hidden = true; $('#regSubmit').click(); }   // the remembered household is let go only once the new one is saved
   else if (e.target.closest('[data-save-same]')){ S.emailOk = true; $('#regSwitch').hidden = true; $('#regSubmit').click(); }
 });
 /* A failed save scrolls to the first thing missing, which on a phone can be several screens from the message under the
@@ -458,9 +459,29 @@ $('#regForm').addEventListener('submit', async e => {
   }
   markMissing([]); toast('');
   if (LINKMODE){ linkOutSubmit(r); return; }
+  const btn = $('#regSubmit'), asNew = !!S.saveAsNew; S.saveAsNew = false;
+  /* This device remembers a household whose details did not load (a weak signal when the page opened). Saving now would
+     write over it without anyone seeing whose it is, so fetch it first; if it cannot be fetched, save nothing. */
+  if (S.token && !S.mine){
+    btn.disabled = true; say(msg, 'Checking this device’s saved registration…', true);
+    try {
+      const d = await api('mine', { token: S.token });
+      if (d.ok){ S.mine = d.mine; renderEditing(); renderMe(); }
+      else if (d.error === 'token'){ S.token = ''; store.set('lr-token', null); }
+      else { say(msg, d.message || 'We could not check this device’s saved registration. Please try again in a moment.', false); btn.disabled = false; return; }
+    } catch (err) { say(msg, failText(err), false); btn.disabled = false; return; }
+    btn.disabled = false;
+  }
+  /* Each household needs its own email: the address is how a household is found again. */
+  if (!S.token && S.prev && S.prev.email && r.email.toLowerCase() === S.prev.email){
+    const text = 'The ' + S.prev.name + ' already uses this email address. Each household needs its own. If this person has no email of their own, add them to your own registration instead, or email the committee. To change the ' + S.prev.name + ' itself, open the private link in its email, or use Email my link on My Registration.';
+    say(msg, text, false); toast(text); markMissing(['#fEmail']);
+    const el = $('#fEmail'); el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+    return;
+  }
   /* A different email on a remembered household is how one household gets saved over another. Ask which was meant. */
   const sw = $('#regSwitch');
-  if (S.mine && !S.emailOk && sw && r.email.toLowerCase() !== String(S.mine.reg.email || '').toLowerCase()){
+  if (S.mine && !S.emailOk && !asNew && sw && r.email.toLowerCase() !== String(S.mine.reg.email || '').toLowerCase()){
     sw.hidden = false;
     sw.innerHTML = `<p style="margin:0 0 10px"><b>Is this a different household?</b> This device is signed in to the ${esc(householdName())} (${esc(S.mine.reg.email)}), and you typed a different email.</p>
       <div class="row"><button type="button" class="btn sm" data-save-new>Save as a new household</button><button type="button" class="btn quiet sm" data-save-same>Change the ${esc(householdName())}</button></div>`;
@@ -469,22 +490,23 @@ $('#regForm').addEventListener('submit', async e => {
     return;
   }
   if (sw) sw.hidden = true;
-  const btn = $('#regSubmit'); btn.disabled = true; say(msg, 'Saving…', true);
+  btn.disabled = true; say(msg, 'Saving…', true);
+  const sendToken = asNew ? '' : S.token;   // "Save as a new household" sends no token; the remembered one is kept until the save succeeds
   try {
-    const was = !!S.mine;
-    let res = await api('register', { token: S.token, reg: r });
+    const was = !asNew && !!S.mine;
+    let res = await api('register', { token: sendToken, reg: r });
     /* "busy" means the server was saving other registrations and wrote nothing of ours, so trying again is safe. */
     for (let i = 0; i < 3 && res && res.error === 'busy'; i++){
       say(msg, 'Lots of cousins are registering right now. Holding your place and trying again…', true);
       await new Promise(done => setTimeout(done, 4000));
-      res = await api('register', { token: S.token, reg: r });
+      res = await api('register', { token: sendToken, reg: r });
     }
     if (!res.ok){
       if (res.error === 'exists' && lostTry === r.email.toLowerCase()){
         /* The first try reached the server but its answer never reached this phone. They are registered; say so. */
         lostTry = '';
         const d = $('#regDone'); d.hidden = false;
-        d.innerHTML = `<h3>You're registered. Welcome home.</h3><p class="hint">Your first try reached us after all. We emailed your private link to ${esc(r.email)}. Open that email and press <b>Open my registration</b> to see your household, change it and report payments. If you have two emails from us, use the newest one.</p>
+        d.innerHTML = `<h3>You're registered. Welcome home.</h3><p class="hint">We have a registration under ${esc(r.email)}: your first try reached us after all. We emailed its private link to that address. Open that email and press <b>Open my registration</b> to see the household, change it and report payments. If you have two emails from us, use the newest one.</p>
           <p class="hint" style="margin-top:10px">No email after a few minutes? Check your spam folder, then use Email my link on <a href="#me">My Registration</a>.</p>`;
         say(msg, 'You are registered. Your private link is in your email.', true);
         d.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
@@ -492,6 +514,7 @@ $('#regForm').addEventListener('submit', async e => {
       btn.disabled = false; return;
     }
     lostTry = ''; S.emailOk = false;
+    if (asNew && S.mine) S.prev = { email: String(S.mine.reg.email || '').toLowerCase(), name: householdName() };
     if (res.token){ S.token = res.token; store.set('lr-token', res.token); }
     S.mine = res.mine; fillReg(S.mine.reg); renderMe();
     say(msg, was ? 'Saved.' : 'You are registered.', true);
@@ -508,7 +531,7 @@ $('#regForm').addEventListener('submit', async e => {
     }
     loadFamily(true);
   } catch (err) {
-    if (!S.mine && err && (err.code === 'timeout' || err.code === 'network')) lostTry = r.email.toLowerCase();
+    if ((asNew || !S.mine) && err && (err.code === 'timeout' || err.code === 'network')) lostTry = r.email.toLowerCase();
     say(msg, err && err.code === 'timeout' ? REG_SLOW : failText(err), false);
   }
   btn.disabled = false;
@@ -543,7 +566,7 @@ const TOKEN_BAD = 'That registration code did not match. Check it against your e
    does not know the family code yet (no link opened, nothing typed at a gate). */
 function renderMeEntry(){
   const wrap = $('#meCodeWrap');
-  if (wrap) wrap.hidden = !!S.code;
+  if (wrap) wrap.hidden = !!S.code && !S.codeBad;   // a code the server refused does not count as having one
 }
 function renderMe(){
   const m = S.mine, wait = !m && !!S.mineLoading;   // a remembered household is on its way: do not show the "find it" form meanwhile
@@ -587,13 +610,14 @@ $('#lostBtn').addEventListener('click', async () => {
   const msg = $('#lostMsg'), email = $('#lostEmail').value.trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ say(msg, 'Enter the email you registered with.', false); return; }
   /* No family code on this device yet: the one typed in the Family code box just above counts. */
+  if (S.codeBad){ S.code = ''; renderMeEntry(); }   // a refused code in memory must not be sent again in place of the one typed now
   const typed = $('#meCode') ? $('#meCode').value.trim().toLowerCase() : '', hadCode = !!S.code;
   if (!S.code && typed) S.code = typed;
   if (!S.code){ say(msg, 'Type the family code in the box above first, or open the link the committee sent you, so we know you are family.', false); if ($('#meCode')) $('#meCode').focus(); return; }
   $('#lostBtn').disabled = true;
   try {
     const res = await api('resend', { email });
-    if (res && res.error === 'code'){ if (!hadCode) S.code = ''; say(msg, 'That family code is not right. Check it against the message the committee sent you.', false); }
+    if (res && res.error === 'code'){ S.code = ''; renderMeEntry(); say(msg, 'That family code is not right. Type it in the Family code box above, as it is in the message the committee sent you.', false); if ($('#meCode')) $('#meCode').focus(); }
     else { say(msg, res.message || 'Check your inbox.', !!res.ok); if (res.ok && !hadCode){ store.set('lr-code', S.code); loadFamily(true); } }
   } catch (err) { if (!hadCode) S.code = ''; say(msg, failText(err), false); }
   $('#lostBtn').disabled = false;
@@ -606,6 +630,8 @@ const normCode = v => String(v || '').replace(/[\s-]/g, '').toLowerCase();
 function pickToken(v){
   const s = String(v || '').trim().toLowerCase(), link = /[?&]t=([a-f0-9]{32,64})/.exec(s);
   if (link) return link[1];
+  const groups = /(?:^|[^a-f0-9])((?:[a-f0-9]{4}[\s-]+){7}[a-f0-9]{4})(?![a-f0-9])/.exec(s);   // eight groups of four, as the email prints it
+  if (groups) return normCode(groups[1]);
   const flat = normCode(s), runs = flat.match(/[a-f0-9]{32,}/g);
   if (!runs) return flat;
   const run = runs[runs.length - 1];
@@ -940,7 +966,7 @@ setMode(store.get('lr-theme') || 'light');
 if (LINKMODE) $('#meEmpty').innerHTML = '<h3 style="font:400 1.5rem var(--display)">Coming soon</h3><p class="hint">Checking your registration and reporting payments will open here on the full website. Until then, the committee will email you about fees and payment.</p><p class="hint" style="margin-top:14px">Not registered yet? <a href="#register">Register your household</a>.</p>';
 S.mineLoading = !LINKMODE && !!(API && S.code && S.token);   // a remembered household: show "opening" until it arrives or fails
 applySections(); renderAttendees(); renderInfo(); renderMe(); renderFamily(); renderGates(); route(); setBanner(); renderPhotosGate(); renderUploadFields();
-addEventListener('online', () => { if (!S.family && S.code && !S.loadingFamily){ S.familyTries = 0; loadFamily(true); } });
+addEventListener('online', () => { if (!S.family && S.code && !S.codeBad && !S.loadingFamily){ S.familyTries = 0; loadFamily(true); } });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && currentView === 'home') drawRings(false); });
 addEventListener('lr-refresh', () => { loadFamily(true); if (S.token) loadMine(); });
 loadInfo(); loadFamily();

@@ -1424,7 +1424,11 @@ function brevoSend_(msg, cfg) {
 function htmlToText_(html) {
   return String(html == null ? '' : html)
     // A link whose words are not its address keeps the address ("Register now: https://..."); a button would otherwise be a dead label.
-    .replace(/<a\b[^>]*\bhref="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g, (m, href, label) => { const t = label.replace(/<[^>]+>/g, '').trim(); return !t || t === href ? href : t + ': ' + href; })
+    .replace(/<a\b[^>]*\bhref="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g, (m, href, label) => {
+      const t = label.replace(/<[^>]+>/g, '').trim(), bare = href.replace(/^(mailto|tel):/i, '');
+      if (bare !== href) return t || bare;   // an email address or phone number: the words are enough
+      return !t || t === href ? href : t + ': ' + href;
+    })
     .replace(/<li[^>]*>/g, '  • ').replace(/<\/li>/g, '\n').replace(/<ul[^>]*>/g, '').replace(/<\/ul>/g, '\n')
     .replace(/<h2[^>]*>/g, '\n').replace(/<\/h2>/g, '\n').replace(/<\/p>/g, '\n\n').replace(/<br\s*\/?>/g, '\n')
     .replace(/<[^>]+>/g, '')
@@ -1899,10 +1903,19 @@ function dueLine_(row, cfg) {
   if (!fees) return 'Registration fees will be announced soon; nothing is due yet.';
   const att = parseAttendees_(row.Attendees), c = bandCounts_(att);
   const parts = FEE_BANDS.filter(b => c[b.key]).map(b => c[b.key] + (fees[b.key] ? ' × ' + money_(fees[b.key]) : ' free') + ' for ' + b.label);
-  let s = 'Total due: ' + money_(dueFor_(att, fees)) + (parts.length ? ' (' + parts.join(', ') + ')' : '') + '.';
+  const total = dueFor_(att, fees), paid = cents_(num_(row.Confirmed) || 0), left = cents_(total - paid);
+  let s = 'Total due: ' + money_(total) + (parts.length ? ' (' + parts.join(', ') + ')' : '') + '.';
+  // A link asked for again months later goes to households that have paid: say what was paid, not only what the total is.
+  if (paid > 0) s += ' Paid so far: ' + money_(paid) + '.' + (left > 0 ? ' Balance: ' + money_(left) + '.' : ' Paid in full. Thank you.');
+  if (left <= 0) return s + (paid > 0 ? '' : ' There is nothing to pay.');
   const due = longDate_(cfg.deadline);
   s += due ? ' Due by ' + due + '.' : ' You can pay any time; the committee will announce the due date.';
   return s;
+}
+/** True while the household still owes something: fees are set and its confirmed payments do not cover its total. */
+function owes_(row, cfg) {
+  const fees = feesOf_(cfg);
+  return !!fees && cents_(dueFor_(parseAttendees_(row.Attendees), fees) - (num_(row.Confirmed) || 0)) > 0;
 }
 
 /** "23 and older $245, 16 to 22 $95, 4 to 15 $55, 3 and under free" from the Config fees, or "to be announced" until all four are set. */
@@ -1934,7 +1947,7 @@ function regDetails_(row, cfg, live) {
     str_(row.Lodging) ? ['Staying', htmlEsc_(str_(row.Lodging))] : null
   ].filter(Boolean).map(l => l[0] + ': ' + l[1]);
   const fees = !!feesOf_(cfg), pay = payLine_(cfg);
-  const next = fees ? [
+  const next = fees && !owes_(row, cfg) ? [htmlEsc_(dueLine_(row, cfg))] : fees ? [   // paid in full: no "ways to pay", no "after you pay"
     htmlEsc_(dueLine_(row, cfg) + (pay ? ' ' + pay : '')),
     (live ? 'After you pay, report the payment on your My Registration page.' : 'After you pay, reply to this email with the amount, the method and the date.') +
       (id ? ' Please put your household ID, ' + htmlEsc_(id) + ', in the payment note so we can match it to you.' : ''),
