@@ -451,7 +451,11 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 @media(max-width:860px){.hero-grid{grid-template-columns:1fr}.hero-logo{order:-1;width:min(320px,76vw);margin:0 auto 8px}}
 .opening .quote{margin:0 auto;max-width:24ch}
 .opening cite{display:block;margin-top:14px;font:400 .82rem var(--body);color:var(--faint);font-style:normal}
-.welcome-crest{display:block;width:clamp(120px,16vw,168px);height:auto;margin:0 auto 28px}
+.welcome-crest{display:block;width:clamp(190px,24vw,288px);height:auto;margin:0 auto 32px}
+/* Welcome reads as one centered column under the crest. */
+.welcome .split{grid-template-columns:1fr;gap:6px;max-width:46rem;margin:0 auto;text-align:center}
+.welcome .split h2,.welcome .split .lead{margin-left:auto;margin-right:auto}
+.welcome .split h2{margin-bottom:10px}
 .gate-sample{border:1px dashed var(--line-2);border-radius:12px;padding:16px 18px;color:var(--muted)}
 .gate-sample h3{margin:0 0 6px;color:var(--text)}
 .lc-stage{display:grid;aspect-ratio:1/1.02;touch-action:pan-y}
