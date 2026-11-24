@@ -52,6 +52,21 @@ This keeps the same `/exec` URL while deploying the updated code.
 
 Photo sharing has an on/off switch in two places (Config tab `photosEnabled` and `config.js`). See **[TESTING.md](TESTING.md)** for how to turn it on and check it, for the email and codes checklist, and for checking a committee update.
 
+## Opening day checklist
+
+Do these once, in order, before telling the family that registration is open.
+
+1. **Backend up to date.** In the Sheet: Extensions, Apps Script. Paste the current `apps-script/Code.gs` over what is there and save. Then Deploy, Manage deployments, the pencil, Version: New version, Deploy. Never "New deployment".
+2. **Config tab.** `siteLive` is `Yes`. The four fees are numbers. `zelle` and `cashapp` (or the handles you use) are filled in. Set `deadline` when the committee has a payment date; until then the site and the emails say it will be announced.
+3. **Holders tab.** One row for each person who receives reunion money, with the ways they take it (for example `Zelle, Cash App`), so every payment names who has it.
+4. **Test data.** Delete test households from Registrations and their rows from Payments. Leave MailQueue alone: it is the record.
+5. **One real test.** Open the family link on your phone, register yourself, and check that the email arrives and that its button opens My Registration.
+6. **Welcome email.** Put the relatives you have email addresses for on the Contacts tab (`First`, `Last`, `Email`). On the Updates tab add a row with Template `Welcome from the committee (HTML)`, Audience `test`, Approved ticked, and choose Reunion, Send approved updates now. Read the proof in the committee inbox. Then a second row with Audience `everyone`. Brevo's free plan sends 300 emails a day; anything over that waits in MailQueue and goes out the next day by itself.
+7. **Texts and the flyer.** Open `https://lewisfamilyroots.com/share/`, copy a message, attach the flyer. See [docs/OUTREACH.md](docs/OUTREACH.md).
+8. **During the day.** Watch the Registrations tab fill. On MailQueue, anything not `Sent` says why in `Last error`. When a payment arrives, set its Status to `Confirmed` on the Payments tab; the household gets a receipt.
+
+If the family link gets out, change `familyCode` on the Config tab and share the new link. Households that already registered keep their own private links.
+
 ## Committee guide
 
 - **Dashboard tab:** households, adults, children, room nights, paid / partial / unpaid, confirmed dollars, dollars awaiting a check, and households by branch.
