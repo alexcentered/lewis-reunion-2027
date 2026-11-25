@@ -222,7 +222,9 @@ function handle_(p) {
     if (action === 'info') return out_({ ok: true, info: publicInfo_(cfg) });
     // The review page has its own key per reviewer (Reviews tab), not the family code.
     if (action === 'review') return out_(review_(p, cfg, false));
-    if (action === 'reviewSave') return out_(locked_(() => review_(p, cfg, true)));
+    if (action === 'reviewPart') return out_(locked_(() => review_(p, cfg, true)));
+    // Pages loaded before Nov 25, 2026 saved the whole review at once, which let a stale tab undo newer work. Refused.
+    if (action === 'reviewSave') return out_({ ok: false, error: 'reload', message: 'Not saved: this page has been updated. Please reload it. Your changes are kept on this device.' });
     if (!codeOk_(p.code, cfg)) return out_({ ok: false, error: 'code', message: 'That family code is not right. Please use the link the committee sent you.' });
     switch (action) {
       case 'family': return out_(familyData_(cfg));
@@ -788,7 +790,10 @@ const REVIEW_HEADERS = ['Name', 'Key', 'Link', 'Saved', 'Homepage order', 'Email
 const REVIEW_TEXT_MAX = 45000;      // a Sheets cell holds 50,000 characters
 const REVIEW_BAD = { ok: false, error: 'review', message: 'This review link is not working. Please ask the committee for a new one.' };
 
-/** action review (load) or reviewSave (save, run inside locked_). p.key, and for a save p.data, p.order, p.wording. */
+/** action review (load) or reviewPart (save, run inside locked_): p.key, and for a save p.part ('order' or 'wording'), p.value
+    (that page's state), p.rev (the rev of that part the page last saw) and p.text (the readable copy). Only that part and
+    its column are written, and only when p.rev is still current; otherwise error 'conflict' returns the saved data and the
+    page merges its changes into it and tries again. Data holds { order, wording, rev: { order, wording } }. */
 function review_(p, cfg, save) {
   const key = String(p.key || '').trim().toLowerCase();
   if (!/^[a-z0-9][a-z0-9-]{1,63}$/.test(key)) return REVIEW_BAD;
@@ -804,15 +809,26 @@ function review_(p, cfg, save) {
   if (!save) {
     let data = null;
     try { data = str_(row.Data) ? JSON.parse(str_(row.Data)) : null; } catch (err) { data = null; }
-    return { ok: true, name: str_(row.Name), saved: row.Saved instanceof Date ? row.Saved.toISOString() : '', data: data };
+    return { ok: true, v: 2, name: str_(row.Name), saved: row.Saved instanceof Date ? row.Saved.toISOString() : '', data: data };
   }
-  const json = JSON.stringify(p.data && typeof p.data === 'object' ? p.data : {});
+  const part = p.part === 'order' || p.part === 'wording' ? p.part : '';
+  if (!part || typeof p.value !== 'string') return { ok: false, error: 'bad_request' };
+  let cur = {};
+  if (str_(row.Data)) {
+    try { cur = JSON.parse(str_(row.Data)); } catch (err) { cur = null; }
+    // Never write over saved work that cannot be read: the committee can look at the cell.
+    if (!cur || typeof cur !== 'object') return { ok: false, error: 'data', message: 'Not saved: please tell the committee the saved review needs a look. Your changes are kept on this device.' };
+  }
+  const rev = cur.rev && typeof cur.rev === 'object' ? cur.rev : {};
+  if (Number(p.rev) !== (Number(rev[part]) || 0)) return { ok: false, error: 'conflict', data: cur };
+  rev[part] = (Number(rev[part]) || 0) + 1;
+  cur[part] = p.value; cur.rev = rev;
+  const json = JSON.stringify(cur);
   if (json.length > REVIEW_TEXT_MAX) return { ok: false, error: 'big', message: 'That is more than this page can save. Please shorten some of your changes.' };
   const set = { Saved: new Date(), Data: json };
-  if (p.order != null) set['Homepage order'] = clean_(p.order, REVIEW_TEXT_MAX);
-  if (p.wording != null) set['Email wording'] = clean_(p.wording, REVIEW_TEXT_MAX);
+  if (p.text != null) set[part === 'order' ? 'Homepage order' : 'Email wording'] = clean_(p.text, REVIEW_TEXT_MAX);
   Object.keys(set).forEach(h => { if (H.col[h] !== undefined) sh.getRange(index, H.col[h] + 1).setValue(set[h]); });
-  return { ok: true, saved: set.Saved.toISOString() };
+  return { ok: true, saved: set.Saved.toISOString(), rev: rev[part] };
 }
 
 /** "Vincent Lewis" -> "vincent", or "vincent-2" (then -3...) when a Key in taken (lowercase keys already used) has it. */
