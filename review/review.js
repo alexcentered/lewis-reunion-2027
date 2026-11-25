@@ -5,7 +5,7 @@
 (function () {
   'use strict';
   var STATE = { order: 'lewis-homepage-order-v1', wording: 'lewis-email-wording-v1' };
-  var KEY_STORE = 'lr-review-key', SYNCED = 'lr-review-synced', SYNCED_FOR = 'lr-review-synced-for', RELOADED = 'lr-review-reloaded';
+  var KEY_STORE = 'lr-review-key', SYNCED = 'lr-review-synced', SYNCED_FOR = 'lr-review-synced-for';   // the last two: older version of this page
   var PAGES = [['index.html', 'Start', 'home'], ['sample.html', '1. Sample', 'sample'], ['order.html', '2. <span class="rv-long">Homepage </span>order', 'order'],
     ['wording.html', '3. Email<span class="rv-long"> wording</span>', 'wording']];
   var page = document.documentElement.getAttribute('data-review') || 'home';
@@ -27,10 +27,71 @@
   }
   var key = get(KEY_STORE);
 
-  // What the Sheet last had, so a page this device has not opened yet (nothing stored here) never blanks it.
-  var base = {};
-  function dataNow() { var d = {}; Object.keys(STATE).forEach(function (k) { var v = get(STATE[k]); d[k] = v != null ? v : (base[k] != null ? base[k] : null); }); return d; }
-  function json(d) { return JSON.stringify(d); }
+  /* Each editing page owns one part of the review and only ever saves that part. BASE (per part) is what the Sheet held when
+     this device last agreed with it, and its rev. The backend refuses a save whose rev is out of date; the changes made
+     here since BASE are then merged into the newer copy, field by field, so no tab or device can undo another's work. */
+  var part = STATE[page] ? page : null;
+  var BASE = 'lr-review-base-';
+  var startLocal = part ? get(STATE[part]) : null;      // before the page's own script tidies it
+  var base = { rev: -1, value: null };
+
+  function isObj(o) { return o && typeof o === 'object' && !Array.isArray(o); }
+  /* A part as flat fields: { 'words/why/p1': '...', layout: {...} }. Null when there is nothing (or nothing readable). */
+  function flat(p, str) {
+    var o; try { o = str == null ? null : JSON.parse(str); } catch (e) { o = null; }
+    if (!isObj(o)) return null;
+    var f = {};
+    if (p === 'wording') { Object.keys(o).forEach(function (k) { f[k] = o[k]; }); return f; }
+    ['who', 'other'].forEach(function (k) { if (o[k]) f[k] = o[k]; });
+    Object.keys(o.notes || {}).forEach(function (k) { f['notes/' + k] = o.notes[k]; });
+    Object.keys(o.words || {}).forEach(function (k) { Object.keys(o.words[k] || {}).forEach(function (w) { f['words/' + k + '/' + w] = o.words[k][w]; }); });
+    if (o.page) f.layout = { page: o.page, tray: o.tray || [] };
+    if (o.tiles) f.tiles = o.tiles;
+    return f;
+  }
+  function unflat(p, f) {
+    if (p === 'wording') return JSON.stringify(f);
+    var o = { who: f.who || '', other: f.other || '', notes: {}, words: {} };
+    Object.keys(f).forEach(function (k) {
+      var b = k.split('/');
+      if (b[0] === 'notes') o.notes[b[1]] = f[k];
+      if (b[0] === 'words') { o.words[b[1]] = o.words[b[1]] || {}; o.words[b[1]][b[2]] = f[k]; }
+    });
+    if (f.layout) { o.page = f.layout.page; o.tray = f.layout.tray; }
+    if (f.tiles) o.tiles = f.tiles;
+    return JSON.stringify(o);
+  }
+  function canon(p, str) {
+    var f = flat(p, str);
+    return f ? JSON.stringify(Object.keys(f).sort().map(function (k) { return [k, f[k]]; })) : '';
+  }
+  /* The server's copy with this device's changes since `was` put on top. `careful`: `was` comes from the older version of this
+     page, which could record it wrongly, so a missing field or a different section order is not taken as a change. */
+  function merge(p, was, local, server, careful) {
+    var S = flat(p, server), L = flat(p, local), B = flat(p, was);
+    if (!S) return local;
+    if (!L || !B) return server;
+    var seen = {};
+    Object.keys(B).concat(Object.keys(L)).forEach(function (k) {
+      if (seen[k]) return; seen[k] = 1;
+      if (JSON.stringify(L[k]) === JSON.stringify(B[k])) return;
+      if (careful && (L[k] === undefined || k === 'layout' || k === 'tiles')) return;
+      if (L[k] === undefined) delete S[k]; else S[k] = L[k];
+    });
+    return unflat(p, S);
+  }
+  function storedBase(p) {
+    try {
+      var b = JSON.parse(get(BASE + p) || 'null');
+      if (b && b.key === key) return b;
+      if (!b && get(SYNCED_FOR) === key) return { rev: -1, value: JSON.parse(get(SYNCED) || '{}')[p], careful: true };
+    } catch (e) {}
+    return { rev: -1, value: null };
+  }
+  function setBase(p, data) {
+    base = { key: key, rev: Number(data && data.rev && data.rev[p]) || 0, value: data && data[p] != null ? data[p] : null };
+    set(BASE + p, JSON.stringify(base));
+  }
   function post(body) {
     return fetch(api, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
       .then(function (r) { return r.json(); });
@@ -58,42 +119,59 @@
     } catch (e) { return null; }
   }
 
-  var lastSaved = null, saving = false, changedAt = 0, retryAt = 0, ready = false;
+  var lastSaved = null, saving = false, changedAt = 0, retryAt = 0, ready = false, leaving = false;
   // The sample (1. Sample) has nothing to edit: it only shows the saved review, so it never saves on its own.
   var readOnly = page === 'sample';
-  /* Tells the page what the review holds now (lr-review-data), so the sample can draw it. */
+  var server = {};
+  /* Tells the sample what the review holds now (lr-review-data): the saved review, plus changes on this device not saved yet. */
   function emit(saved) {
-    try { document.dispatchEvent(new CustomEvent('lr-review-data', { detail: { name: reviewer, data: dataNow(), saved: saved || null } })); } catch (e) {}
+    var d = {}, own = { order: storedBase('order') };
+    Object.keys(server).forEach(function (k) { d[k] = server[k]; });
+    d.order = own.order.value != null ? merge('order', own.order.value, get(STATE.order), server.order, own.order.careful) : server.order;
+    try { document.dispatchEvent(new CustomEvent('lr-review-data', { detail: { name: reviewer, data: d, saved: saved || null } })); } catch (e) {}
+  }
+  function now() { return part ? get(STATE[part]) : null; }
+  function dirty() { return !!part && ready && !leaving && now() != null && canon(part, now()) !== lastSaved; }
+  function body() {
+    var b = { action: 'reviewPart', key: key, part: part, value: now(), rev: base.rev }, text = readable();
+    if (text != null) b.text = text;
+    return b;
+  }
+  /* Puts `value` on this device and draws the page again from it. At once, so nothing typed into the older copy follows. */
+  function redraw(value) {
+    set(STATE[part], value);
+    leaving = true;
+    if (get(STATE[part]) === value) location.reload();
+    else say('This browser is not keeping your changes. Please try another browser, or a window that is not private.', true, true);
   }
   function save() {
-    var d = dataNow(), j = json(d), body = { action: 'reviewSave', key: key, data: d };
-    var text = readable();
-    if (page === 'order' && text != null) body.order = text;
-    if (page === 'wording' && text != null) body.wording = text;
+    var b = body(), c = canon(part, b.value);
     saving = true; say('Saving…');
-    post(body).then(function (r) {
+    post(b).then(function (r) {
       saving = false;
-      if (r && r.ok) { lastSaved = j; base = d; set(SYNCED, j); set(SYNCED_FOR, key); retryAt = 0; say('All changes saved at ' + time(r.saved) + '.'); }
-      else { retryAt = Date.now() + 15000; say((r && r.message) || 'Not saved yet. Trying again soon.', true); }
+      if (r && r.ok) {
+        var d = { rev: {} }; d.rev[part] = r.rev; d[part] = b.value; setBase(part, d);
+        lastSaved = c; retryAt = 0; say('All changes saved at ' + time(r.saved) + '.');
+      } else if (r && r.error === 'conflict' && r.data) {
+        var local = now(), m = merge(part, base.value, local, r.data[part]);
+        setBase(part, r.data);
+        if (canon(part, m) !== canon(part, local)) redraw(m);
+        else { lastSaved = canon(part, base.value); retryAt = 0; changedAt = 0; }
+      } else { retryAt = Date.now() + 15000; say((r && r.message) || 'Not saved yet. Trying again soon.', true); }
     }, function () {
       saving = false; retryAt = Date.now() + 10000;
       say('Not saved yet: no connection. Your changes are kept on this device and will save when you are back online.', true);
     });
   }
   function tick() {
-    if (!ready || saving || readOnly) return;
-    var j = json(dataNow());
-    if (j === lastSaved) return;
+    if (saving || !dirty()) return;
     if (!changedAt) { changedAt = Date.now(); say('Saving…'); }
     if (Date.now() - changedAt < 1200 || Date.now() < retryAt) return;
     changedAt = 0; save();
   }
   function beacon() {
-    if (readOnly || !ready || json(dataNow()) === lastSaved || !navigator.sendBeacon) return;
-    var body = { action: 'reviewSave', key: key, data: dataNow() }, text = readable();
-    if (page === 'order' && text != null) body.order = text;
-    if (page === 'wording' && text != null) body.wording = text;
-    try { navigator.sendBeacon(api, new Blob([JSON.stringify(body)], { type: 'text/plain;charset=utf-8' })); } catch (e) {}
+    if (!dirty() || !navigator.sendBeacon) return;
+    try { navigator.sendBeacon(api, new Blob([JSON.stringify(body())], { type: 'text/plain;charset=utf-8' })); } catch (e) {}
   }
 
   function load() {
@@ -102,6 +180,7 @@
       block('<b>This page needs your private review link.</b><br>Please open it from the email Alex sent you, or ' + BACKUP_LINK + '.');
       say('Not connected', true); return;
     }
+    var opened = now() != null ? now() : '{}';          // what the page shows before anything is typed
     say('Opening your saved changes…');
     post({ action: 'review', key: key }).then(function (r) {
       if (!r || !r.ok) {
@@ -109,29 +188,21 @@
         else say((r && r.message) || 'Could not open your saved changes. Please reload the page.', true, true);
         return;
       }
+      if (!(r.v >= 2)) { say('Saving is paused for a few minutes while this page is updated. Please reload it soon.', true, true); return; }
       reviewer = r.name || '';
       var who = document.querySelectorAll('[data-rv-name]');
       for (var i = 0; i < who.length; i++) who[i].textContent = reviewer || 'there';
-      var server = r.data || {};
-      Object.keys(STATE).forEach(function (k) { if (server[k] != null) base[k] = server[k]; });
-      var local = dataNow(), synced = get(SYNCED_FOR) === key ? get(SYNCED) : null;
-      // Right after this page reloaded itself to show the saved state, the page may have tidied that state: not a change.
-      var justReloaded = Date.now() - Number(sessionStorage.getItem(RELOADED) || 0) < 15000;
-      if (synced != null && json(local) !== synced && !justReloaded) {
-        // Changes made here that never reached the Sheet (for example offline): this device wins.
-        ready = true; save(); emit(); return;
+      server = r.data || {};
+      if (part) {
+        var was = storedBase(part), cur = now(), sv = server[part] != null ? server[part] : null;
+        // Anything typed while the saved copy was on its way counts as a change too.
+        var local = startLocal == null ? (canon(part, cur) === canon(part, opened) ? null : cur) : merge(part, opened, cur, startLocal);
+        var m = sv == null ? cur : merge(part, startLocal == null ? opened : was.value, local, sv, was.careful);
+        setBase(part, server);
+        if (sv != null && canon(part, m) !== canon(part, startLocal == null ? cur : local)) { redraw(m); return; }
+        // The page tidying what it loaded is not a change; a real difference from the Sheet is.
+        lastSaved = sv == null || canon(part, m) === canon(part, sv) ? canon(part, cur) : null;
       }
-      // A page the reviewer has not saved yet (null on the server) keeps what this device shows.
-      var newer = Object.keys(STATE).filter(function (k) { return server[k] != null && server[k] !== get(STATE[k]); });
-      if (newer.length) {
-        newer.forEach(function (k) { set(STATE[k], server[k]); });
-        set(SYNCED, json(dataNow())); set(SYNCED_FOR, key);
-        if ((page === 'order' || page === 'wording') && !justReloaded) {
-          sessionStorage.setItem(RELOADED, String(Date.now()));
-          location.reload(); return;
-        }
-      }
-      lastSaved = json(dataNow()); set(SYNCED, lastSaved); set(SYNCED_FOR, key);
       ready = true;
       say(r.saved ? 'All changes saved. Last saved ' + new Date(r.saved).toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' at ' + time(r.saved) + '.' : 'Ready. Your changes save by themselves.');
       emit(r.saved);
@@ -148,12 +219,7 @@
       polling = false;
       if (!r || !r.ok) return;
       if (r.name) reviewer = r.name;
-      var server = r.data || {};
-      // Changes made on this device that have not reached the Sheet yet (offline) stay; 2. Homepage order saves them.
-      var pending = get(SYNCED_FOR) === key && get(SYNCED) != null && get(SYNCED) !== json(dataNow());
-      if (!pending) Object.keys(STATE).forEach(function (k) { if (server[k] != null) { base[k] = server[k]; set(STATE[k], server[k]); } });
-      lastSaved = json(dataNow());
-      if (!pending) { set(SYNCED, lastSaved); set(SYNCED_FOR, key); }
+      server = r.data || {};
       say('Up to date with the saved review. Checked at ' + time() + '.');
       emit(r.saved);
     }, function () { polling = false; say('Could not check for new changes. Trying again in a moment.', true); });
@@ -171,7 +237,7 @@
     document.body.appendChild(cover);
     // Save before moving to another review page, so nothing is lost between pages.
     bar.addEventListener('click', function (e) {
-      var a = e.target.closest && e.target.closest('a'); if (!a || !ready || readOnly || json(dataNow()) === lastSaved) return;
+      var a = e.target.closest && e.target.closest('a'); if (!a || !dirty()) return;
       e.preventDefault(); save();
       var go = a.href, t0 = Date.now();
       (function wait() { if (!saving || Date.now() - t0 > 4000) location.href = go; else setTimeout(wait, 150); })();
@@ -185,7 +251,18 @@
       // 2. Homepage order open in another tab of this browser: show each change at once, before it reaches the Sheet.
       window.addEventListener('storage', function (e) { if (ready && e.key === STATE.order) emit(); });
     }
-    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') beacon(); });
+    /* The same page open in another tab of this browser shares this device's copy: when that tab changes it, draw this one
+       again, so it never writes its older copy back. */
+    var left = null;
+    function again() { if (part && !leaving) { leaving = true; location.reload(); } }
+    if (part) {
+      window.addEventListener('storage', function (e) { if (e.key === STATE[part] && e.newValue != null && canon(part, e.newValue) !== canon(part, e.oldValue)) again(); });
+      window.addEventListener('pageshow', function (e) { if (e.persisted) again(); });
+    }
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') { left = now(); beacon(); }
+      else if (part && left != null && now() != null && canon(part, now()) !== canon(part, left)) again();
+    });
     window.addEventListener('pagehide', beacon);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build); else build();
