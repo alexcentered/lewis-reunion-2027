@@ -82,9 +82,9 @@ function drawRings(once){
 
 /* ---------- state ---------- */
 const DEFAULT_AGENDA = { days: [
-  { title: 'Friday', date: 'July 2', items: [ {time:'Afternoon', what:'Hotel check-in', where:'Home2 Suites Fresno Northwest'}, {time:'Evening', what:'Meet & Greet', where:'Venue TBA'} ] },
-  { title: 'Saturday', date: 'July 3', items: [ {time:'Daytime', what:'Reunion activities', where:'Venue TBA'}, {time:'Evening', what:'Banquet', where:'Venue TBA'} ] },
-  { title: 'Sunday', date: 'July 4', items: [ {time:'Daytime', what:'Family day and picnic', where:'Venue TBA'}, {time:'Night', what:'Fourth of July fireworks', where:''} ] },
+  { title: 'Friday', date: 'July 2', items: [ {time:'Afternoon', what:'Hotel check-in', where:'Home2 Suites Fresno Northwest'}, {time:'Evening', what:'Meet & Greet', where:"Clo and Aunt Do's Place"} ] },
+  { title: 'Saturday', date: 'July 3', items: [ {time:'Daytime', what:'Reunion activities', where:'Venue TBA'}, {time:'Evening', what:'Banquet', where:'Dante Club'} ] },
+  { title: 'Sunday', date: 'July 4', items: [ {time:'Daytime', what:'Family day and picnic', where:'Frasier Gardens'}, {time:'Night', what:'Fourth of July fireworks', where:''} ] },
   { title: 'Monday', date: 'July 5', items: [ {time:'Morning', what:'Farewell breakfast', where:'Venue TBA'} ] }
 ]};
 const DAYS = [
@@ -230,7 +230,7 @@ function feeOf(key){ const f = (S.info.fees || []).find(x => x.key === key); ret
 function feeSet(){ return Array.isArray(S.info.fees) && FEE_BANDS.every(b => feeOf(b.key) != null); }
 /** The fee list in the registration summary: one row per age group, then the due date. */
 function feeListHtml(deadline){
-  const ages = { a23: 'Ages 23 and up', y16: 'Ages 16 to 22', c4: 'Ages 4 to 15', i0: 'Ages 3 and under' };
+  const ages = { a23: 'Ages 23 and older', y16: 'Ages 16 to 22', c4: 'Ages 4 to 15', i0: 'Ages 3 and under' };
   return '<div class="fees-h">Fees per person, by age on July 2, 2027</div>' +
     FEE_BANDS.map(b => `<div class="feerow"><span>${ages[b.key]}</span><span class="num">${feeOf(b.key) ? money(feeOf(b.key)) : 'Free'}</span></div>`).join('') +
     (deadline ? `<div class="fees-due">Due by ${esc(fmtDate(deadline))}</div>` : '');

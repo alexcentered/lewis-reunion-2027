@@ -1261,10 +1261,10 @@ function moneyEmail_(d, cfg, sheetUrl) {
     '<p>Here is where the reunion money stands.</p>' +
     '<p><b>Cash on hand: ' + e(money_(d.cash)) + '</b><br>Confirmed payments minus paid expenses.</p>' +
     '<p><b>Money in</b></p>' + li([
-      'Confirmed: ' + e(money_(i.confirmed)) + ' (' + i.confirmedCount + ' payments)',
+      'Confirmed: ' + e(money_(i.confirmed)) + ' (' + i.confirmedCount + (Number(i.confirmedCount) === 1 ? ' payment)' : ' payments)'),
       'Waiting for confirmation: ' + e(money_(i.waiting)) + ' (' + i.waitingCount + ')',
       i.owed === null ? 'Still owed: fees not set yet' : 'Still owed by households: ' + e(money_(i.owed)) + ' of ' + e(money_(i.expected)) + ' expected',
-      i.households + ' households: ' + i.paidInFull + ' paid in full, ' + i.partly + ' partly paid, ' + i.nothing + ' with nothing confirmed'
+      i.households + (Number(i.households) === 1 ? ' household: ' : ' households: ') + i.paidInFull + ' paid in full, ' + i.partly + ' partly paid, ' + i.nothing + ' with nothing confirmed'
     ]) +
     '<p><b>Who holds what</b></p>' + (d.holders.length ? li(d.holders.map(x => e(x.name + ': ' + holds_(x.holds)))) : '<p>Nobody is on the Holders tab yet.</p>') +
     '<p><b>Money out</b></p>' + li([

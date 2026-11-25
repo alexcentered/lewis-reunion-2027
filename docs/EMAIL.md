@@ -58,7 +58,7 @@ Rules: there must be exactly one SPF record and exactly one DMARC record on the 
 
 ## What each email contains
 
-All emails share the frame in `mailWrap_`: Georgia body, the sign-off "Somehow, some way, your foundation is Lewis — and you belong here.", and the committee address from Config `email`. Each has an HTML part and a real plain-text part (`htmlToText_`).
+All emails share the frame in `mailWrap_`: Georgia body, the sign-off "Somehow, some way, your foundation is Lewis, and you belong here.", and the committee address from Config `email`. Each has an HTML part and a real plain-text part (`htmlToText_`).
 
 **Registration link email** (`linkEmail_`, kind `link`)
 Subject: `You are registered: Lewis Family Reunion 2027` on first registration, or `Your Lewis Reunion registration link` when it is a fresh link (duplicate registration, lost link).
@@ -148,7 +148,7 @@ To type an argument in the editor, call it from a one-line wrapper or the editor
 - [ ] Reply to the email. It arrives in `lewisfamilyreunion2027@gmail.com`. Send a message to `info@lewisfamilyroots.com`. It arrives too.
 - [ ] Temporarily blank `BREVO_API_KEY`. Register another test household. The registration saves; MailQueue shows `Via = MailApp` (or a `Queued` row if the Gmail quota is gone). Restore the key. **Send queued mail now** sends anything left.
 - [ ] Mark a test payment `Confirmed`. One receipt arrives; `Receipt sent` is filled. Edit the same row again. No second email.
-- [ ] Register with the same email again. A fresh-link email arrives and the site says the email is already registered. No server error.
+- [ ] Ten minutes or more after the first registration, open a new private window and register with the same email again. A fresh-link email arrives and the site says the email is already registered. No server error.
 - [ ] `git grep -iE 'xkeysib-[0-9a-f]'` in the repo returns nothing.
 
 ## Committee Updates: how to send one
@@ -160,8 +160,8 @@ A committee update is one email to every registered household (or to a slice of 
 1. **Open the Updates tab** and start a new row. Leave `ID`, `Created`, `Sent at`, `Sent`, `Failed` and `Skipped` blank; the script fills them.
 2. **Write the Subject.** This is the email subject line, for example `Fees are set: $245 for ages 23 and up`.
 3. **Write the body.** Three ways:
-   - Pick a **Template** (the last column). Its Subject and Body appear in the row's blank Subject and Draft cells, ready to change. Templates live on the **Templates** tab; see "Templates and fields" below.
-   - Type the email yourself into `Draft`. Plain paragraphs separated by a blank line are fine; simple HTML (`<p>`, `<br>`, `<b>`, `<a>`) also works. Start with a greeting line such as `Hi,`, `Hello,`, `Hi everyone,` or `Dear family,` and the script will put each household's name in (`Hi Denise,`). If you leave the greeting out, the script adds one. Do not add the sign-off line or your name at the bottom; the email frame adds "Somehow, some way, your foundation is Lewis — and you belong here." and the committee address itself. If you type the sign-off anyway, it is removed so it does not appear twice.
+   - Pick a **Template** (the column before **Send on**). Its Subject and Body appear in the row's blank Subject and Draft cells, ready to change. Templates live on the **Templates** tab; see "Templates and fields" below.
+   - Type the email yourself into `Draft`. Plain paragraphs separated by a blank line are fine; simple HTML (`<p>`, `<br>`, `<b>`, `<a>`) also works. Start with a greeting line such as `Hi,`, `Hello,`, `Hi everyone,` or `Dear family,` and the script will put each household's name in (`Hi Denise,`). If you leave the greeting out, the script adds one. Do not add the sign-off line or your name at the bottom; the email frame adds "Somehow, some way, your foundation is Lewis, and you belong here." and the committee address itself. If you type the sign-off anyway, it is removed so it does not appear twice.
    - Or put bullet points in `Notes` and choose **Reunion, Draft update with AI** from the Sheet menu. The script sends your notes to Claude and writes the result into `Draft`. Read it. Change anything you like. It is a draft, not the email. (Setup for this is below.)
 4. **Set the Audience.** One word from the table below, or a Branch name exactly as it appears on the Registrations tab.
 5. **Test it first.** Quickest: click the row and choose **Reunion, Email me this draft**; it comes to you filled in for a made-up household (Cousin Lewis, `H-SAMPLE1`) and nothing is marked sent. Or set Audience to `test`, tick **Approved**, and choose **Reunion, Send approved updates now**. Within a minute the email arrives at the Config `email` address with the greeting `Hi committee,`. Read it on a phone. If you want to change it, make a new row (a sent row is finished).
@@ -172,7 +172,7 @@ A committee update is one email to every registered household (or to a slice of 
 
 | ID | Created | Subject | Notes | Draft | Approved | Audience | Sent at | Sent | Failed | Skipped |
 |---|---|---|---|---|---|---|---|---|---|---|
-| `U-3F9A12C0` | 2027-02-01 | Fees are set and the hotel block is open | fees $120 adult $60 child, deadline May 1, hotel block code LEWIS27 | Hi, The committee has set the fees: ... (two or three paragraphs) | ticked | all | 2027-02-02 09:00 | 184 | 0 | 3 |
+| `U-3F9A12C0` | 2027-02-01 | Fees are set and the hotel block is open | fees $245 for 23 and older, $95 for 16 to 22, $55 for 4 to 15, 3 and under free; hotel group code 501 | Hi, The committee has set the fees: ... (two or three paragraphs) | ticked | all | 2027-02-02 09:00 | 184 | | 3 |
 
 Read it as: 184 households were queued, 3 were left out (opted out or no email), nothing failed. `ID` and `Created` were blank when the row was written; the script filled them.
 
@@ -205,7 +205,7 @@ The **Welcome from the committee** template is ready for the first email to the 
 - A field inside a tag gets the bare value, so `<a href="{{family link}}">Register now</a>` makes a working button. Written on its own, a link field becomes a link showing the address. Buttons lose their address in the plain-text copy, so keep a "copy this link" line with the field on its own.
 - [`docs/templates/welcome.html`](templates/welcome.html) is the designed welcome: an invitation card with a Register button (it opens the registration form: `href="{{family link}}#register"`), how to register in three steps, the weekend at a glance, the fees by age with how to pay, the hotel and the airport, what to do now, and a fallback link. Paste the whole file into the Body of a Templates row (for example "Welcome from the committee (HTML)"), with the Subject `Welcome to the Lewis Family Reunion 2027`. Proof it with **Email me this draft** or Audience `test` before sending.
 
-A misspelt field (`{{firstname}}`) is not sent: the row's **Failed** names it and lists the fields that work, and **Email me this draft** says the same before anything goes out.
+A misspelled field (`{{firstname}}`) is not sent: the row's **Failed** names it and lists the fields that work, and **Email me this draft** says the same before anything goes out.
 
 Two rows word the registration email itself: **Registration: thank you** (its first line) and **Registration: what happens next** (extra lines under "What happens next", one per line). The household ID, the codes, the link, the money lines and the hotel are fixed and cannot be changed there. To see a change, click the row and choose **Email me this draft**.
 
@@ -271,10 +271,10 @@ Cost: pennies per draft. The model is `claude-opus-5-5` and the request is a few
 |---|---|---|
 | Nothing was sent; `Sent at` still blank | `Approved` is not ticked, or the daily run has not happened yet, or the trigger is missing. | Tick the box. Choose **Reunion, Send approved updates now**. Editor, Triggers (clock icon): `sendUpdates` should be listed as daily; if not, run `setup`. |
 | `Sent at` says `sending…` and stays that way | The list is large and needs more than one run, or a run died halfway. | Read `Failed`: `In progress` means wait for the next run or use **Send approved updates now** again; `ERROR:` tells you what broke (Executions has the detail). Running again is safe: households already queued are skipped by their MailQueue key. |
-| `Failed` has text | Blank `Draft`, misspelt Audience, blank Config `email` for a test, or an error. | Fix what it says, clear `Sent at`, run again. Nothing was queued. |
+| `Failed` has text | Blank `Draft`, misspelled Audience, blank Config `email` for a test, or an error. | Fix what it says, clear `Sent at`, run again. Nothing was queued. |
 | `Draft` starts with `ERROR:` | The AI call failed: `HTTP 401` means the key is wrong or missing; `HTTP 429` or `402` means the account is out of credit or rate-limited; `the AI declined` means Claude refused the request; anything else is network or a malformed reply. | Fix the key or the credit, clear `Draft`, run **Draft update with AI** again. Or just write the email yourself. |
 | Someone got the update twice | Two Registrations rows with different spellings of the same email (dedupe compares exact lowercase addresses), or the MailQueue rows for that update were deleted and the row re-run. | Merge the duplicate household rows. Leave MailQueue rows alone; they are the record of who was sent what. |
-| Someone who asked STOP still got one | `Mail opt-out` was not set, or set to something other than `Yes` (the script accepts `Yes`, `Y`, `True`, `1`), or set on a different household row than the one with that email. | Search Registrations by email, set `Mail opt-out` to `Yes` on every row with that address. Apologise. |
+| Someone who asked STOP still got one | `Mail opt-out` was not set, or set to something other than `Yes` (the script accepts `Yes`, `Y`, `True`, `1`), or set on a different household row than the one with that email. | Search Registrations by email, set `Mail opt-out` to `Yes` on every row with that address. Apologize. |
 | The update arrived with `Hi cousin,` | The household has no `Preferred` and no `First` name. | Fill in the Registrations row. |
 | Only about 100 went out right away | By design. The run queues everything and drains one batch at once (up to 100 rows). | Wait. The hourly drain sends the rest. |
 
