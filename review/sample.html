@@ -709,7 +709,8 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 (function(){
   var d = document.getElementById('cdDays'); if (d) d.textContent = Math.max(0, Math.ceil((new Date('2027-07-02T12:00:00-07:00') - new Date()) / 864e5));
   var root = document.documentElement;
-  [].forEach.call(document.querySelectorAll('.modes button'), function(b){ b.addEventListener('click', function(){ root.setAttribute('data-mode', b.getAttribute('data-m')); [].forEach.call(document.querySelectorAll('.modes button'), function(x){ x.setAttribute('aria-pressed', String(x === b)); }); }); });
+  // Light, Forest and Espresso, set as the live site sets them (setMode in app.js): a dark ground is data-mode="dark" plus data-ground.
+  [].forEach.call(document.querySelectorAll('.modes button'), function(b){ b.addEventListener('click', function(){ var m = b.getAttribute('data-m'); root.setAttribute('data-mode', m === 'light' ? 'light' : 'dark'); root.setAttribute('data-ground', m === 'espresso' ? 'espresso' : 'forest'); [].forEach.call(document.querySelectorAll('.modes button'), function(x){ x.setAttribute('aria-pressed', String(x === b)); }); }); });
   [].forEach.call(document.querySelectorAll('.looks button'), function(b){ b.addEventListener('click', function(){ root.setAttribute('data-look', b.getAttribute('data-l')); [].forEach.call(document.querySelectorAll('.looks button'), function(x){ x.setAttribute('aria-pressed', String(x === b)); }); }); });
   var lc = document.querySelector('.lc'); if (!lc) return;
   var slides = lc.querySelectorAll('.lc-slide'), dots = lc.querySelectorAll('.lc-dot'), label = lc.querySelector('.lc-label'), at = 0;
