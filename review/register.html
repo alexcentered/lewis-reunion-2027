@@ -129,17 +129,41 @@
   .site .pay-line { display:flex; justify-content:space-between; gap:12px; align-items:center; padding:12px 0; border-top:1px solid var(--sline); flex-wrap:wrap; }
   .site .empty { color:var(--faint); font-size:.92rem; padding:12px 0 4px; margin:0; }
   /* Notes for the reviewer inside a drawing (not words on the website). */
-  .site .rn { font:italic 14px/1.4 Georgia, serif; color:#56708f; }
+  .site .rn, .mail .rn, .mwhen .rn { font:italic 14px/1.4 Georgia, serif; color:#56708f; }
+
+  /* The emails, drawn as they arrive: the email's own look (Georgia, 16px), under a From / To / Subject header. */
+  .mwhen { color:var(--muted); margin:30px 0 10px; max-width:760px; font-size:16px; }
+  .mwhen b { color:var(--ink); }
+  .mwhen:first-of-type { margin-top:6px; }
+  .mail { background:#fff; border:1px solid #d6ccb8; border-radius:14px; overflow:hidden; max-width:760px; scroll-margin-top:70px; }
+  .mail + .nb { max-width:760px; }
+  .mhead { background:#f4f1ea; border-bottom:1px solid #e3dccd; padding:12px 18px; font:14px/1.6 -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; color:#3b3a36; }
+  .mhead div { display:flex; gap:10px; }
+  .mhead .mk { flex:none; width:58px; color:#8a8577; }
+  .mhead b { font-weight:600; }
+  .mbody { padding:18px 22px 20px; font:16px/1.6 Georgia, "Times New Roman", serif; color:#1b1b18; }
+  .mbody p { margin:0 0 14px; }
+  .mbody ul { margin:0 0 14px; padding-left:22px; }
+  .mbody li { margin:0 0 6px; }
+  .mbtn { display:inline-block; background:#2f6e4e; color:#fff; padding:12px 20px; border-radius:999px; cursor:text; }
+  .mcode { font-size:14px; background:#f4f1ea; padding:12px 16px; border-radius:8px; }
+  .mvar { margin:-4px 0 14px; padding:10px 14px; border:1px dashed #cfc5b0; border-radius:8px; font-size:15px; }
+  .mvar p { margin:4px 0; }
+  .mbody .pre { white-space:pre-line; }
+  .mbody .mbtn [data-k] { text-decoration-color:rgba(255,255,255,.6); }
+  /* Words this page shows but that are changed on another tab: blue once the reviewer has changed them there. */
+  .theirs { background:#e3edf9; border-radius:4px; box-shadow:0 0 0 2px #e3edf9; }
+  @media (max-width:640px) { .mbody { padding:14px 14px 16px; } .mhead { padding:10px 12px; } .mhead .mk { width:52px; } }
 
   /* Words that can be changed: dotted underline; yellow while typing; green once changed. */
-  .site [data-k] { cursor:text; border-radius:4px; outline:none; white-space:pre-wrap; overflow-wrap:anywhere;
+  :is(.site, .mail) [data-k] { cursor:text; border-radius:4px; outline:none; white-space:pre-wrap; overflow-wrap:anywhere;
                    text-decoration:underline dotted rgba(23,61,42,.45); text-decoration-thickness:1px; text-underline-offset:.22em; }
-  .site [data-k]:hover { background:rgba(201,162,74,.18); }
-  .site [data-k]:focus { background:#fff4cc; color:var(--text); box-shadow:0 0 0 2px #c9a24a; text-decoration:none; }
-  .site [data-k].chg { background:#d9efdd; color:var(--text); text-decoration:underline solid #1f7a48; text-decoration-thickness:1px; }
-  .site [data-k].chg:focus { background:#fff4cc; }
-  .site [data-k].blank { display:inline-block; min-width:5ch; }
-  .site [data-k].blank:not(:focus)::before { content:"(left out)"; color:#8a7f70; font-style:italic; }
+  :is(.site, .mail) [data-k]:hover { background:rgba(201,162,74,.18); }
+  :is(.site, .mail) [data-k]:focus { background:#fff4cc; color:var(--text); box-shadow:0 0 0 2px #c9a24a; text-decoration:none; }
+  :is(.site, .mail) [data-k].chg { background:#d9efdd; color:var(--text); text-decoration:underline solid #1f7a48; text-decoration-thickness:1px; }
+  :is(.site, .mail) [data-k].chg:focus { background:#fff4cc; }
+  :is(.site, .mail) [data-k].blank { display:inline-block; min-width:5ch; }
+  :is(.site, .mail) [data-k].blank:not(:focus)::before { content:"(left out)"; color:#8a7f70; font-style:italic; }
   .site .btn [data-k] { text-decoration-color:rgba(247,242,231,.6); }
   .site .btn.quiet [data-k] { text-decoration-color:rgba(23,61,42,.45); }
   @media (max-width:640px) {
@@ -149,20 +173,20 @@
 </style>
 <link rel="stylesheet" href="review.css?v=reg1">
 <script src="../config.js"></script>
-<script src="review.js?v=reg1"></script>
+<script src="review.js?v=stay1"></script>
 </head>
 <body>
 <header>
   <p class="kicker">Lewis Family Reunion 2027</p>
   <h1>The registration pages: your words</h1>
-  <p class="sub">The Register page and My Registration, drawn the way families see them. Change any words, and leave a note on any part.</p>
+  <p class="sub">The Register page, My Registration and the emails they send, drawn the way families see them. Change any words, and leave a note on any part.</p>
 </header>
 <main>
 
   <div class="how">
     <b>How this works</b>
     <ol>
-      <li><b>Tap or click any words</b> on the pages below and type over them. Words you change turn green.</li>
+      <li><b>Tap or click any words</b> on the pages and emails below and type over them. Words you change turn green.</li>
       <li>Changed your mind? Tap the words again and press <b>Put back</b>. Each part also has <b>Put back today’s words</b> for all its changes.</li>
       <li>Words in <b>[square brackets]</b> are filled in by the website for each family, such as a name, an email or an amount. Keep the brackets where those should go.</li>
       <li>Under every part is a <b>note</b> box for anything else: something to add, take out or move. Two <b>general notes</b> boxes are at the end.</li>
@@ -171,7 +195,7 @@
     <p>These are drawings of the pages, so the boxes and buttons in them don’t work. Nothing changes on the real website until the committee decides.</p>
   </div>
   <nav class="toc" aria-label="Parts of this page">
-    <a href="#register">1. Register your household</a><a href="#after">2. After pressing Save</a><a href="#me">3. My Registration</a><a href="#gate">4. Without the family code</a><a href="#general">General notes</a>
+    <a href="#register">1. Register your household</a><a href="#after">2. After pressing Save</a><a href="#me">3. My Registration</a><a href="#gate">4. Without the family code</a><a href="#emails">5. The emails they send</a><a href="#general">General notes</a>
   </nav>
 
   <h2 class="screen" id="register">1. Register your household</h2>
@@ -407,6 +431,106 @@
     </div>
   </div>
 
+  <h2 class="screen" id="emails">5. The emails they send</h2>
+  <p class="lead">Each email the Register and My Registration pages send, as it arrives. Change any words the same way as on the pages above. These emails are changed here only: <a href="wording.html?at=registration">3. Email wording</a> shows your words for them too.</p>
+
+  <p class="mwhen"><b>When:</b> right after a household registers on the Register page. <b>To:</b> the email they registered with.</p>
+  <div class="mail sec" id="e-reg" data-sec="e-reg" data-title="Email: You are registered" data-name="You are registered">
+    <div class="mhead"><div><span class="mk">From</span><span>Lewis Family Reunion 2027 &lt;committee@lewisfamilyroots.com&gt;</span></div>
+      <div><span class="mk">To</span><span>[the email they registered with]</span></div>
+      <div><span class="mk">Subject</span><b data-k="e.reg.subject" data-l="Subject">You are registered: Lewis Family Reunion 2027</b></div>
+    </div>
+    <div class="mbody">
+      <p data-k="e.reg.hi" data-l="Greeting">Hi [their first name or nickname],</p>
+      <p data-k="e.reg.open" data-l="Opening line" data-para>Thank you for registering for the Lewis Family Reunion, July 2–5, 2027 in Fresno.</p>
+      <p><span class="mbtn"><span data-k="e.reg.button" data-l="Button">Open my registration</span></span></p>
+      <p class="mcode"><span data-k="e.reg.c1" data-l="Grey box: link line">Link: [their private link]</span><br><span data-k="e.reg.c2" data-l="Grey box: website line">Website: [the website]</span><br><span data-k="e.reg.c3" data-l="Grey box: family code line">Family code: [the family code]</span><br><span data-k="e.reg.c4" data-l="Grey box: registration code line">Registration code: [their registration code]</span><br><span data-k="e.reg.c5" data-l="Grey box: last line" data-para>If the link does not open, go to the website, open My Registration, and type the family code and the registration code.</span></p>
+      <p><b data-k="e.reg.yours" data-l="Heading: their registration">Your registration</b><br><span data-k="e.reg.y1" data-l="Their registration: household ID line">Household ID: [their household ID]</span><br><span data-k="e.reg.y2" data-l="Their registration: who is coming">Coming: [the names of everyone coming]</span><br><span data-k="e.reg.y3" data-l="Their registration: days">Days: [the days they picked]</span><br><span data-k="e.reg.y4" data-l="Their registration: travel">Travel: arriving [day], leaving [day]</span><br><span data-k="e.reg.y5" data-l="Their registration: where they stay">Staying: [where they are staying]</span></p>
+      <p style="margin-bottom:6px"><b data-k="e.reg.nextH" data-l="Heading: what happens next">What happens next</b></p>
+      <ul>
+        <li data-k="e.reg.n1" data-l="What happens next: the total and how to pay" data-para>Total due: [their total] ([how many people at each fee]). You can pay any time; the committee will announce the due date. Ways to pay: [Zelle and Cash App, from the Sheet].</li>
+        <li data-k="e.reg.n2" data-l="What happens next: after paying" data-para>After you pay, report the payment on your My Registration page. Please put your household ID, [their household ID], in the payment note so we can match it to you.</li>
+        <li data-k="e.reg.n3" data-l="What happens next: receipts" data-para>The committee confirms each payment and emails you a receipt.</li>
+        <li data-k="e.reg.n4" data-l="What happens next: updates" data-para>The committee will email updates about the schedule and the venues as plans are confirmed.</li>
+      </ul>
+      <div class="mvar"><p class="rn">The first line changes as things happen:</p>
+        <p><span class="rn">Once the committee sets a due date, in place of the middle sentence:</span> <span data-k="e.reg.due" data-l="First line, once a due date is set">Due by [the due date].</span></p>
+        <p><span class="rn">After a payment is confirmed, added to it:</span> <span data-k="e.reg.part" data-l="First line, after a payment">Paid so far: [amount paid]. Balance: [amount left].</span></p>
+        <p><span class="rn">When it is all paid (then the lines about paying are left out):</span> <span data-k="e.reg.full" data-l="First line, when it is all paid">Paid in full. Thank you.</span></p>
+      </div>
+      <p><b data-k="e.reg.hotelH" data-l="Heading: the hotel">Reunion hotel</b><br><span data-k="e.reg.h1" data-l="Hotel name">Home2 Suites by Hilton Fresno Northwest</span><br><span data-k="e.reg.h2" data-l="Hotel address">6965 W. Farrington Avenue, Fresno, CA 93722</span><br><span data-k="e.reg.h3" data-l="Hotel phone">(559) 512-8410</span><br><span data-k="e.reg.h4" data-l="Hotel group rate line">Group rate available. Group code: 501. Hotel code: FATNOHT.</span></p>
+      <p data-k="e.reg.keep" data-l="Keep this email" data-para>Use the link to update who is coming, report a payment, and see when the committee confirms it. Please keep this email; anyone with the link or codes can change your registration.</p>
+      <p data-k="e.reg.questions" data-l="Questions line" data-para>Questions? Reply to this email. It reaches the committee.</p>
+        <p data-from="wording:every:0">Somehow, some way, your foundation is Lewis, and you belong here.</p>
+        <p class="pre" data-from="wording:every:1">The Lewis Family Reunion Committee
+committee@lewisfamilyroots.com</p>
+        <p class="rn" style="margin:0">The closing and signature on every email. Change them on <a href="wording.html?at=every">3. Email wording</a>.</p>
+    </div>
+  </div>
+
+  <p class="mwhen"><b>When:</b> when someone presses <b>Email my link</b> on My Registration, or registers again with an email that is already registered. The new link replaces the old one. <b>To:</b> that household.</p>
+  <div class="mail sec" id="e-link" data-sec="e-link" data-title="Email: Your registration link" data-name="Your registration link">
+    <div class="mhead"><div><span class="mk">From</span><span>Lewis Family Reunion 2027 &lt;committee@lewisfamilyroots.com&gt;</span></div>
+      <div><span class="mk">To</span><span>[the household's email]</span></div>
+      <div><span class="mk">Subject</span><b data-k="e.link.subject" data-l="Subject">Your Lewis Reunion registration link</b></div>
+    </div>
+    <div class="mbody">
+      <p data-mirror="e.reg.hi">Hi [their first name or nickname],</p>
+      <p data-k="e.link.open" data-l="Opening line" data-para>Here is a fresh private link to your registration. Older links and codes no longer work.</p>
+      <p class="rn" style="margin:0">Everything after this line is the same as “You are registered” above, with your changes there.</p>
+    </div>
+  </div>
+
+  <p class="mwhen"><b>When:</b> each time a new household registers, once the committee turns it on. <b>To:</b> the committee. <span class="rn">Your answer on 3. Email wording: <span data-from="wording:q:notify">not answered yet</span><span data-from="wording:q:notifyNote" data-prefix=", "></span>.</span></p>
+  <div class="mail sec" id="e-com" data-sec="e-com" data-title="Email: New registration (to the committee)" data-name="New registration">
+    <div class="mhead"><div><span class="mk">From</span><span>Lewis Family Reunion 2027 &lt;committee@lewisfamilyroots.com&gt;</span></div>
+      <div><span class="mk">To</span><span>Reunion Committee &lt;committee@lewisfamilyroots.com&gt;</span></div>
+      <div><span class="mk">Subject</span><b data-k="e.com.subject" data-l="Subject">New registration: [their name]</b></div>
+    </div>
+    <div class="mbody">
+      <p data-k="e.com.open" data-l="Opening line" data-para>A new household registered on the website.</p>
+      <p><span data-k="e.com.l1" data-l="Line: household">Household: [their name] ([household ID])</span><br><span data-k="e.com.l2" data-l="Line: branch">Branch: [their branch]</span><br><span data-k="e.com.l3" data-l="Line: adults">Adults: [how many are 16 or older]</span><br><span data-k="e.com.l4" data-l="Line: children">Children: [how many are under 16]</span><br><span data-k="e.com.l5" data-l="Line: days">Days: [the days they picked]</span><br><span data-k="e.com.l6" data-l="Line: where from">From: [their city, state]</span><br><span data-k="e.com.l7" data-l="Line: email">Email: [their email]</span><br><span data-k="e.com.l8" data-l="Line: phone">Phone: [their phone]</span><br><span data-k="e.com.l9" data-l="Line: dietary needs">Dietary needs: [what they picked]</span><br><span data-k="e.com.l10" data-l="Line: other needs">Other needs: [what they wrote]</span></p>
+      <p data-k="e.com.end" data-l="Last line" data-para>Details are in the Registrations tab.</p>
+        <p data-from="wording:every:0">Somehow, some way, your foundation is Lewis, and you belong here.</p>
+        <p class="pre" data-from="wording:every:1">The Lewis Family Reunion Committee
+committee@lewisfamilyroots.com</p>
+        <p class="rn" style="margin:0">The closing and signature on every email. Change them on <a href="wording.html?at=every">3. Email wording</a>.</p>
+    </div>
+  </div>
+
+  <p class="mwhen"><b>When:</b> after a family reports a payment on My Registration and the committee marks it Confirmed in the Payments tab. <b>To:</b> that household.</p>
+  <div class="mail sec" id="e-paid" data-sec="e-paid" data-title="Email: Payment confirmed" data-name="Payment confirmed">
+    <div class="mhead"><div><span class="mk">From</span><span>Lewis Family Reunion 2027 &lt;committee@lewisfamilyroots.com&gt;</span></div>
+      <div><span class="mk">To</span><span>[the household's email]</span></div>
+      <div><span class="mk">Subject</span><b data-k="e.paid.subject" data-l="Subject">Payment confirmed: Lewis Family Reunion 2027</b></div>
+    </div>
+    <div class="mbody">
+      <p data-k="e.pay.hi" data-l="Greeting">Hi [their first name or nickname],</p>
+      <p data-k="e.paid.open" data-l="Opening line" data-para>The committee has confirmed your payment. Thank you!</p>
+      <p><span data-k="e.pay.d1" data-l="Payment line: amount">Amount: [amount]</span><br><span data-k="e.pay.d2" data-l="Payment line: method">Method: [how they paid]</span><br><span data-k="e.pay.d3" data-l="Payment line: date">Date sent: [date]</span><br><span data-k="e.pay.d4" data-l="Payment line: reference">Reference: [their confirmation number]</span><br><span data-k="e.pay.d5" data-l="Payment line: household ID">Household ID: [their household ID]</span></p>
+      <p><span data-k="e.pay.sofar" data-l="Confirmed so far line">Confirmed so far: [amount]</span><br><span data-k="e.pay.left" data-l="Remaining balance line">Remaining balance: [amount]</span></p>
+      <p><span class="mbtn"><span data-k="e.pay.button" data-l="Button">Open the reunion website</span></span></p>
+      <p class="mcode"><span data-k="e.pay.c1" data-l="Grey box: website line">Website: [the website link]</span><br><span data-k="e.pay.c2" data-l="Grey box: family code line">Family code: [the family code]</span><br><span data-k="e.pay.c3" data-l="Grey box: last line" data-para>To open your registration, use the private link from your registration email, or choose Email my link on the My Registration page.</span></p>
+        <p data-from="wording:every:0">Somehow, some way, your foundation is Lewis, and you belong here.</p>
+        <p class="pre" data-from="wording:every:1">The Lewis Family Reunion Committee
+committee@lewisfamilyroots.com</p>
+        <p class="rn" style="margin:0">The closing and signature on every email. Change them on <a href="wording.html?at=every">3. Email wording</a>.</p>
+    </div>
+  </div>
+
+  <p class="mwhen"><b>When:</b> when the committee marks a reported payment Not received. <b>To:</b> that household.</p>
+  <div class="mail sec" id="e-nf" data-sec="e-nf" data-title="Email: We have not found your payment yet" data-name="We have not found your payment yet">
+    <div class="mhead"><div><span class="mk">From</span><span>Lewis Family Reunion 2027 &lt;committee@lewisfamilyroots.com&gt;</span></div>
+      <div><span class="mk">To</span><span>[the household's email]</span></div>
+      <div><span class="mk">Subject</span><b data-k="e.nf.subject" data-l="Subject">We have not found your payment yet: Lewis Family Reunion 2027</b></div>
+    </div>
+    <div class="mbody">
+      <p data-mirror="e.pay.hi">Hi [their first name or nickname],</p>
+      <p data-k="e.nf.open" data-l="Opening line" data-para>The committee has not found the payment you reported yet. Please check the details below and reply to this email so we can sort it out together.</p>
+      <p class="rn" style="margin:0">Everything after this line is the same as “Payment confirmed” above, with your changes there.</p>
+    </div>
+  </div>
+
   <section class="general" id="general">
     <h2 class="screen">General notes</h2>
     <p class="lead">For anything that isn’t about one part: what is missing, what is confusing, what you would put in a different order.</p>
@@ -449,7 +573,9 @@
   }
   function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
 
-  var EDS = $$('.site [data-k]'), BY = {}, TODAY = {}, LABEL = {}, SEC = {};
+  var EDS = $$('.site [data-k], .mail [data-k]'), BY = {}, TODAY = {}, LABEL = {}, SEC = {};
+  /* The words being typed in: a data-k element inside a drawing of a page or of an email. */
+  function edOf(t) { var el = t && t.closest && t.closest('[data-k]'); return el && el.closest('.site, .mail') ? el : null; }
   var plain = (function () { var d = document.createElement('div'); try { d.contentEditable = 'plaintext-only'; } catch (e) {} return d.contentEditable === 'plaintext-only'; })();
 
   /* The parts, in page order, each with a note box under it. */
@@ -516,13 +642,13 @@
 
   /* Typing in the words: Enter finishes a short line (labels, buttons, headings); longer text may have line breaks.
      Pasted text arrives as plain text, so nothing from a web page or a document brings its own styling. */
-  document.addEventListener('input', function (e) { var el = e.target.closest && e.target.closest('.site [data-k]'); if (el) edited(el); });
+  document.addEventListener('input', function (e) { var el = edOf(e.target); if (el) edited(el); });
   document.addEventListener('keydown', function (e) {
-    var el = e.target.closest && e.target.closest('.site [data-k]'); if (!el) return;
+    var el = edOf(e.target); if (!el) return;
     if (e.key === 'Escape' || (e.key === 'Enter' && !el.hasAttribute('data-para'))) { e.preventDefault(); el.blur(); }
   });
   document.addEventListener('paste', function (e) {
-    var el = e.target.closest && e.target.closest('.site [data-k]'); if (!el) return;
+    var el = edOf(e.target); if (!el) return;
     var t = (e.clipboardData || window.clipboardData).getData('text');
     if (t == null) return;
     e.preventDefault();
@@ -533,7 +659,7 @@
       edited(el);
     }
   });
-  document.addEventListener('drop', function (e) { if (e.target.closest && e.target.closest('.site [data-k]')) e.preventDefault(); });
+  document.addEventListener('drop', function (e) { if (edOf(e.target)) e.preventDefault(); });
 
   /* A press on a button, box or choice in a drawing goes to the words inside it. */
   function focusEnd(el) {
@@ -542,7 +668,7 @@
   }
   document.addEventListener('click', function (e) {
     if (!e.target.closest || e.target.closest('[data-k]')) return;
-    var host = e.target.closest('.site .btn, .site .in, .site .pill, .site .chip, .site .check');
+    var host = e.target.closest('.site .btn, .site .in, .site .pill, .site .chip, .site .check, .mail .mbtn');
     var el = host && host.querySelector('[data-k]');
     if (el) focusEnd(el);
   });
@@ -565,12 +691,12 @@
     was.style.top = (r.bottom + window.pageYOffset + 6) + 'px';
   }
   document.addEventListener('focusin', function (e) {
-    var el = e.target.closest && e.target.closest('.site [data-k]');
+    var el = edOf(e.target);
     clearTimeout(hideT);
     if (el) { cur = el; showWas(el); } else { was.hidden = true; cur = null; }
   });
   document.addEventListener('focusout', function (e) {
-    if (e.target.closest && e.target.closest('.site [data-k]')) hideT = setTimeout(function () { was.hidden = true; cur = null; }, 400);
+    if (edOf(e.target)) hideT = setTimeout(function () { was.hidden = true; cur = null; }, 400);
   });
   was.addEventListener('mousedown', function (e) { e.preventDefault(); });
   was.querySelector('.was-b').addEventListener('click', function () {
@@ -595,6 +721,53 @@
 
   Object.keys(BY).forEach(mark);
   SECS.forEach(function (s) { secState(s.id); });
+
+  /* Words shown here but changed on another tab (data-from="<part>:<key>"), such as the closing on every email, which is
+     changed on 3. Email wording: review.js sends what the review holds (lr-review-data), and the reviewer's words replace
+     today's, in blue. */
+  function partOf(data, p) { try { var o = JSON.parse((data && data[p]) || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
+  function showFrom(data) {
+    var parts = {};
+    $$('[data-from]').forEach(function (el) {
+      var f = el.getAttribute('data-from'), i = f.indexOf(':'), p = f.slice(0, i), k = f.slice(i + 1);
+      if (!parts[p]) parts[p] = partOf(data, p);
+      if (!el.hasAttribute('data-today')) el.setAttribute('data-today', el.textContent);
+      var v = parts[p][k], yours = typeof v === 'string' && v.trim() !== '';
+      el.textContent = yours ? (el.getAttribute('data-prefix') || '') + v.trim() : el.getAttribute('data-today');
+      el.classList.toggle('theirs', yours);
+      if (yours) el.title = 'Your words from 3. Email wording'; else el.removeAttribute('title');
+    });
+  }
+  /* These emails used to be changed on 3. Email wording. Whatever was typed there comes here once (i:<old key> marks it
+     done), so nothing typed before the move is lost. The two "What happens next" boxes there do not match a line here,
+     so they go into this email's note. */
+  var OLD = { 'registration:0': 'e.reg.subject', 'registration:1': 'e.reg.open', 'registration:4': 'e.reg.n4', 'registration:5': 'e.reg.keep',
+    'registration:6': 'e.reg.questions', 'fresh-link:0': 'e.link.subject', 'fresh-link:1': 'e.link.open', 'paid:0': 'e.paid.subject',
+    'paid:1': 'e.paid.open', 'not-found:0': 'e.nf.subject', 'not-found:1': 'e.nf.open' };
+  var OLD_NOTE = { 'registration:2': 'What happens next, until fees are set', 'registration:3': 'What happens next, once fees are set' };
+  function moveOld(w) {
+    var took = false;
+    Object.keys(OLD).forEach(function (o) {
+      var v = w[o], k = OLD[o];
+      if (typeof v !== 'string' || !v.trim() || store['i:' + o] || !BY[k]) return;
+      if (typeof store['w:' + k] !== 'string') { BY[k].textContent = norm(v); edited(BY[k]); }
+      store['i:' + o] = 1; took = true;
+    });
+    Object.keys(OLD_NOTE).forEach(function (o) {
+      var v = w[o], s = SECBY['e-reg'];
+      if (typeof v !== 'string' || !v.trim() || store['i:' + o] || !s) return;
+      var add = 'From 3. Email wording (' + OLD_NOTE[o] + '): ' + norm(v);
+      s.ta.value = s.ta.value.trim() ? s.ta.value.replace(/\s+$/, '') + '\n' + add : add;
+      store['n:e-reg'] = s.ta.value; s.box.classList.add('has'); grow(s.ta);
+      store['i:' + o] = 1; took = true;
+    });
+    if (took) save();
+  }
+  document.addEventListener('lr-review-data', function (e) {
+    var data = (e.detail && e.detail.data) || {};
+    showFrom(data);
+    moveOld(partOf(data, 'wording'));
+  });
   window.addEventListener('load', function () { $$('.nb textarea, textarea[data-g]').forEach(grow); });
 
   /* The readable copy for the Sheet (review.js puts the reviewer's name on the first line). */
@@ -620,6 +793,14 @@
         n++;
       });
     });
+    var known = { 'g:all': 1, 'g:other': 1 };
+    Object.keys(BY).forEach(function (k) { known['w:' + k] = 1; });
+    SECS.forEach(function (s) { known['n:' + s.id] = 1; });
+    var gone = Object.keys(store).filter(function (k) { return /^[wng]:/.test(k) && !known[k] && typeof store[k] === 'string'; });
+    if (gone.length) {
+      L.push(''); L.push('== Earlier changes to words no longer on this page ==');
+      gone.forEach(function (k) { L.push(k.slice(2) + ': ' + (norm(store[k]) ? lines(store[k], '  ') : '(leave it out)')); n++; });
+    }
     if (!n) { L.push(''); L.push('No changes or notes yet.'); }
     return { text: L.join('\n'), n: n };
   };

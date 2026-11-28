@@ -7,7 +7,7 @@
 <title>Lewis Family Reunion 2027: website review</title>
 <link rel="stylesheet" href="review.css?v=reg1">
 <script src="../config.js"></script>
-<script src="review.js?v=reg1"></script>
+<script src="review.js?v=stay1"></script>
 <style>
   :root { --green:#173d2a; --green2:#2f6e4e; --cream:#f7f2e7; --sand:#efe6d3; --ink:#211a13; --muted:#5c5145; --line:#e2d8c4; }
   * { box-sizing:border-box; }
@@ -25,6 +25,8 @@
   .steps b { font-size:19px; color:var(--green); }
   .steps span.t { color:var(--muted); font-size:16px; grid-column:2; }
   .steps .go { grid-row:1 / span 2; grid-column:3; color:var(--green2); font-size:22px; }
+  .steps .sv { grid-column:2; color:var(--green2); font-size:15px; }
+  .steps .sv[hidden] { display:none; }
   .box { background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 20px; }
   .box ul { margin:6px 0 0; padding-left:22px; }
   .box li { margin:6px 0; }
@@ -42,16 +44,16 @@
   <h2>Four things to look at</h2>
   <ol class="steps">
     <li><a href="sample.html"><span class="n">1</span><b>The homepage sample</b><span class="t">Alex's mock-up of the homepage in your order, with the new reunion logo. Just look: is it right?</span><span class="go" aria-hidden="true">→</span></a></li>
-    <li><a href="order.html"><span class="n">2</span><b>Homepage order</b><span class="t">Move the sections up or down, take one off or add one, change the words, and see a preview as you go.</span><span class="go" aria-hidden="true">→</span></a></li>
-    <li><a href="wording.html"><span class="n">3</span><b>Email wording</b><span class="t">Every email the reunion sends. Answer a few decisions, and type your version under any line you would change.</span><span class="go" aria-hidden="true">→</span></a></li>
-    <li><a href="register.html"><span class="n">4</span><b>The registration pages</b><span class="t">The Register page and My Registration, the way families see them. Tap any words to change them, and leave a note on any part.</span><span class="go" aria-hidden="true">→</span></a></li>
+    <li><a href="order.html"><span class="n">2</span><b>Homepage order</b><span class="t">Move the sections up or down, take one off or add one, change the words, and see a preview as you go.</span><span class="sv" data-part="order" hidden>✓ Your changes here are saved</span><span class="go" aria-hidden="true">→</span></a></li>
+    <li><a href="wording.html"><span class="n">3</span><b>Email wording</b><span class="t">Every email the reunion sends. Answer a few decisions, and type your version under any line you would change.</span><span class="sv" data-part="wording" hidden>✓ Your changes here are saved</span><span class="go" aria-hidden="true">→</span></a></li>
+    <li><a href="register.html"><span class="n">4</span><b>The registration pages</b><span class="t">The Register page, My Registration and the emails they send, the way families see them. Tap any words to change them, and leave a note on any part.</span><span class="sv" data-part="register" hidden>✓ Your changes here are saved</span><span class="go" aria-hidden="true">→</span></a></li>
   </ol>
 
   <h2>How it works</h2>
   <div class="box">
     <ul>
       <li><b>There is nothing to send.</b> Everything you change saves by itself within a few seconds, and Alex sees it right away. The bar at the top says when it last saved.</li>
-      <li><b>Take your time.</b> Close the page whenever you like. Open the same link later, on this phone or on a computer, and your changes will be there.</li>
+      <li><b>Take your time.</b> Close the page whenever you like. Open the same link later, or any review page you saved as a bookmark, on this phone or on a computer, and your changes will be there, on every tab.</li>
       <li><b>Nothing goes live.</b> The real website does not change until the committee decides.</li>
       <li><b>This link is just for you.</b> Please don't forward it: anyone with it could change your answers.</li>
     </ul>
@@ -64,5 +66,19 @@
   </div>
   <footer>Somehow, some way, your foundation is Lewis, and you belong here.</footer>
 </main>
+<script>
+/* Under each tab: whether the reviewer's changes there are saved (review.js sends what the review holds, lr-review-data). */
+document.addEventListener('lr-review-data', function (e) {
+  var data = (e.detail && e.detail.data) || {};
+  function has(p) {
+    var o; try { o = JSON.parse(data[p] || 'null'); } catch (x) { return false; }
+    if (!o || typeof o !== 'object') return false;
+    if (p === 'order') return !!(String(o.other || '').trim() || Object.keys(o.notes || {}).length ||
+      Object.keys(o.words || {}).some(function (id) { return Object.keys(o.words[id] || {}).length; }));
+    return Object.keys(o).some(function (k) { return !/^(i:|__)/.test(k); });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('[data-part]'), function (el) { el.hidden = !has(el.getAttribute('data-part')); });
+});
+</script>
 </body>
 </html>
