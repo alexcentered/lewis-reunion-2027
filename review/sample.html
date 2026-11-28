@@ -478,17 +478,24 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 .callout{margin:22px 0;padding:16px 20px 17px;border:1px solid color-mix(in oklab,var(--accent-text) 30%,transparent);border-left:4px solid var(--accent-text);border-radius:4px 12px 12px 4px;background:color-mix(in oklab,var(--accent-text) 7%,transparent);font:italic 600 clamp(1.22rem,2.4vw,1.42rem)/1.36 var(--display);color:var(--text);text-wrap:pretty}
 /* The film strip: the 1985 and 2008 pictures run across the screen like film through a projector. Each frame draws its own
    eight sprocket holes, top and bottom, so the holes travel with the pictures. A frame (picture + gap) is a multiple of 8 px wide.
-   The flyer's frame (.tall) is three-quarters as wide and draws six holes, so the spacing never changes. The film base is
-   a warm sepia brown with a faint grain, like a real roll; each picture sits in a dark window, so the cut-out shirts and the
-   flyer read as exposed frames like the hat. */
-.reel{--s:152px;--gap:16px;--edge:24px;--film-tone:linear-gradient(180deg,#22170f,#31241a 22%,#382a1d 50%,#31241a 78%,#22170f);--grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .86 0 0 0 0 .7 0 0 0 0 .5 0 0 0 .22 0'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>");--perf:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><rect x='21' y='29' width='58' height='42' rx='15' ry='19' fill='%23efe8d9'/></svg>");margin:34px 0 0}
+   The flyer's frame (.tall) is three-quarters as wide and draws six holes, so the spacing never changes. The film base, a
+   light sepia brown with a faint grain, is its own layer (.reel-film::before) under the moving frames: in the light theme it
+   multiplies with the page, like a translucent strip on paper, and the pictures above it, cut out with no backgrounds, keep
+   their true colors. A blend cannot reach the page from inside the moving track, so the base stays still while the frames
+   and holes move; when the strip stands still the base rides on the track instead, so it scrolls with the pictures. */
+.reel{--s:152px;--gap:16px;--edge:24px;--film-tone:linear-gradient(180deg,#4f3a28,#644a35 22%,#6e533b 50%,#644a35 78%,#4f3a28);--grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .86 0 0 0 0 .7 0 0 0 0 .5 0 0 0 .22 0'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>");--perf:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><rect x='21' y='29' width='58' height='42' rx='15' ry='19' fill='%23efe8d9'/></svg>");margin:34px 0 0}
 @media(min-width:600px){.reel{--s:184px}}
 @media(min-width:1000px){.reel{--s:224px}}
-.reel-film{overflow:hidden;background:var(--grain) 0 0 / 160px 160px,var(--film-tone);box-shadow:0 14px 30px -20px rgba(0,0,0,.7)}
+.reel-film{position:relative;overflow:hidden}
+.reel-film::before,.reel:not(.run) .reel-track::before{content:"";position:absolute;inset:0;background:var(--grain) 0 0 / 160px 160px,var(--film-tone)}
+.reel:not(.run) .reel-film::before{display:none}
+.reel:not(.run) .reel-track{position:relative}
+.reel:not(.run) .reel-track::before{z-index:-1}
+[data-mode="light"] .reel-film::before,[data-mode="light"] .reel-track::before{mix-blend-mode:multiply}
 .reel-track{display:flex;width:max-content;margin:0;padding:0;list-style:none}
-.reel-frame{flex:none;width:calc(var(--s) + var(--gap));padding:var(--edge) calc(var(--gap) / 2);background:var(--perf) left top / 12.5% var(--edge) repeat-x,var(--perf) left bottom / 12.5% var(--edge) repeat-x,var(--grain) 0 0 / 160px 160px,var(--film-tone)}
-.reel-frame img{display:block;width:var(--s);height:var(--s);object-fit:cover;border-radius:3px;background:#0b0806;box-shadow:0 0 0 1px rgba(239,232,217,.16)}
-.reel-mark{display:block;margin-top:7px;font:500 .66rem/14px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(239,232,217,.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reel-frame{flex:none;width:calc(var(--s) + var(--gap));padding:var(--edge) calc(var(--gap) / 2);background:var(--perf) left top / 12.5% var(--edge) repeat-x,var(--perf) left bottom / 12.5% var(--edge) repeat-x}
+.reel-frame img{display:block;width:var(--s);height:var(--s);object-fit:cover;filter:drop-shadow(0 3px 4px rgba(28,16,8,.3))}
+.reel-mark{display:block;margin-top:7px;font:500 .66rem/14px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(248,241,226,.88);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .reel.run .reel-track{animation:reel-roll 54s linear infinite;will-change:transform}
 .reel.run .reel-film:hover .reel-track,.reel.paused .reel-track,.reel.off .reel-track{animation-play-state:paused}
 @keyframes reel-roll{to{transform:translateX(-50%)}}
@@ -499,8 +506,8 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 .reel-cap{flex:1 1 12em;min-width:0;font:500 .74rem/1.5 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent-2)}
 .reel-btn{flex:none}
 @media(prefers-reduced-motion:reduce){.reel.run .reel-track{animation:none}}
-.reel-frame.tall{width:calc((var(--s) + var(--gap)) * .75);background-size:calc(100% / 6) var(--edge),calc(100% / 6) var(--edge),160px 160px,100% 100%}
-.reel-frame.tall img{width:calc((var(--s) + var(--gap)) * .75 - var(--gap));object-fit:contain}
+.reel-frame.tall{width:calc((var(--s) + var(--gap)) * .75);background-size:calc(100% / 6) var(--edge)}
+.reel-frame.tall img{width:calc(var(--s) * 2 / 3);margin:0 auto;border-radius:2px}
 .welcome>picture{display:block}
 /* The 2027 Family Reunion: the film under its own heading, inside the text column, then two cards, looking back and ahead. */
 .album{margin-top:40px}
@@ -587,9 +594,9 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
       <figure class="reel" aria-labelledby="reelCap">
         <div class="reel-film">
           <ul class="reel-track">
-            <li class="reel-frame"><picture><source srcset="../assets/reunion-1985-hat.webp?v=20261127" type="image/webp"><img src="../assets/reunion-1985-hat.jpg?v=20261127" width="640" height="640" alt="The 1985 reunion hat: a red and cream cap that reads Lewis Reunion 85." loading="lazy" decoding="async"></picture><span class="reel-mark" aria-hidden="true">1985 · Reunion hat</span></li>
-            <li class="reel-frame"><picture><source srcset="../assets/reunion-2008-shirt-front.webp?v=20261128" type="image/webp"><img src="../assets/reunion-2008-shirt-front.jpg?v=20261128" width="640" height="640" alt="The 2008 reunion T-shirt, front: maroon, with Lewis Family Reunion 2008, Remember, Renew, Celebrate in small gold letters on the chest." loading="lazy" decoding="async"></picture><span class="reel-mark" aria-hidden="true">2008 · Shirt, front</span></li>
-            <li class="reel-frame"><picture><source srcset="../assets/reunion-2008-shirt-back.webp?v=20261128" type="image/webp"><img src="../assets/reunion-2008-shirt-back.jpg?v=20261128" width="640" height="640" alt="The 2008 reunion T-shirt, back: Lewis Family Reunion 2008, Remember, Renew, Celebrate in large gold letters." loading="lazy" decoding="async"></picture><span class="reel-mark" aria-hidden="true">2008 · Shirt, back</span></li>
+            <li class="reel-frame"><picture><source srcset="../assets/reunion-1985-hat.webp?v=20261128b" type="image/webp"><img src="../assets/reunion-1985-hat.jpg?v=20261128b" width="640" height="640" alt="The 1985 reunion hat: a red and cream cap that reads Lewis Reunion 85." loading="lazy" decoding="async"></picture><span class="reel-mark" aria-hidden="true">1985 · Reunion hat</span></li>
+            <li class="reel-frame"><picture><source srcset="../assets/reunion-2008-shirt-front.webp?v=20261128b" type="image/webp"><img src="../assets/reunion-2008-shirt-front.jpg?v=20261128b" width="640" height="640" alt="The 2008 reunion T-shirt, front: maroon, with Lewis Family Reunion 2008, Remember, Renew, Celebrate in small gold letters on the chest." loading="lazy" decoding="async"></picture><span class="reel-mark" aria-hidden="true">2008 · Shirt, front</span></li>
+            <li class="reel-frame"><picture><source srcset="../assets/reunion-2008-shirt-back.webp?v=20261128b" type="image/webp"><img src="../assets/reunion-2008-shirt-back.jpg?v=20261128b" width="640" height="640" alt="The 2008 reunion T-shirt, back: Lewis Family Reunion 2008, Remember, Renew, Celebrate in large gold letters." loading="lazy" decoding="async"></picture><span class="reel-mark" aria-hidden="true">2008 · Shirt, back</span></li>
             <li class="reel-frame tall"><picture><source srcset="../assets/reunion-2027-flyer.webp?v=20261128" type="image/webp"><img src="../assets/reunion-2027-flyer.jpg?v=20261128" width="400" height="600" alt="The 2027 reunion flyer: Lewis Family Reunion 2027, From Their Roots, We Rise, in Fresno, California, with hotel check-in on Friday, 2 July 2027, the Home2 Suites hotel and its group rate, and the Friday, Saturday and Sunday event locations." loading="lazy" decoding="async"></picture><span class="reel-mark" aria-hidden="true">2027 · Fresno</span></li>
           </ul>
         </div>
