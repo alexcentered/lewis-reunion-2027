@@ -137,12 +137,12 @@
   .pv .split { display:grid; gap:28px; grid-template-columns:1.1fr .9fr; }
   .pv .split p { font-size:16px; color:var(--muted); margin:0 0 1em; }
   .pv .split p.callout { padding:14px 18px 15px; border:1px solid rgba(23,61,42,.28); border-left:4px solid var(--accent); border-radius:4px 12px 12px 4px; background:rgba(23,61,42,.06); font:italic 600 22px/1.36 'Playfair Display', Georgia, serif; color:var(--text); }
-  .pv .reel { position:relative; display:flex; gap:16px; overflow:hidden; margin:32px -40px 24px; padding:26px 8px; background:#0e0d0c; }
+  .pv .reel { position:relative; display:flex; gap:16px; overflow:hidden; margin:32px -40px 24px; padding:26px 8px; background:#050505; }
   .pv .reel::before, .pv .reel::after { content:""; position:absolute; left:0; right:0; height:24px; background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><rect x='21' y='29' width='58' height='42' rx='15' ry='19' fill='%23efe8d9'/></svg>") left top / 30px 24px repeat-x; }
   .pv .reel::before { top:0; }
   .pv .reel::after { bottom:0; }
   .pv .reel img { flex:none; display:block; width:224px; height:224px; border-radius:3px; }
-  .pv .reel img.logo { object-fit:contain; padding:13px; box-sizing:border-box; background:#080808; }
+  .pv .reel img.tall { width:164px; object-fit:contain; }
   .pv .album { margin:36px -40px 0; padding:30px 40px 24px; background:#f1e7d0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
   .pv .album .reel { margin:20px -40px 0; }
   .pv .album-title { font:600 34px/1.1 'Playfair Display', Georgia, serif; margin:0; }
@@ -450,10 +450,10 @@ function splitSec(id, ps, more) {
   return '<div class="section" data-sec="' + id + '"><div class="split"><div><div class="kicker">' + ev(id, 'kicker') + '</div><h2>' + ev(id, 'heading') + '</h2></div><div>' +
     ps.map(function (k) { return para(id, k); }).join('') + '</div></div>' + (more || '') + '</div>';
 }
-/* The film strip: 1985, 2008 (front and back) and the 2027 logo. It stands still here; on 1. Sample it runs across the screen. */
-var REEL = ['reunion-1985-hat.webp?v=20261127', 'reunion-2008-shirt-front.webp?v=20261127', 'reunion-2008-shirt-back.webp?v=20261127', 'reunion-logo.png?v=20261125a'];
+/* The film strip: 1985, 2008 (front and back) and the 2027 flyer. It stands still here; on 1. Sample it runs across the screen. */
+var REEL = ['reunion-1985-hat.webp?v=20261127', 'reunion-2008-shirt-front.webp?v=20261128', 'reunion-2008-shirt-back.webp?v=20261128', 'reunion-2027-flyer.webp?v=20261128'];
 function reel() {
-  return '<div class="reel">' + REEL.concat(REEL).map(function (n) { return '<img src="../assets/' + n + '" alt=""' + (/logo/.test(n) ? ' class="logo"' : '') + '>'; }).join('') + '</div>';
+  return '<div class="reel">' + REEL.concat(REEL).map(function (n) { return '<img src="../assets/' + n + '" alt=""' + (/flyer/.test(n) ? ' class="tall"' : '') + '>'; }).join('') + '</div>';
 }
 /* Layout B: one of the two cards under the album, looking back (the past reunions) or looking ahead (Fresno). */
 function era(n, cls, kicker, heading, body) {

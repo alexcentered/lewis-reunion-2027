@@ -477,8 +477,10 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 /* Callout boxes: a line lifted from the paragraph above, set large, so the long read has places to rest. */
 .callout{margin:22px 0;padding:16px 20px 17px;border:1px solid color-mix(in oklab,var(--accent-text) 30%,transparent);border-left:4px solid var(--accent-text);border-radius:4px 12px 12px 4px;background:color-mix(in oklab,var(--accent-text) 7%,transparent);font:italic 600 clamp(1.22rem,2.4vw,1.42rem)/1.36 var(--display);color:var(--text);text-wrap:pretty}
 /* The film strip: the 1985 and 2008 pictures run across the screen like film through a projector. Each frame draws its own
-   eight sprocket holes, top and bottom, so the holes travel with the pictures. A frame (picture + gap) is a multiple of 8 px wide. */
-.reel{--s:152px;--gap:16px;--edge:24px;--film:#0e0d0c;--perf:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><rect x='21' y='29' width='58' height='42' rx='15' ry='19' fill='%23efe8d9'/></svg>");margin:34px 0 0}
+   eight sprocket holes, top and bottom, so the holes travel with the pictures. A frame (picture + gap) is a multiple of 8 px wide.
+   The flyer's frame (.tall) is three-quarters as wide and draws six holes, so the spacing never changes. The film is the
+   same near-black as the hat's photo, and the shirts are cut-outs on it. */
+.reel{--s:152px;--gap:16px;--edge:24px;--film:#050505;--perf:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><rect x='21' y='29' width='58' height='42' rx='15' ry='19' fill='%23efe8d9'/></svg>");margin:34px 0 0}
 @media(min-width:600px){.reel{--s:184px}}
 @media(min-width:1000px){.reel{--s:224px}}
 .reel-film{overflow:hidden;background:var(--film);box-shadow:0 14px 30px -20px rgba(0,0,0,.7)}
@@ -498,7 +500,9 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 .story-more{margin-top:22px}
 @media(max-width:860px){.story-more>:first-child{display:none}}
 @media(prefers-reduced-motion:reduce){.reel.run .reel-track{animation:none}}
-.reel-frame img.reel-logo{object-fit:contain;padding:6%;background:#080808}
+.reel-frame.tall{width:calc((var(--s) + var(--gap)) * .75);background-size:calc(100% / 6) var(--edge)}
+.reel-frame.tall img{width:calc((var(--s) + var(--gap)) * .75 - var(--gap));object-fit:contain}
+.welcome>picture{display:block}
 /* Two layouts for The 2027 Family Reunion, to compare. A: one column, the film between the paragraphs. B: the film in an
    album band with its own heading, then two cards, looking back and looking ahead. The switch at the top of the section
    flips them on this screen only; the choice the committee sees is saved under Edit words on 2. Homepage order. */
@@ -550,7 +554,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 <section data-view="home" class="on">
   <div class="wrap" data-sec="welcome">
     <div class="section welcome">
-      <img class="welcome-crest" src="../assets/lewis-family-crest-large.png?v=20261125a" width="576" height="670" alt="Lewis family crest" decoding="async">
+      <picture><source srcset="../assets/lewis-family-crest-large.webp?v=20261128" type="image/webp"><img class="welcome-crest" src="../assets/lewis-family-crest-large.png?v=20261128" width="576" height="671" alt="Lewis family crest" decoding="async"></picture>
       <div class="split">
         <div>
           <div class="kicker" data-w="welcome.kicker">Welcome</div>
@@ -604,12 +608,12 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
         <div class="reel-film">
           <ul class="reel-track">
             <li class="reel-frame"><picture><source srcset="../assets/reunion-1985-hat.webp?v=20261127" type="image/webp"><img src="../assets/reunion-1985-hat.jpg?v=20261127" width="640" height="640" alt="The 1985 reunion hat: a red and cream cap that reads Lewis Reunion 85." loading="lazy" decoding="async"></picture><span class="reel-mark" aria-hidden="true">1985 · Reunion hat</span></li>
-            <li class="reel-frame"><picture><source srcset="../assets/reunion-2008-shirt-front.webp?v=20261127" type="image/webp"><img src="../assets/reunion-2008-shirt-front.jpg?v=20261127" width="640" height="640" alt="The 2008 reunion T-shirt, front: maroon, with Lewis Family Reunion 2008, Remember, Renew, Celebrate in small gold letters on the chest." loading="lazy" decoding="async"></picture><span class="reel-mark" aria-hidden="true">2008 · Shirt, front</span></li>
-            <li class="reel-frame"><picture><source srcset="../assets/reunion-2008-shirt-back.webp?v=20261127" type="image/webp"><img src="../assets/reunion-2008-shirt-back.jpg?v=20261127" width="640" height="640" alt="The 2008 reunion T-shirt, back: Lewis Family Reunion 2008, Remember, Renew, Celebrate in large gold letters." loading="lazy" decoding="async"></picture><span class="reel-mark" aria-hidden="true">2008 · Shirt, back</span></li>
-            <li class="reel-frame"><img class="reel-logo" src="../assets/reunion-logo.png?v=20261125a" width="640" height="640" alt="The 2027 reunion logo: a great tree over deep roots around the Lewis crest, with From Their Roots, We Rise and Lewis Family Reunion 2027." loading="lazy" decoding="async"><span class="reel-mark" aria-hidden="true">2027 · Fresno</span></li>
+            <li class="reel-frame"><picture><source srcset="../assets/reunion-2008-shirt-front.webp?v=20261128" type="image/webp"><img src="../assets/reunion-2008-shirt-front.jpg?v=20261128" width="640" height="640" alt="The 2008 reunion T-shirt, front: maroon, with Lewis Family Reunion 2008, Remember, Renew, Celebrate in small gold letters on the chest." loading="lazy" decoding="async"></picture><span class="reel-mark" aria-hidden="true">2008 · Shirt, front</span></li>
+            <li class="reel-frame"><picture><source srcset="../assets/reunion-2008-shirt-back.webp?v=20261128" type="image/webp"><img src="../assets/reunion-2008-shirt-back.jpg?v=20261128" width="640" height="640" alt="The 2008 reunion T-shirt, back: Lewis Family Reunion 2008, Remember, Renew, Celebrate in large gold letters." loading="lazy" decoding="async"></picture><span class="reel-mark" aria-hidden="true">2008 · Shirt, back</span></li>
+            <li class="reel-frame tall"><picture><source srcset="../assets/reunion-2027-flyer.webp?v=20261128" type="image/webp"><img src="../assets/reunion-2027-flyer.jpg?v=20261128" width="400" height="600" alt="The 2027 reunion flyer: Lewis Family Reunion 2027, From Their Roots, We Rise, in Fresno, California, with hotel check-in on Friday, 2 July 2027, the Home2 Suites hotel and its group rate, and the Friday, Saturday and Sunday event locations." loading="lazy" decoding="async"></picture><span class="reel-mark" aria-hidden="true">2027 · Fresno</span></li>
           </ul>
         </div>
-        <div class="wrap reel-bar"><span class="reel-cap" id="reelCap">Pictured: the 1985 and 2008 reunions, and the 2027 logo</span><button type="button" class="btn quiet sm reel-btn">Pause</button></div>
+        <div class="wrap reel-bar"><span class="reel-cap" id="reelCap">Pictured: the 1985 and 2008 reunions, and the 2027 flyer</span><button type="button" class="btn quiet sm reel-btn">Pause</button></div>
       </figure>
     </div>
     <div class="wrap only-a">
@@ -895,7 +899,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 <script>
 /* The film strip. The page holds each picture once (for screen readers, and for a phone without scripts). This adds copies
    until one run of pictures is wider than the strip, doubles that run, and slides the strip left by exactly one run, over and
-   over, so it never shows a gap or a jump. Each picture takes six seconds to move its own width. A device set to reduce
+   over, so it never shows a gap or a jump. A square frame takes six seconds to move its own width. A device set to reduce
    motion gets the strip standing still, to scroll by hand. Pause stops it, and so do a mouse resting on it and the strip
    being off screen. It rebuilds when the strip changes width, and when the reviewer's order shows or hides the section. */
 (function(){
@@ -910,13 +914,13 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
     return c;
   }
   function build(){
-    var run = pics[0].offsetWidth * pics.length;
-    var need = calm && calm.matches ? 0 : (run ? Math.ceil(film.clientWidth / run) : 0);
+    var run = pics.reduce(function(sum, li){ return sum + li.offsetWidth; }, 0), square = pics[0].offsetWidth;
+    var need = calm && calm.matches ? 0 : (run && square ? Math.ceil(film.clientWidth / run) : 0);
     if (need === runs) return;
     runs = need;
     while (track.children.length > pics.length) track.removeChild(track.lastChild);
     for (var n = 1; n < need * 2; n++) pics.forEach(function(li){ track.appendChild(copy(li)); });
-    track.style.animationDuration = need ? (need * pics.length * SECONDS_PER_PICTURE) + 's' : '';
+    track.style.animationDuration = need ? (need * run / square * SECONDS_PER_PICTURE) + 's' : '';
     reel.classList.toggle('run', need > 0);
   }
   btn.addEventListener('click', function(){
