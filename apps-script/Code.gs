@@ -778,28 +778,33 @@ function setup() {
 }
 
 /* ---------------- reviews ----------------
-   The review page (review/ on the site) lets a committee member try the homepage order and the email wording on any
-   phone or computer, and saves as they go. One Reviews row per reviewer (REVIEW_HEADERS). The committee types a Name;
-   the menu "Make review links" (reviewLinks) fills a blank Key with the reviewer's first name (reviewKey_, such as
-   vincent, or vincent-2 when that name is taken) and Link with siteUrl/review/#<Key>. Older 32-hex keys and #k= links
-   still work. A name key is easy to guess, by the committee's choice: anyone who tries it can open that review. The key is in the part of the link after #, which browsers never send to a server, and the
-   page sends it only in the POST body. A wrong or blank key gets the same answer as an unknown one. Clearing or changing
-   a Key retires that link. The page writes Saved, the two readable columns and Data (the page state as JSON, read back
-   when the reviewer opens the page again). Nothing here sends mail. */
-const REVIEW_HEADERS = ['Name', 'Key', 'Link', 'Saved', 'Homepage order', 'Email wording', 'Data', 'Notes'];
+   The review page (review/ on the site) lets a committee member try the homepage order, the email wording and the words
+   on the registration pages on any phone or computer, and saves as they go. One Reviews row per reviewer
+   (REVIEW_HEADERS). The committee types a Name; the menu "Make review links" (reviewLinks) fills a blank Key with the
+   reviewer's first name (reviewKey_, such as vincent, or vincent-2 when that name is taken) and Link with
+   siteUrl/review/#<Key>. Older 32-hex keys and #k= links still work. A name key is easy to guess, by the committee's
+   choice: anyone who tries it can open that review. The key is in the part of the link after #, which browsers never send
+   to a server, and the page sends it only in the POST body. A wrong or blank key gets the same answer as an unknown one.
+   Clearing or changing a Key retires that link. The page writes Saved, the readable columns (REVIEW_PARTS) and Data (the
+   page state as JSON, read back when the reviewer opens the page again). Nothing here sends mail. */
+const REVIEW_HEADERS = ['Name', 'Key', 'Link', 'Saved', 'Homepage order', 'Email wording', 'Registration pages', 'Data', 'Notes'];
+/* The parts of a review (one per editing page) and the column that holds each part's readable copy. A tab made before
+   the registration pages has no Registration pages column: the first save of that part adds it at the end. */
+const REVIEW_PARTS = { order: 'Homepage order', wording: 'Email wording', register: 'Registration pages' };
 const REVIEW_TEXT_MAX = 45000;      // a Sheets cell holds 50,000 characters
 const REVIEW_BAD = { ok: false, error: 'review', message: 'This review link is not working. Please ask the committee for a new one.' };
 
-/** action review (load) or reviewPart (save, run inside locked_): p.key, and for a save p.part ('order' or 'wording'), p.value
+/** action review (load) or reviewPart (save, run inside locked_): p.key, and for a save p.part (a REVIEW_PARTS key), p.value
     (that page's state), p.rev (the rev of that part the page last saw) and p.text (the readable copy). Only that part and
     its column are written, and only when p.rev is still current; otherwise error 'conflict' returns the saved data and the
-    page merges its changes into it and tries again. Data holds { order, wording, rev: { order, wording } }. */
+    page merges its changes into it and tries again. Data holds { order, wording, register, rev: { order, wording, register } }.
+    The load answers v: 3, the first version that saves the registration pages; review.js holds that page until it sees it. */
 function review_(p, cfg, save) {
   const key = String(p.key || '').trim().toLowerCase();
   if (!/^[a-z0-9][a-z0-9-]{1,63}$/.test(key)) return REVIEW_BAD;
   const sh = SpreadsheetApp.getActive().getSheetByName(TAB.reviews);
   if (!sh || sh.getLastRow() < 2) return REVIEW_BAD;
-  const H = headers_(sh);
+  let H = headers_(sh);
   if (H.col.Key === undefined) return REVIEW_BAD;
   const keys = sh.getRange(2, H.col.Key + 1, sh.getLastRow() - 1, 1).getValues();
   let index = -1;
@@ -809,9 +814,9 @@ function review_(p, cfg, save) {
   if (!save) {
     let data = null;
     try { data = str_(row.Data) ? JSON.parse(str_(row.Data)) : null; } catch (err) { data = null; }
-    return { ok: true, v: 2, name: str_(row.Name), saved: row.Saved instanceof Date ? row.Saved.toISOString() : '', data: data };
+    return { ok: true, v: 3, name: str_(row.Name), saved: row.Saved instanceof Date ? row.Saved.toISOString() : '', data: data };
   }
-  const part = p.part === 'order' || p.part === 'wording' ? p.part : '';
+  const part = Object.prototype.hasOwnProperty.call(REVIEW_PARTS, p.part) ? p.part : '';
   if (!part || typeof p.value !== 'string') return { ok: false, error: 'bad_request' };
   let cur = {};
   if (str_(row.Data)) {
@@ -826,7 +831,10 @@ function review_(p, cfg, save) {
   const json = JSON.stringify(cur);
   if (json.length > REVIEW_TEXT_MAX) return { ok: false, error: 'big', message: 'That is more than this page can save. Please shorten some of your changes.' };
   const set = { Saved: new Date(), Data: json };
-  if (p.text != null) set[part === 'order' ? 'Homepage order' : 'Email wording'] = clean_(p.text, REVIEW_TEXT_MAX);
+  if (p.text != null) {
+    if (H.col[REVIEW_PARTS[part]] === undefined) { ensureTab_(TAB.reviews, REVIEW_HEADERS); H = headers_(sh); }
+    set[REVIEW_PARTS[part]] = clean_(p.text, REVIEW_TEXT_MAX);
+  }
   Object.keys(set).forEach(h => { if (H.col[h] !== undefined) sh.getRange(index, H.col[h] + 1).setValue(set[h]); });
   return { ok: true, saved: set.Saved.toISOString(), rev: rev[part] };
 }
