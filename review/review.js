@@ -18,14 +18,45 @@
   function get(k) { try { return ls.getItem(k); } catch (e) { return null; } }
   function set(k, v) { try { if (v == null) ls.removeItem(k); else ls.setItem(k, v); } catch (e) {} }
 
-  // The key arrives once in the link, as #vincent (or the older #k=<32 hex>), is kept on this device, and is taken out
-  // of the address bar.
-  var m = /^#(?:k=)?([a-zA-Z0-9][a-zA-Z0-9-]{1,63})$/.exec(location.hash);
-  if (m) {
-    set(KEY_STORE, m[1].toLowerCase());
-    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  /* The key comes in the link as #vincent (or the older #k=<32 hex>) and is kept on this device. It also stays in the
+     address bar and in every link between the review pages, so a reload, a bookmark, a new tab, or a phone that has cleared
+     the page's storage still opens this review. A place on the page (#welcome, #me) is never taken for a key: before this,
+     a reload after tapping such a link replaced the key with the place's name and every page said the link was not
+     working. A tap on a link to a place scrolls there without changing the address; a link to a place on another review
+     page says it with ?at=<place>. Read when the page is built (findKey), once the places on it exist. */
+  var KEY_RE = /^#(?:k=)?([a-zA-Z0-9][a-zA-Z0-9-]{1,63})$/;
+  var key = null, landing = null;
+  function placeOf(h) {
+    var id = String(h || '').replace(/^#/, '');
+    try { id = decodeURIComponent(id); } catch (e) {}
+    return id ? document.getElementById(id) : null;
   }
-  var key = get(KEY_STORE);
+  function findKey() {
+    var m = KEY_RE.exec(location.hash), spot = location.hash.length > 1 ? placeOf(location.hash) : null;
+    if (m && !spot) set(KEY_STORE, m[1].toLowerCase());
+    key = get(KEY_STORE);
+    var at = null, search = location.search;
+    try { var q = new URLSearchParams(search); at = q.get('at'); q.delete('at'); search = q.toString() ? '?' + q.toString() : ''; } catch (e) {}
+    landing = spot || (at ? placeOf(at) : null);
+    try { history.replaceState(history.state, '', location.pathname + search + (key ? '#' + key : '')); } catch (e) {}
+  }
+  /* Links to the other review pages carry the key; a place named after # in such a link moves to ?at=. */
+  function keyLinks() {
+    if (!key) return;
+    Array.prototype.forEach.call(document.querySelectorAll('a[href]'), function (a) {
+      var href = a.getAttribute('href') || '', u;
+      if (href.charAt(0) === '#' || /^[a-z]+:/i.test(href) && !/^https?:/i.test(href)) return;
+      try { u = new URL(href, location.href); } catch (e) { return; }
+      if (u.origin !== location.origin || !/\/review\/(?:[\w-]+\.html)?$/.test(u.pathname)) return;
+      if (u.hash.length > 1) u.searchParams.set('at', u.hash.slice(1));
+      u.hash = key;
+      a.setAttribute('href', u.href);
+    });
+  }
+  function goTo(el, smooth) {
+    var top = el.getBoundingClientRect().top + window.pageYOffset - (bar ? bar.offsetHeight : 0) - 10;
+    try { window.scrollTo({ top: Math.max(0, top), behavior: smooth ? 'smooth' : 'auto' }); } catch (e) { window.scrollTo(0, Math.max(0, top)); }
+  }
 
   /* Each editing page owns one part of the review and only ever saves that part. BASE (per part) is what the Sheet held when
      this device last agreed with it, and its rev. The backend refuses a save whose rev is out of date; the changes made
@@ -125,11 +156,15 @@
   // The sample (1. Sample) has nothing to edit: it only shows the saved review, so it never saves on its own.
   var readOnly = page === 'sample';
   var server = {};
-  /* Tells the sample what the review holds now (lr-review-data): the saved review, plus changes on this device not saved yet. */
+  /* Tells the page what the review holds now (lr-review-data): the saved review, plus changes on this device not saved yet,
+     for every part. The sample draws the homepage from it; the other pages show words that are changed on another page. */
   function emit(saved) {
-    var d = {}, own = { order: storedBase('order') };
+    var d = {};
     Object.keys(server).forEach(function (k) { d[k] = server[k]; });
-    d.order = own.order.value != null ? merge('order', own.order.value, get(STATE.order), server.order, own.order.careful) : server.order;
+    Object.keys(STATE).forEach(function (p) {
+      var own = storedBase(p);
+      if (own.value != null) d[p] = merge(p, own.value, get(STATE[p]), server[p], own.careful);
+    });
     try { document.dispatchEvent(new CustomEvent('lr-review-data', { detail: { name: reviewer, data: d, saved: saved || null } })); } catch (e) {}
   }
   function now() { return part ? get(STATE[part]) : null; }
@@ -232,6 +267,7 @@
   }
 
   function build() {
+    findKey();
     bar = document.createElement('nav');
     bar.className = 'rv-bar'; bar.setAttribute('aria-label', 'Review pages');
     bar.innerHTML = '<div class="rv-in"><span class="rv-brand">Lewis ’27 review</span><span class="rv-tabs">' +
@@ -241,6 +277,23 @@
     status = bar.querySelector('.rv-status');
     cover = document.createElement('div'); cover.className = 'rv-cover'; cover.hidden = true;
     document.body.appendChild(cover);
+    keyLinks();
+    // A tap on a link to a place on this page scrolls there; the address keeps the key.
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('a[href^="#"]');
+      if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      var spot = placeOf(a.getAttribute('href'));
+      if (spot) goTo(spot, !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches));
+    });
+    if (landing) {
+      var spot = landing;
+      setTimeout(function () { goTo(spot, false); }, 0);
+      // Fonts and pictures can still move things: land again once they are in, unless the reader has scrolled.
+      var moved = false, off = function () { moved = true; };
+      ['wheel', 'touchmove', 'keydown'].forEach(function (t) { window.addEventListener(t, off, { once: true, passive: true }); });
+      window.addEventListener('load', function () { if (!moved) goTo(spot, false); });
+    }
     // Save before moving to another review page, so nothing is lost between pages.
     bar.addEventListener('click', function (e) {
       var a = e.target.closest && e.target.closest('a'); if (!a || !dirty()) return;

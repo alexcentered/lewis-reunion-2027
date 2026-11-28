@@ -168,7 +168,7 @@
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="review.css?v=reg1">
 <script src="../config.js"></script>
-<script src="review.js?v=reg1"></script>
+<script src="review.js?v=stay1"></script>
 </head>
 <body>
 <header>
@@ -350,10 +350,13 @@ function fillFields() {
 function ids(list) { return Array.prototype.map.call(list.querySelectorAll(':scope > .item'), function (li) { return li.dataset.id; }); }
 function title(li) { return li.querySelector('h3').childNodes[0].textContent.trim(); }
 function store() { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
+/* Notes on sections that are no longer on this page: kept as they are, so a later version of the page never drops them. */
+var KEPT_NOTES = {};
 function save() {
   var st = { who: document.getElementById('who').value, other: document.getElementById('other').value, notes: {}, words: WORDS };
   Object.keys(lists).forEach(function (k) { st[k] = ids(lists[k]); });
   Object.keys(ITEMS).forEach(function (id) { var t = ITEMS[id].querySelector('.note textarea'); if (t && t.value.trim()) st.notes[id] = t.value; });
+  Object.keys(KEPT_NOTES).forEach(function (id) { if (!(id in st.notes)) st.notes[id] = KEPT_NOTES[id]; });
   try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {}
 }
 function restore(st) {
@@ -362,7 +365,10 @@ function restore(st) {
   WORDS = st.words || {};
   document.getElementById('who').value = st.who || '';
   document.getElementById('other').value = st.other || '';
-  Object.keys(st.notes || {}).forEach(function (id) { var li = ITEMS[id]; if (li) { li.querySelector('.note textarea').value = st.notes[id]; li.classList.add('noting'); } });
+  Object.keys(st.notes || {}).forEach(function (id) {
+    var li = ITEMS[id], t = li && li.querySelector('.note textarea');
+    if (t) { t.value = st.notes[id]; li.classList.add('noting'); } else KEPT_NOTES[id] = st.notes[id];
+  });
 }
 
 /* buttons on each card */
@@ -570,9 +576,23 @@ function compose() {
       });
     });
   }
+  /* Notes and words typed for sections or lines that are no longer on this page stay in the copy for the committee. */
+  var keptNotes = Object.keys(KEPT_NOTES).filter(function (id) { return String(KEPT_NOTES[id] || '').trim(); }), keptWords = [];
+  Object.keys(WORDS).forEach(function (id) {
+    Object.keys(WORDS[id] || {}).forEach(function (f) {
+      var onPage = ITEMS[id] && (COPY[id] || []).some(function (x) { return x[0] === f; }), t = WORDS[id][f];
+      if (!onPage && t != null) keptWords.push(id + ' / ' + f + ': ' + (String(t).trim() ? String(t).trim().replace(/\n+/g, ' / ') : '(leave it out)'));
+    });
+  });
+  if (keptNotes.length || keptWords.length) {
+    L.push(''); L.push('EARLIER CHANGES (no longer on this page)');
+    keptNotes.forEach(function (id) { L.push('Note on ' + id + ': ' + String(KEPT_NOTES[id]).trim().replace(/\n+/g, ' ')); });
+    keptWords.forEach(function (w) { L.push(w); });
+  }
   var other = document.getElementById('other').value.trim();
   if (other) { L.push(''); L.push('ANYTHING ELSE'); L.push(other); }
-  changed = ['page', 'tiles'].some(function (k) { return ids(lists[k]).join() !== START[k].join(); }) || notes.length > 0 || worded.length > 0 || !!other;
+  changed = ['page', 'tiles'].some(function (k) { return ids(lists[k]).join() !== START[k].join(); }) || notes.length > 0 || worded.length > 0 || !!other ||
+    keptNotes.length > 0 || keptWords.length > 0;
   return { text: L.join('\n'), name: name, changed: changed };
 }
 var mail = document.getElementById('mail'), out = document.getElementById('out'), statusEl = document.getElementById('status');
