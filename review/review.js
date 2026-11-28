@@ -4,10 +4,10 @@
    the reviewer can stop and come back on any device, and the committee sees each change in the Sheet. */
 (function () {
   'use strict';
-  var STATE = { order: 'lewis-homepage-order-v1', wording: 'lewis-email-wording-v1' };
+  var STATE = { order: 'lewis-homepage-order-v1', wording: 'lewis-email-wording-v1', register: 'lewis-registration-wording-v1' };
   var KEY_STORE = 'lr-review-key', SYNCED = 'lr-review-synced', SYNCED_FOR = 'lr-review-synced-for';   // the last two: older version of this page
   var PAGES = [['index.html', 'Start', 'home'], ['sample.html', '1. Sample', 'sample'], ['order.html', '2. <span class="rv-long">Homepage </span>order', 'order'],
-    ['wording.html', '3. Email<span class="rv-long"> wording</span>', 'wording']];
+    ['wording.html', '3. Email<span class="rv-long"> wording</span>', 'wording'], ['register.html', '4. <span class="rv-long">Registration</span><span class="rv-short">Register</span>', 'register']];
   var page = document.documentElement.getAttribute('data-review') || 'home';
   // The backup for when this page can't reach the website: a Google Sheet with the same tables, shared with the reviewer.
   var BACKUP = 'https://docs.google.com/spreadsheets/d/1dibJT8-1s4UtKp-QocN5Q3z8m5HFxCYM6w94IhsOJRI/edit';
@@ -36,12 +36,14 @@
   var base = { rev: -1, value: null };
 
   function isObj(o) { return o && typeof o === 'object' && !Array.isArray(o); }
-  /* A part as flat fields: { 'words/why/p1': '...', layout: {...} }. Null when there is nothing (or nothing readable). */
+  /* A part as flat fields: { 'words/why/p1': '...', layout: {...} }. Null when there is nothing (or nothing readable).
+     The email wording and the registration pages already keep flat fields. */
+  function flatPart(p) { return p === 'wording' || p === 'register'; }
   function flat(p, str) {
     var o; try { o = str == null ? null : JSON.parse(str); } catch (e) { o = null; }
     if (!isObj(o)) return null;
     var f = {};
-    if (p === 'wording') { Object.keys(o).forEach(function (k) { f[k] = o[k]; }); return f; }
+    if (flatPart(p)) { Object.keys(o).forEach(function (k) { f[k] = o[k]; }); return f; }
     ['who', 'other'].forEach(function (k) { if (o[k]) f[k] = o[k]; });
     Object.keys(o.notes || {}).forEach(function (k) { f['notes/' + k] = o.notes[k]; });
     Object.keys(o.words || {}).forEach(function (k) { Object.keys(o.words[k] || {}).forEach(function (w) { f['words/' + k + '/' + w] = o.words[k][w]; }); });
@@ -50,7 +52,7 @@
     return f;
   }
   function unflat(p, f) {
-    if (p === 'wording') return JSON.stringify(f);
+    if (flatPart(p)) return JSON.stringify(f);
     var o = { who: f.who || '', other: f.other || '', notes: {}, words: {} };
     Object.keys(f).forEach(function (k) {
       var b = k.split('/');
@@ -115,7 +117,7 @@
     if (typeof window.compose !== 'function') return null;
     try {
       var t = String(window.compose().text || '');
-      return t.replace(/^(Homepage order|Email wording) from .*$/m, '$1 from ' + (reviewer || 'the reviewer'));
+      return t.replace(/^(Homepage order|Email wording|Registration pages) from .*$/m, '$1 from ' + (reviewer || 'the reviewer'));
     } catch (e) { return null; }
   }
 
@@ -188,7 +190,8 @@
         else say((r && r.message) || 'Could not open your saved changes. Please reload the page.', true, true);
         return;
       }
-      if (!(r.v >= 2)) { say('Saving is paused for a few minutes while this page is updated. Please reload it soon.', true, true); return; }
+      // The registration pages need a backend that knows their part (v3); until it is deployed, nothing saves.
+      if (!(r.v >= (part === 'register' ? 3 : 2))) { say('Saving is paused for a few minutes while this page is updated. Please reload it soon.', true, true); return; }
       reviewer = r.name || '';
       var who = document.querySelectorAll('[data-rv-name]');
       for (var i = 0; i < who.length; i++) who[i].textContent = reviewer || 'there';
@@ -200,8 +203,11 @@
         var m = sv == null ? cur : merge(part, startLocal == null ? opened : was.value, local, sv, was.careful);
         setBase(part, server);
         if (sv != null && canon(part, m) !== canon(part, startLocal == null ? cur : local)) { redraw(m); return; }
-        // The page tidying what it loaded is not a change; a real difference from the Sheet is.
-        lastSaved = sv == null || canon(part, m) === canon(part, sv) ? canon(part, cur) : null;
+        // The page tidying what it loaded is not a change; a real difference from the Sheet is. The email wording and the
+        // registration pages keep only what was typed, so while the Sheet has none of that part yet, anything on this
+        // device was typed here (perhaps while saving was paused) and is saved now.
+        var typed = flatPart(part) && sv == null && Object.keys(flat(part, cur) || {}).length > 0;
+        lastSaved = !typed && (sv == null || canon(part, m) === canon(part, sv)) ? canon(part, cur) : null;
       }
       ready = true;
       say(r.saved ? 'All changes saved. Last saved ' + new Date(r.saved).toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' at ' + time(r.saved) + '.' : 'Ready. Your changes save by themselves.');

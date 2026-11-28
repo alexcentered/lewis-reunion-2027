@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en" data-review="register">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Review: Lewis Reunion 2027: registration pages</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  /* The review page around the drawings: the same look as the other review pages. */
+  :root { --green:#173d2a; --green2:#2f6e4e; --cream:#f7f2e7; --line:#e3dccd; --ink:#1b1b18; --muted:#5b5a55; --brown:#5b4433; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--cream); color:var(--ink); font:17px/1.55 Georgia, "Times New Roman", serif; }
+  header { background:var(--green); color:var(--cream); padding:34px 18px 28px; text-align:center; }
+  header p.kicker { margin:0 0 6px; font-size:12px; letter-spacing:2px; text-transform:uppercase; color:#cfe0d3; }
+  header h1 { margin:0; font-size:30px; line-height:1.2; font-weight:normal; }
+  header p.sub { margin:10px auto 0; max-width:600px; color:#e6dcc8; font-size:16px; }
+  main { max-width:1180px; margin:0 auto; padding:0 18px 80px; }
+  .how { max-width:760px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:16px 20px; margin-top:26px; }
+  .how ol { margin:8px 0 0; padding-left:22px; }
+  .how li { margin:5px 0; }
+  .how p { margin:10px 0 0; color:var(--muted); font-size:16px; }
+  .toc { display:flex; flex-wrap:wrap; gap:8px; margin:18px 0 0; }
+  .toc a { color:var(--green); text-decoration:none; border:1px solid #c9d6cc; background:#fff; border-radius:999px; padding:5px 13px; font-size:15px; }
+  .toc a:hover { border-color:var(--green2); }
+  h2.screen { font-weight:normal; font-size:26px; color:var(--green); margin:46px 0 4px; scroll-margin-top:70px; }
+  p.lead { color:var(--muted); margin:0 0 16px; max-width:760px; }
+
+  /* A note box under each part, and the general notes at the end. */
+  .nb { font:15px/1.45 Georgia, "Times New Roman", serif; color:var(--ink); background:#fdf6df; border:1px dashed #d9c58f; border-radius:10px; padding:8px 12px 10px; margin-top:12px; }
+  .nb.has { border-style:solid; border-color:#c9a24a; background:#fcf0c8; }
+  .nb-h { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:2px 12px; margin-bottom:5px; }
+  .nb-h label { font-size:13.5px; font-weight:bold; color:#7a5a12; }
+  .nb-chg { font-size:13.5px; color:#1f7a48; }
+  .nb-chg[hidden] { display:none; }
+  .nb-undo { font:inherit; background:none; border:0; padding:0; color:var(--muted); text-decoration:underline; cursor:pointer; }
+  .nb textarea { display:block; width:100%; font:inherit; font-size:15px; line-height:1.45; padding:7px 10px; border:1px solid #e2d3a6; border-radius:8px; background:#fffdf6; color:var(--ink); resize:vertical; min-height:38px; }
+  .nb textarea:focus, .general textarea:focus { outline:2px solid var(--green2); }
+  .general { max-width:760px; }
+  .general label { display:block; font-weight:bold; margin:18px 0 6px; }
+  .general label span { font-weight:normal; color:var(--muted); }
+  .general textarea { display:block; width:100%; font:inherit; font-size:16px; line-height:1.5; padding:10px 12px; border:1px solid #cdc4b2; border-radius:8px; background:#fff; color:var(--ink); resize:vertical; min-height:110px; }
+  .general textarea.has { border-color:var(--green2); background:#f3faf5; }
+  footer { text-align:center; color:var(--muted); font-size:15px; margin-top:44px; }
+
+  /* "Today:" under a line that has been changed, with a button that puts today's words back. */
+  .was { position:absolute; z-index:40; max-width:min(440px, calc(100vw - 16px)); background:#211a13; color:#f7f2e7; font:14px/1.45 Georgia, serif; padding:8px 12px; border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,.25); }
+  .was[hidden] { display:none; }
+  .was-l { color:#cfe0d3; font-size:12px; letter-spacing:1px; text-transform:uppercase; margin-right:4px; }
+  .was-b { font:inherit; font-size:13px; font-weight:bold; margin-left:8px; background:#f7f2e7; color:var(--green); border:0; border-radius:999px; padding:3px 11px; cursor:pointer; }
+
+  /* The drawings: the website's own look (light theme), simplified. Nothing in them is a real form. */
+  .site { --bg:#f3eee3; --surface:#fbf8f1; --sline:rgba(58,40,24,.12); --sline2:rgba(58,40,24,.22); --text:#211a13; --smuted:#5c5145; --faint:#6b6154;
+          --accent:#173d2a; --accent2:#5b4433; --on:#f7f2e7; --ok:#1f7a48; --warn:#94600b; --bad:#b3352a;
+          --display:'Playfair Display', Georgia, serif; --body:'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; --mono:'Geist Mono', ui-monospace, Menlo, Consolas, monospace;
+          background:var(--bg); color:var(--text); font:400 16px/1.6 var(--body); border:1px solid #d6ccb8; border-radius:14px; overflow:hidden; }
+  .site .bar { display:flex; align-items:center; gap:6px; padding:8px 12px; background:#e3dacb; font:13px/1 Menlo, monospace; color:#5b5a55; }
+  .site .bar i { width:10px; height:10px; border-radius:50%; background:#cbbfa9; display:inline-block; }
+  .site .bar span { margin-left:8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .site .pg { padding:30px 26px 34px; }
+  .site h2 { font:600 clamp(1.9rem, 4.2vw, 2.7rem)/1.08 var(--display); letter-spacing:-.015em; margin:0; color:var(--text); }
+  .site h3 { font:600 1.02rem/1.35 var(--body); margin:0; }
+  .site .bigh { font:600 1.55rem/1.15 var(--display); margin:0 0 4px; }
+  .site .kicker { font:500 .74rem var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--accent2); margin-bottom:12px; }
+  .site .intro { color:var(--smuted); max-width:60ch; margin:.6em 0 0; }
+  .site .split { display:grid; gap:28px; grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr); align-items:start; margin-top:24px; }
+  @media (max-width:860px) { .site .split { grid-template-columns:1fr; } }
+  .site .steps { display:grid; gap:18px; }
+  .site .card { background:var(--surface); border:1px solid var(--sline); border-radius:14px; padding:22px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .site .step { padding:26px; }
+  .site .sub { color:var(--smuted); font-size:.92rem; margin:0 0 18px; }
+  .site .fields { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap:16px; }
+  .site .full { grid-column:1 / -1; }
+  .site .lab { display:inline-block; font-size:.84rem; color:var(--smuted); margin-bottom:6px; }
+  .site .in { min-height:48px; border:1px solid rgba(58,40,24,.5); border-radius:10px; background:#fffdf8; padding:11px 13px; color:#8a7f70; font-size:1rem; line-height:1.5; }
+  .site .in.sel { display:flex; justify-content:space-between; gap:10px; color:var(--text); }
+  .site .in.sel::after { content:"▾"; color:var(--smuted); }
+  .site .in.big { min-height:96px; }
+  .site .checks { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap:10px; }
+  .site .check { display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border:1px solid var(--sline); border-radius:12px; font-size:.95rem; }
+  .site .check.on { border-color:var(--accent); background:rgba(23,61,42,.05); }
+  .site .box { width:20px; height:20px; flex:none; margin-top:2px; border-radius:5px; border:1.5px solid rgba(58,40,24,.5); background:#fffdf8; position:relative; }
+  .site .check.on .box { background:var(--accent); border-color:var(--accent); }
+  .site .check.on .box::after { content:""; position:absolute; left:6px; top:2px; width:5px; height:10px; border:solid var(--on); border-width:0 2px 2px 0; transform:rotate(45deg); }
+  .site .btn { display:inline-flex; align-items:center; justify-content:center; min-height:46px; padding:0 20px; border-radius:99px; border:1px solid var(--accent); background:var(--accent); color:var(--on); font:500 .95rem var(--body); cursor:text; }
+  .site .btn.quiet { background:transparent; color:var(--text); border-color:var(--sline2); }
+  .site .btn.sm { min-height:36px; padding:0 14px; font-size:.85rem; }
+  .site .btn.wide { display:flex; width:100%; margin-top:10px; }
+  .site .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  .site .hint { font-size:.84rem; color:var(--faint); }
+  .site .msg { font-size:.9rem; margin-top:10px; }
+  .site .msg.ok { color:var(--ok); }
+  .site .msg.err { color:var(--bad); }
+  .site .lk { color:var(--accent); text-decoration:underline; text-underline-offset:3px; }
+  .site .num { font-family:var(--mono); font-variant-numeric:tabular-nums; }
+  .site .att { display:grid; grid-template-columns:minmax(0,2fr) minmax(6.5rem,1fr) minmax(3.5rem,1fr) minmax(5.5rem,1fr); gap:10px; align-items:end; }
+  .site .att .diet { grid-column:1 / 3; }
+  @media (max-width:720px) { .site .att { grid-template-columns:1fr 1fr; } .site .att .nm, .site .att .diet { grid-column:1 / -1; } }
+  .site .opts { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:12px 0 0; }
+  .site .chip { border:1px solid var(--sline2); border-radius:8px; padding:2px 9px; background:#fffdf8; font-size:.88rem; }
+  .site .sumrow { display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-top:1px solid var(--sline); font-size:.94rem; }
+  .site .kicker + .sumrow { border-top:0; }
+  .site .sumrow > span:first-child { color:var(--smuted); }
+  .site .fees { margin:12px 0 8px; padding:10px 12px; border:1px solid var(--sline); border-radius:10px; background:var(--surface); }
+  .site .fees-h { color:var(--smuted); font-size:.8rem; margin-bottom:4px; }
+  .site .feerow { display:flex; justify-content:space-between; gap:12px; padding:3px 0; font-size:.9rem; color:var(--text); }
+  .site .fees-due { margin-top:6px; padding-top:6px; border-top:1px solid var(--sline); color:var(--smuted); }
+  .site .done { border-color:rgba(31,122,72,.45); }
+  .site .linkbox { font-family:var(--mono); font-size:.8rem; word-break:break-all; padding:10px 12px; border:1px dashed var(--sline2); border-radius:10px; margin:10px 0; color:var(--smuted); }
+  .site .banner { border:1px dashed var(--sline2); border-radius:12px; padding:12px 16px; color:var(--smuted); font-size:.9rem; margin-top:22px; }
+  .site .banner b { color:var(--text); font-weight:600; }
+  .site .gate { border:1px solid rgba(23,61,42,.4); background:rgba(23,61,42,.06); border-radius:14px; padding:22px; }
+  .site .gate h3 { font:600 1.5rem var(--display); margin-bottom:4px; }
+  .site .gate p { color:var(--smuted); margin:0 0 14px; max-width:60ch; }
+  .site .stats { display:grid; gap:10px; grid-template-columns:repeat(auto-fit, minmax(min(100%, 150px), 1fr)); margin-top:20px; }
+  @media (max-width:640px) { .site .stats { grid-template-columns:1fr 1fr; } }
+  .site .stat { padding:16px 18px; border:1px solid var(--sline); border-radius:12px; background:var(--surface); }
+  .site .stat b { display:block; font:600 2rem/1.1 var(--display); }
+  .site .stat > span { font-size:.76rem; color:var(--faint); text-transform:uppercase; letter-spacing:.08em; }
+  .site .headrow { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap; }
+  .site .pill { display:inline-flex; align-items:center; gap:6px; font:500 .74rem var(--mono); letter-spacing:.04em; padding:4px 10px; border-radius:99px; border:1px solid var(--sline2); color:var(--smuted); }
+  .site .pill::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; flex:none; }
+  .site .pill.ok { color:var(--ok); border-color:rgba(31,122,72,.4); }
+  .site .pill.bad { color:var(--bad); border-color:rgba(179,53,42,.4); }
+  .site .pill.info { color:var(--accent); border-color:rgba(23,61,42,.4); }
+  .site .pill.warn { color:var(--warn); border-color:rgba(148,96,11,.4); }
+  .site .pay-line { display:flex; justify-content:space-between; gap:12px; align-items:center; padding:12px 0; border-top:1px solid var(--sline); flex-wrap:wrap; }
+  .site .empty { color:var(--faint); font-size:.92rem; padding:12px 0 4px; margin:0; }
+  /* Notes for the reviewer inside a drawing (not words on the website). */
+  .site .rn { font:italic 14px/1.4 Georgia, serif; color:#56708f; }
+
+  /* Words that can be changed: dotted underline; yellow while typing; green once changed. */
+  .site [data-k] { cursor:text; border-radius:4px; outline:none; white-space:pre-wrap; overflow-wrap:anywhere;
+                   text-decoration:underline dotted rgba(23,61,42,.45); text-decoration-thickness:1px; text-underline-offset:.22em; }
+  .site [data-k]:hover { background:rgba(201,162,74,.18); }
+  .site [data-k]:focus { background:#fff4cc; color:var(--text); box-shadow:0 0 0 2px #c9a24a; text-decoration:none; }
+  .site [data-k].chg { background:#d9efdd; color:var(--text); text-decoration:underline solid #1f7a48; text-decoration-thickness:1px; }
+  .site [data-k].chg:focus { background:#fff4cc; }
+  .site [data-k].blank { display:inline-block; min-width:5ch; }
+  .site [data-k].blank:not(:focus)::before { content:"(left out)"; color:#8a7f70; font-style:italic; }
+  .site .btn [data-k] { text-decoration-color:rgba(247,242,231,.6); }
+  .site .btn.quiet [data-k] { text-decoration-color:rgba(23,61,42,.45); }
+  @media (max-width:640px) {
+    .site .pg { padding:22px 14px 26px; }
+    .site .step, .site .card { padding:18px; }
+  }
+</style>
+<link rel="stylesheet" href="review.css?v=reg1">
+<script src="../config.js"></script>
+<script src="review.js?v=reg1"></script>
+</head>
+<body>
+<header>
+  <p class="kicker">Lewis Family Reunion 2027</p>
+  <h1>The registration pages: your words</h1>
+  <p class="sub">The Register page and My Registration, drawn the way families see them. Change any words, and leave a note on any part.</p>
+</header>
+<main>
+
+  <div class="how">
+    <b>How this works</b>
+    <ol>
+      <li><b>Tap or click any words</b> on the pages below and type over them. Words you change turn green.</li>
+      <li>Changed your mind? Tap the words again and press <b>Put back</b>. Each part also has <b>Put back today’s words</b> for all its changes.</li>
+      <li>Words in <b>[square brackets]</b> are filled in by the website for each family, such as a name, an email or an amount. Keep the brackets where those should go.</li>
+      <li>Under every part is a <b>note</b> box for anything else: something to add, take out or move. Two <b>general notes</b> boxes are at the end.</li>
+      <li>There is nothing to send. Everything saves by itself, and Alex sees it right away.</li>
+    </ol>
+    <p>These are drawings of the pages, so the boxes and buttons in them don’t work. Nothing changes on the real website until the committee decides.</p>
+  </div>
+  <nav class="toc" aria-label="Parts of this page">
+    <a href="#register">1. Register your household</a><a href="#after">2. After pressing Save</a><a href="#me">3. My Registration</a><a href="#gate">4. Without the family code</a><a href="#general">General notes</a>
+  </nav>
+
+  <h2 class="screen" id="register">1. Register your household</h2>
+  <p class="lead">The Register page, as a relative sees it after opening the family link. On a phone the summary box comes after the form.</p>
+  <div class="site">
+    <div class="bar"><i></i><i></i><i></i><span>lewisfamilyroots.com/#register</span></div>
+    <div class="pg">
+      <div class="sec" data-sec="reg-top" data-title="Register page: the top" data-name="the top of the page">
+        <div class="kicker" data-k="reg.top.kicker" data-l="Small heading">Register</div>
+        <h2 data-k="reg.top.title" data-l="Heading">Register your household</h2>
+        <p class="intro" data-k="reg.top.intro" data-l="Text under the heading" data-para>One person fills this in for everyone traveling together. You can come back and change it any time before the reunion.</p>
+      </div>
+      <div class="split">
+        <div class="steps">
+          <div class="card step sec" data-sec="reg-about" data-title="Register page: About you" data-name="About you">
+            <h3 class="bigh" data-k="reg.about.title" data-l="Heading">About you</h3>
+            <p class="sub" data-k="reg.about.sub" data-l="Line under the heading" data-para>The main contact for your household.</p>
+            <div class="fields">
+              <div><span class="lab" data-k="reg.about.first" data-l="First name: label">First name *</span><div class="in"></div></div>
+              <div><span class="lab" data-k="reg.about.middle" data-l="Middle name: label">Middle name</span><div class="in"></div></div>
+              <div><span class="lab" data-k="reg.about.last" data-l="Last name: label">Last name *</span><div class="in"></div></div>
+              <div><span class="lab" data-k="reg.about.birth" data-l="Birth or maiden surname: label">Birth or maiden surname</span><div class="in"><span data-k="reg.about.birthHint" data-l="Birth or maiden surname: grey words in the box">If different</span></div></div>
+              <div><span class="lab" data-k="reg.about.nick" data-l="Nickname: label">What family calls you</span><div class="in"><span data-k="reg.about.nickHint" data-l="Nickname: grey words in the box">Nickname</span></div></div>
+              <div><span class="lab" data-k="reg.about.email" data-l="Email: label">Email *</span><div class="in"></div></div>
+              <div><span class="lab" data-k="reg.about.phone" data-l="Cell phone: label">Cell phone *</span><div class="in"></div></div>
+              <div><span class="lab" data-k="reg.about.city" data-l="City: label">City *</span><div class="in"></div></div>
+              <div><span class="lab" data-k="reg.about.state" data-l="State: label">State *</span><div class="in"></div></div>
+            </div>
+          </div>
+
+          <div class="card step sec" data-sec="reg-tree" data-title="Register page: Your place on the tree" data-name="Your place on the tree">
+            <h3 class="bigh" data-k="reg.tree.title" data-l="Heading">Your place on the tree</h3>
+            <p class="sub" data-k="reg.tree.sub" data-l="Line under the heading" data-para>Which child of the founding couples do you descend from?</p>
+            <div class="fields">
+              <div class="full"><span class="lab" data-k="reg.tree.branch" data-l="Branch: label">Branch *</span><div class="in sel"><span data-k="reg.tree.choose" data-l="Branch: words in the box before a choice">Choose your branch</span></div>
+                <div class="opts"><span class="rn">Then the 13 children of John and Anna Mary Lewis, from the family tree, and at the end:</span><span class="chip" data-k="reg.tree.married" data-l="Branch list: choice at the end">Married into the family</span><span class="chip" data-k="reg.tree.notSure" data-l="Branch list: last choice">Not sure yet</span></div></div>
+              <div><span class="lab" data-k="reg.tree.parents" data-l="Parents: label">Your parents' names</span><div class="in"></div></div>
+              <div><span class="lab" data-k="reg.tree.grand" data-l="Grandparent: label">Your grandparent</span><div class="in"></div></div>
+              <div class="full"><span class="lab" data-k="reg.tree.spouse" data-l="Spouse: label">Spouse or partner</span><div class="in"></div></div>
+            </div>
+          </div>
+
+          <div class="card step sec" data-sec="reg-who" data-title="Register page: Who's coming" data-name="Who's coming">
+            <h3 class="bigh" data-k="reg.who.title" data-l="Heading">Who's coming</h3>
+            <p class="sub" data-k="reg.who.sub" data-l="Line under the heading" data-para>Everyone in your household who is attending, including you. Age group is each person's age on July 2, 2027; fees go by age group.</p>
+            <div class="att">
+              <div class="nm"><span class="lab" data-k="reg.who.name" data-l="Each person: Full name label">Full name</span><div class="in"></div></div>
+              <div><span class="lab" data-k="reg.who.band" data-l="Each person: Age group label">Age group</span><div class="in sel"><span data-mirror="reg.who.band1">23 &amp; up</span></div></div>
+              <div><span class="lab" data-k="reg.who.age" data-l="Each person: Age label">Age</span><div class="in"></div></div>
+              <div><span class="lab" data-k="reg.who.shirt" data-l="Each person: T-shirt label">T-shirt</span><div class="in sel"><span data-k="reg.who.size" data-l="T-shirt: words in the box before a choice">Size</span></div></div>
+              <div class="diet"><span class="lab" data-k="reg.who.diet" data-l="Each person: Dietary needs label">Dietary needs</span><div class="in sel"><span data-mirror="reg.who.diet0">None</span></div></div>
+            </div>
+            <div class="opts"><span class="rn">Age group choices:</span><span class="chip" data-k="reg.who.band1" data-l="Age group choice 1">23 &amp; up</span><span class="chip" data-k="reg.who.band2" data-l="Age group choice 2">16–22</span><span class="chip" data-k="reg.who.band3" data-l="Age group choice 3">4–15</span><span class="chip" data-k="reg.who.band4" data-l="Age group choice 4">0–3</span></div>
+            <div class="opts"><span class="rn">Dietary needs choices:</span><span class="chip" data-k="reg.who.diet0" data-l="Dietary choice: the first one (no needs)">None</span><span class="chip" data-k="reg.who.diet1" data-l="Dietary choice">Vegetarian</span><span class="chip" data-k="reg.who.diet2" data-l="Dietary choice">Vegan</span><span class="chip" data-k="reg.who.diet3" data-l="Dietary choice">Kosher</span><span class="chip" data-k="reg.who.diet4" data-l="Dietary choice">Halal</span><span class="chip" data-k="reg.who.diet5" data-l="Dietary choice">Gluten-free</span><span class="chip" data-k="reg.who.diet6" data-l="Dietary choice">Diabetic-friendly</span><span class="chip" data-k="reg.who.diet7" data-l="Dietary choice: the last one">Other (tell us below)</span></div>
+            <p style="margin:16px 0 0"><span class="btn quiet sm"><span data-k="reg.who.add" data-l="Button to add a row">+ Add a person</span></span></p>
+          </div>
+
+          <div class="card step sec" data-sec="reg-dates" data-title="Register page: Dates & lodging" data-name="Dates & lodging">
+            <h3 class="bigh" data-k="reg.dates.title" data-l="Heading">Dates &amp; lodging</h3>
+            <p class="sub" data-k="reg.dates.sub" data-l="Line under the heading" data-para>Which days will you be with us?</p>
+            <div class="checks">
+              <div class="check on"><span class="box"></span><span><b style="font-weight:600" data-k="reg.dates.fri" data-l="Friday">Fri, July 2</b><br><span class="hint" data-k="reg.dates.friWhat" data-l="Friday: what happens">Check-in and Meet &amp; Greet</span></span></div>
+              <div class="check on"><span class="box"></span><span><b style="font-weight:600" data-k="reg.dates.sat" data-l="Saturday">Sat, July 3</b><br><span class="hint" data-k="reg.dates.satWhat" data-l="Saturday: what happens">Reunion day and Banquet</span></span></div>
+              <div class="check on"><span class="box"></span><span><b style="font-weight:600" data-k="reg.dates.sun" data-l="Sunday">Sun, July 4</b><br><span class="hint" data-k="reg.dates.sunWhat" data-l="Sunday: what happens">Family day and fireworks</span></span></div>
+              <div class="check on"><span class="box"></span><span><b style="font-weight:600" data-k="reg.dates.mon" data-l="Monday">Mon, July 5</b><br><span class="hint" data-k="reg.dates.monWhat" data-l="Monday: what happens">Farewell breakfast</span></span></div>
+            </div>
+            <div class="fields" style="margin-top:16px">
+              <div><span class="lab" data-k="reg.dates.arrive" data-l="Arriving: label">Arriving</span><div class="in num" style="color:var(--text)">07/02/2027</div></div>
+              <div><span class="lab" data-k="reg.dates.leave" data-l="Leaving: label">Leaving</span><div class="in num" style="color:var(--text)">07/05/2027</div></div>
+              <div><span class="lab" data-k="reg.dates.stay" data-l="Where are you staying: label">Where are you staying?</span><div class="in sel"><span data-mirror="reg.dates.stay1">Reunion hotel (Home2 Suites)</span></div></div>
+            </div>
+            <div class="opts"><span class="rn">Where are you staying, choices:</span><span class="chip" data-k="reg.dates.stay1" data-l="Staying choice 1">Reunion hotel (Home2 Suites)</span><span class="chip" data-k="reg.dates.stay2" data-l="Staying choice 2">Different hotel</span><span class="chip" data-k="reg.dates.stay3" data-l="Staying choice 3">Airbnb</span><span class="chip" data-k="reg.dates.stay4" data-l="Staying choice 4">Vrbo</span><span class="chip" data-k="reg.dates.stay5" data-l="Staying choice 5">With family</span><span class="chip" data-k="reg.dates.stay6" data-l="Staying choice 6">I live locally</span><span class="chip" data-k="reg.dates.stay7" data-l="Staying choice 7">Not decided yet</span></div>
+          </div>
+
+          <div class="card step sec" data-sec="reg-needs" data-title="Register page: Anything we should know" data-name="Anything we should know">
+            <h3 class="bigh" data-k="reg.needs.title" data-l="Heading">Anything we should know</h3>
+            <div class="fields" style="margin-top:14px">
+              <div class="full"><span class="lab" data-k="reg.needs.label" data-l="Needs box: label">Accessibility, health or other needs (optional)</span><div class="in big"><span data-k="reg.needs.hint" data-l="Needs box: grey words in the box">Wheelchair access, seating near the front, allergies…</span></div></div>
+            </div>
+            <div class="checks" style="margin-top:14px">
+              <div class="check"><span class="box"></span><span data-k="reg.needs.travel" data-l="Travel checkbox (must be ticked to save)" data-para>I understand that I am responsible for arranging my own travel to Fresno and my travel around town while in Fresno.</span></div>
+              <div class="check on"><span class="box"></span><span data-k="reg.needs.show" data-l="Who's coming checkbox (ticked to start with)" data-para>Show my household name, branch, city and number of people on the “Who's coming” list. (STRONGLY ENCOURAGED)</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="aside">
+          <div class="card sec" data-sec="reg-sum" data-title="Register page: the summary box" data-name="the summary box">
+            <div class="kicker" data-k="reg.sum.kicker" data-l="Small heading">Your registration</div>
+            <div class="sumrow"><span data-k="reg.sum.adults" data-l="Row: people 16 and older">Ages 16+</span><span class="num">0</span></div>
+            <div class="sumrow"><span data-k="reg.sum.kids" data-l="Row: people under 16">Under 16</span><span class="num">0</span></div>
+            <div class="sumrow"><span data-k="reg.sum.nights" data-l="Row: nights">Nights</span><span class="num">3</span></div>
+            <div class="sumrow"><span data-k="reg.sum.total" data-l="Row: estimated total">Estimated total</span><span class="num">$0</span></div>
+            <div class="hint fees">
+              <div class="fees-h" data-k="reg.sum.feesH" data-l="Fees: heading">Fees per person, by age on July 2, 2027</div>
+              <div class="feerow"><span data-k="reg.sum.fee1" data-l="Fees: first age group">Ages 23 and older</span><span class="num">$245</span></div>
+              <div class="feerow"><span data-k="reg.sum.fee2" data-l="Fees: second age group">Ages 16 to 22</span><span class="num">$95</span></div>
+              <div class="feerow"><span data-k="reg.sum.fee3" data-l="Fees: third age group">Ages 4 to 15</span><span class="num">$55</span></div>
+              <div class="feerow"><span data-k="reg.sum.fee4" data-l="Fees: fourth age group">Ages 3 and under</span><span class="num" data-k="reg.sum.free" data-l="Fees: the word for no charge">Free</span></div>
+              <div class="fees-due"><span data-k="reg.sum.due" data-l="Fees: due date line (shows once a due date is set)">Due by [the due date]</span> <span class="rn">(shows once the committee sets a due date)</span></div>
+            </div>
+            <p class="hint" data-k="reg.sum.gift" data-l="Line about the free gift" data-para>A free gift goes to the first 10 adults who pay in full.</p>
+            <div class="btn wide"><span data-k="reg.sum.save" data-l="Save button">Save registration</span></div>
+            <p class="msg err"><span data-k="reg.sum.missing" data-l="Message when something is left out (the website lists what)">Still needed:</span> first name, branch, the travel box.</p>
+            <p class="rn" style="margin:2px 0 0">The red line shows only when something required is left empty. The website names what is missing.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="screen" id="after">2. After pressing Save</h2>
+  <p class="lead">What the Register page shows once the registration is saved, and what it says when someone comes back later to change it.</p>
+  <div class="site">
+    <div class="bar"><i></i><i></i><i></i><span>lewisfamilyroots.com/#register</span></div>
+    <div class="pg">
+      <div class="card done sec" data-sec="done" data-title="After Save: You're registered" data-name="You're registered" style="max-width:760px">
+        <h3 class="bigh" data-k="done.title" data-l="Heading">You're registered. Welcome home.</h3>
+        <p class="hint" data-k="done.text" data-l="Text under the heading" data-para>We emailed your private link to [their email]. Use it to come back, change your registration and report payments. This device will remember you too.</p>
+        <div class="linkbox">https://lewisfamilyroots.com/?c=[family code]&amp;t=[registration code]#me</div>
+        <div class="row"><span class="btn quiet sm"><span data-k="done.copyLink" data-l="Button to copy the link">Copy my link</span></span><span class="btn sm"><span data-k="done.go" data-l="Button to My Registration">Go to My Registration</span></span></div>
+        <p class="hint" style="margin-top:18px" data-k="done.codes" data-l="Line about the two codes" data-para>If the link does not open, type these two codes on My Registration. They are in your email too.</p>
+        <div class="row" style="margin-top:8px"><span class="hint" style="min-width:140px" data-k="done.family" data-l="Label: family code">Family code</span><b class="num" style="font-weight:500">[family code]</b><span class="btn quiet sm"><span data-k="done.copy" data-l="Copy buttons beside the codes">Copy</span></span></div>
+        <div class="row" style="margin-top:8px"><span class="hint" style="min-width:140px" data-k="done.reg" data-l="Label: registration code">Registration code</span><b class="num" style="font-weight:500">[registration code]</b><span class="btn quiet sm"><span data-mirror="done.copy">Copy</span></span></div>
+        <p class="msg ok"><span data-k="done.msg" data-l="Green line under the Save button">You are registered.</span></p>
+      </div>
+
+      <div class="sec" data-sec="edit" data-title="After Save: coming back to change it" data-name="coming back to change it" style="margin-top:34px">
+        <div class="kicker"><span data-mirror="reg.top.kicker">Register</span></div>
+        <h2 data-k="edit.title" data-l="Heading (in place of Register your household)">Update your registration</h2>
+        <div class="banner"><span data-k="edit.banner" data-l="Box under the heading" data-para>You are changing the registration of the [household name]. Signing up a different household on this device?</span> <span class="lk" data-k="edit.new" data-l="Link in that box">Start a new registration</span>.</div>
+        <div class="card" style="margin-top:18px;max-width:420px">
+          <p class="rn" style="margin:0 0 4px">The summary box, at the bottom:</p>
+          <div class="btn wide"><span data-k="edit.save" data-l="Button (in place of Save registration)">Save changes</span></div>
+          <p class="msg ok"><span data-k="edit.saved" data-l="Green line once the changes are saved">Saved.</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="screen" id="me">3. My Registration</h2>
+  <p class="lead">The page a family comes back to from the private link in their email. First it asks for the link or the codes; once it opens it shows the household, their payments and a form to report one. The names and amounts are samples.</p>
+  <div class="site">
+    <div class="bar"><i></i><i></i><i></i><span>lewisfamilyroots.com/#me</span></div>
+    <div class="pg">
+      <div class="sec" data-sec="me-find" data-title="My Registration: finding it" data-name="finding a registration">
+        <div class="kicker" data-k="me.kicker" data-l="Small heading">My registration</div>
+        <h2 data-k="me.title0" data-l="Heading before the registration opens">Your household</h2>
+        <div class="card" style="max-width:640px;margin-top:24px">
+          <h3 class="bigh" data-k="me.find.title" data-l="Box heading">Find your registration</h3>
+          <p class="hint" data-k="me.find.text" data-l="Text under the box heading" data-para>Open the private link we emailed you when you registered. If the link will not open, type the two codes from that email below.</p>
+          <p style="margin:18px 0 0;font-weight:600" data-k="me.find.codesQ" data-l="Question above the code boxes">Have the codes from your email?</p>
+          <div class="fields" style="margin-top:10px">
+            <div><span class="lab" data-k="me.find.family" data-l="Label: family code">Family code</span><div class="in"></div></div>
+            <div><span class="lab" data-k="me.find.reg" data-l="Label: registration code">Registration code</span><div class="in num">xxxx xxxx xxxx xxxx …</div></div>
+          </div>
+          <p style="margin:14px 0 0"><span class="btn"><span data-k="me.find.open" data-l="Button to open it">Open my registration</span></span></p>
+          <p style="margin:18px 0 0;font-weight:600" data-k="me.find.lostQ" data-l="Question: lost the email">Lost the email?</p>
+          <p class="hint" style="margin-top:4px" data-k="me.find.lostText" data-l="Line under it" data-para>Enter the email you registered with and we'll send a new one.</p>
+          <div class="row" style="margin-top:10px"><div class="in" style="flex:1;min-width:200px">you@example.com</div><span class="btn"><span data-k="me.find.email" data-l="Button to email the link">Email my link</span></span></div>
+          <p class="msg ok"><span data-k="me.find.sent" data-l="Green line after Email my link" data-para>If that email is registered, a new private link is on its way. Check your inbox and spam folder.</span></p>
+          <p class="hint" style="margin-top:14px"><span data-k="me.find.notYet" data-l="Last line">Not registered yet?</span> <span class="lk" data-k="me.find.notYetLink" data-l="Link in the last line">Register your household</span>.</p>
+        </div>
+      </div>
+
+      <div class="sec" data-sec="me-house" data-title="My Registration: their household" data-name="their household" style="margin-top:40px">
+        <p class="rn" style="margin:0 0 10px">Once the registration opens:</p>
+        <div class="headrow">
+          <div><div class="kicker"><span data-mirror="me.kicker">My registration</span></div><h2 data-k="me.title" data-l="Heading once it opens">[their name] household</h2></div>
+          <span class="pill info"><span data-mirror="me.st1">Registered, payment pending</span></span>
+        </div>
+        <div class="stats">
+          <div class="stat"><b class="num">2</b><span data-k="me.st.adults" data-l="Box: people 16 and older">Ages 16+</span></div>
+          <div class="stat"><b class="num">1</b><span data-k="me.st.kids" data-l="Box: people under 16">Under 16</span></div>
+          <div class="stat"><b class="num">3</b><span data-k="me.st.nights" data-l="Box: nights">Nights</span></div>
+          <div class="stat"><b class="num">$545</b><span data-k="me.st.due" data-l="Box: total due">Total due</span></div>
+          <div class="stat"><b class="num">$0</b><span data-k="me.st.confirmed" data-l="Box: confirmed">Confirmed</span></div>
+          <div class="stat"><b class="num">$545</b><span data-k="me.st.balance" data-l="Box: balance">Balance</span></div>
+        </div>
+        <p class="hint" style="margin-top:12px" data-k="me.id" data-l="Household ID line" data-para>Household ID: [household ID]. Put it in the note when you pay, so the committee can match your payment.</p>
+        <div class="opts"><span class="rn">The status beside the heading is one of these, and the website picks it:</span><span class="chip" data-k="me.st1" data-l="Status: registered, nothing paid">Registered, payment pending</span><span class="chip" data-k="me.st2" data-l="Status: a payment reported">Payment reported, awaiting confirmation</span><span class="chip" data-k="me.st3" data-l="Status: part paid">Partially paid</span><span class="chip" data-k="me.st4" data-l="Status: all paid">Paid in full</span></div>
+      </div>
+
+      <div class="split" style="margin-top:28px">
+        <div>
+          <div class="card sec" data-sec="me-pay" data-title="My Registration: Payments" data-name="Payments">
+            <h3 data-k="me.pay.title" data-l="Heading">Payments</h3>
+            <p class="hint" data-k="me.pay.text" data-l="Line under the heading" data-para>A payment counts toward your balance once the committee confirms it arrived.</p>
+            <p class="empty"><span data-k="me.pay.none" data-l="Before any payment is reported">No payments reported yet.</span></p>
+            <p class="rn" style="margin:10px 0 0">Each payment reported then shows on a line like these:</p>
+            <div class="pay-line" style="border-top:0"><div><b class="num">$245.00</b> <span class="hint">Zelle · sent [date]</span></div><span class="pill info"><span data-k="me.pay.await" data-l="Payment waiting for the committee">Awaiting confirmation</span></span></div>
+            <div class="pay-line"><div><b class="num">$300.00</b> <span class="hint">Cash App · sent [date]</span></div><span class="pill ok"><span data-k="me.pay.ok" data-l="Payment the committee confirmed (the date follows)">Confirmed</span> [date]</span></div>
+            <div class="pay-line"><div><b class="num">$100.00</b> <span class="hint">Zelle · sent [date]</span></div><span class="pill bad"><span data-k="me.pay.not" data-l="Payment the committee could not find">Not received yet. Contact the committee</span></span></div>
+          </div>
+        </div>
+        <div>
+          <div class="card sec" data-sec="me-report" data-title="My Registration: Report a payment" data-name="Report a payment">
+            <h3 data-k="me.rep.title" data-l="Heading">Report a payment</h3>
+            <p class="hint" data-k="me.rep.how" data-l="How to pay line" data-para>Send payment by [the ways to pay: Zelle and Cash App, from the Sheet].</p>
+            <div class="fields" style="margin-top:12px">
+              <div><span class="lab" data-k="me.rep.amount" data-l="Amount: label">Amount (USD)</span><div class="in"></div></div>
+              <div><span class="lab" data-k="me.rep.method" data-l="Method: label">Method</span><div class="in sel"><span data-mirror="me.rep.m1">Zelle</span></div></div>
+              <div><span class="lab" data-k="me.rep.date" data-l="Date sent: label">Date sent</span><div class="in num" style="color:var(--text)">[today]</div></div>
+              <div><span class="lab" data-k="me.rep.ref" data-l="Confirmation number: label">Confirmation number</span><div class="in"><span data-k="me.rep.refHint" data-l="Confirmation number: grey words in the box">If you have one</span></div></div>
+              <div class="full"><span class="lab" data-k="me.rep.note" data-l="Note: label">Note</span><div class="in"><span data-k="me.rep.noteHint" data-l="Note: grey words in the box">Paid for my mom's household too, etc.</span></div></div>
+            </div>
+            <div class="opts"><span class="rn">Method choices:</span><span class="chip" data-k="me.rep.m1" data-l="Method choice 1">Zelle</span><span class="chip" data-k="me.rep.m2" data-l="Method choice 2">Cash App</span><span class="chip" data-k="me.rep.m3" data-l="Method choice 3">Venmo</span><span class="chip" data-k="me.rep.m4" data-l="Method choice 4">PayPal</span><span class="chip" data-k="me.rep.m5" data-l="Method choice 5">Check</span><span class="chip" data-k="me.rep.m6" data-l="Method choice 6">Cash to committee</span></div>
+            <p style="margin:14px 0 0"><span class="btn"><span data-k="me.rep.send" data-l="Button">Report payment</span></span></p>
+            <p class="msg ok"><span data-k="me.rep.done" data-l="Green line once it is reported" data-para>Reported. It shows as confirmed once the committee sees it arrive.</span></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec" data-sec="me-end" data-title="My Registration: the bottom" data-name="the bottom of the page" style="margin-top:18px">
+        <div class="row"><span class="btn quiet sm"><span data-k="me.end.edit" data-l="Button: edit">Edit my registration</span></span><span class="btn quiet sm"><span data-k="me.end.new" data-l="Button: another household">Register a different household</span></span></div>
+        <p class="hint" style="margin-top:8px" data-k="me.end.text" data-l="Line under the buttons" data-para>Registering someone else too, such as a parent? Use “Register a different household”. This one stays saved, and its private link is in your email.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="screen" id="gate">4. Without the family code</h2>
+  <p class="lead">What shows in place of the form when someone opens the website without the family link. The same box guards the other family pages, such as Our Family and Photos.</p>
+  <div class="site">
+    <div class="bar"><i></i><i></i><i></i><span>lewisfamilyroots.com/#register</span></div>
+    <div class="pg">
+      <div class="gate sec" data-sec="gate" data-title="Without the family code" data-name="the family code box" style="max-width:760px">
+        <h3 data-k="gate.title" data-l="Heading">Family members only</h3>
+        <p data-k="gate.text" data-l="Text under the heading" data-para>This part of the site is for Lewis family. Open the link the reunion committee sent you, or enter the family code from it.</p>
+        <div class="row"><div class="in" style="flex:1;min-width:200px;max-width:340px"><span data-k="gate.box" data-l="Grey words in the box">Family code</span></div><span class="btn"><span data-k="gate.go" data-l="Button">Continue</span></span></div>
+        <p class="hint" style="margin:14px 0 0" data-k="gate.ask" data-l="Line about getting the code" data-para>Do not have the code? Ask the relative who told you about the reunion, or email the committee at [the committee email].</p>
+        <p class="hint" style="margin:8px 0 0"><span data-k="gate.reg" data-l="Last line">Have a registration code too? Enter it on</span> <span class="lk" data-k="gate.regLink" data-l="Link in the last line">My Registration</span>.</p>
+      </div>
+    </div>
+  </div>
+
+  <section class="general" id="general">
+    <h2 class="screen">General notes</h2>
+    <p class="lead">For anything that isn’t about one part: what is missing, what is confusing, what you would put in a different order.</p>
+    <label for="g-all">About the registration pages <span>(optional)</span></label>
+    <textarea id="g-all" data-g="all" rows="5" placeholder="Your notes on the registration pages as a whole"></textarea>
+    <label for="g-other">Anything else <span>(optional)</span></label>
+    <textarea id="g-other" data-g="other" rows="3" placeholder="Questions or ideas for Alex and the committee"></textarea>
+  </section>
+
+  <footer>Somehow, some way, your foundation is Lewis, and you belong here.</footer>
+</main>
+
+<script>
+/* The words on the registration pages, for the committee's review. Every element with data-k is a piece of the website's
+   words: its text in this file is the wording the website uses today. The reviewer types over it in place; this page keeps
+   only what differs from today (w:<key>, an empty string meaning "leave it out"), plus a note per part (n:<part>) and two
+   general notes (g:all, g:other), as one flat object in localStorage under KEY. review.js saves that object to the Sheet
+   (part "register") and calls compose() for the readable copy. */
+(function () {
+  'use strict';
+  var KEY = 'lewis-registration-wording-v1';
+  var store = {};
+  try { store = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { store = {}; }
+  if (!store || typeof store !== 'object' || Array.isArray(store)) store = {};
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
+
+  function norm(s) { return String(s == null ? '' : s).replace(/\u00a0/g, ' ').replace(/\r/g, '').replace(/[ \t]+\n/g, '\n').trim(); }
+  /* The words as typed. Not innerText: that gives "REGISTER" for a small heading the page shows in capitals. A line break
+     can arrive as a newline, a <br> or (in older browsers) a new <div>. */
+  function textOf(el) {
+    var out = '';
+    (function walk(n) {
+      for (var c = n.firstChild; c; c = c.nextSibling) {
+        if (c.nodeType === 3) out += c.nodeValue;
+        else if (c.nodeName === 'BR') out += '\n';
+        else if (c.nodeType === 1) { if (/^(DIV|P|LI)$/.test(c.nodeName) && out && !/\n$/.test(out)) out += '\n'; walk(c); }
+      }
+    })(el);
+    return norm(out);
+  }
+  function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+
+  var EDS = $$('.site [data-k]'), BY = {}, TODAY = {}, LABEL = {}, SEC = {};
+  var plain = (function () { var d = document.createElement('div'); try { d.contentEditable = 'plaintext-only'; } catch (e) {} return d.contentEditable === 'plaintext-only'; })();
+
+  /* The parts, in page order, each with a note box under it. */
+  var SECS = $$('[data-sec]').map(function (sec) {
+    var id = sec.getAttribute('data-sec');
+    var nb = document.createElement('div');
+    nb.className = 'nb';
+    nb.innerHTML = '<div class="nb-h"><label for="n-' + id + '"></label><span class="nb-chg" hidden><span class="nb-n"></span> · <button type="button" class="nb-undo">Put back today’s words</button></span></div>' +
+      '<textarea id="n-' + id + '" rows="1" placeholder="A note about this part (optional)"></textarea>';
+    nb.querySelector('label').textContent = 'Your note on “' + (sec.getAttribute('data-name') || sec.getAttribute('data-title')) + '”';
+    sec.parentNode.insertBefore(nb, sec.nextSibling);
+    var ta = nb.querySelector('textarea');
+    ta.value = typeof store['n:' + id] === 'string' ? store['n:' + id] : '';
+    nb.classList.toggle('has', !!ta.value.trim());
+    ta.addEventListener('input', function () {
+      if (ta.value.trim()) store['n:' + id] = ta.value; else delete store['n:' + id];
+      nb.classList.toggle('has', !!ta.value.trim());
+      save(); grow(ta);
+    });
+    nb.querySelector('.nb-undo').addEventListener('click', function () { putBack(id); });
+    return { id: id, title: sec.getAttribute('data-title') || id, box: nb, chg: nb.querySelector('.nb-chg'), n: nb.querySelector('.nb-n'), ta: ta, eds: [] };
+  });
+  var SECBY = {}; SECS.forEach(function (s) { SECBY[s.id] = s; });
+
+  EDS.forEach(function (el) {
+    var k = el.getAttribute('data-k'), sec = el.closest('[data-sec]');
+    if (BY[k]) { if (window.console) console.warn('Two words share the key ' + k); return; }
+    BY[k] = el;
+    TODAY[k] = norm(el.textContent);
+    LABEL[k] = el.getAttribute('data-l') || TODAY[k];
+    SEC[k] = sec ? sec.getAttribute('data-sec') : '';
+    if (SECBY[SEC[k]]) SECBY[SEC[k]].eds.push(k);
+    el.contentEditable = plain ? 'plaintext-only' : 'true';
+    el.spellcheck = true;
+    el.setAttribute('role', 'textbox');
+    el.setAttribute('aria-multiline', el.hasAttribute('data-para') ? 'true' : 'false');
+    el.setAttribute('aria-label', (sec ? sec.getAttribute('data-title') + ': ' : '') + LABEL[k]);
+    if (typeof store['w:' + k] === 'string') el.textContent = store['w:' + k];
+  });
+
+  function changed(k) { return typeof store['w:' + k] === 'string' && norm(store['w:' + k]) !== TODAY[k]; }
+  function mark(k) {
+    var el = BY[k], t = textOf(el);
+    el.classList.toggle('chg', t !== TODAY[k]);
+    el.classList.toggle('blank', t === '');
+    $$('[data-mirror="' + k + '"]').forEach(function (m) { m.textContent = t || '(left out)'; });
+  }
+  function secState(id) {
+    var s = SECBY[id]; if (!s) return;
+    var n = s.eds.filter(changed).length;
+    s.chg.hidden = !n;
+    s.n.textContent = n === 1 ? '1 change' : n + ' changes';
+  }
+  function edited(el) {
+    var k = el.getAttribute('data-k'), t = textOf(el);
+    if (t === TODAY[k]) delete store['w:' + k]; else store['w:' + k] = t;
+    save(); mark(k); secState(SEC[k]); showWas(el);
+  }
+  function putBack(id) {
+    var s = SECBY[id]; if (!s) return;
+    s.eds.forEach(function (k) { if (BY[k] && textOf(BY[k]) !== TODAY[k]) { BY[k].textContent = TODAY[k]; delete store['w:' + k]; mark(k); } });
+    save(); secState(id); was.hidden = true;
+  }
+
+  /* Typing in the words: Enter finishes a short line (labels, buttons, headings); longer text may have line breaks.
+     Pasted text arrives as plain text, so nothing from a web page or a document brings its own styling. */
+  document.addEventListener('input', function (e) { var el = e.target.closest && e.target.closest('.site [data-k]'); if (el) edited(el); });
+  document.addEventListener('keydown', function (e) {
+    var el = e.target.closest && e.target.closest('.site [data-k]'); if (!el) return;
+    if (e.key === 'Escape' || (e.key === 'Enter' && !el.hasAttribute('data-para'))) { e.preventDefault(); el.blur(); }
+  });
+  document.addEventListener('paste', function (e) {
+    var el = e.target.closest && e.target.closest('.site [data-k]'); if (!el) return;
+    var t = (e.clipboardData || window.clipboardData).getData('text');
+    if (t == null) return;
+    e.preventDefault();
+    if (!el.hasAttribute('data-para')) t = t.replace(/\s*\n\s*/g, ' ');
+    if (!document.execCommand || !document.execCommand('insertText', false, t)) {
+      var sel = window.getSelection(); if (!sel || !sel.rangeCount) return;
+      var r = sel.getRangeAt(0); r.deleteContents(); r.insertNode(document.createTextNode(t)); r.collapse(false);
+      edited(el);
+    }
+  });
+  document.addEventListener('drop', function (e) { if (e.target.closest && e.target.closest('.site [data-k]')) e.preventDefault(); });
+
+  /* A press on a button, box or choice in a drawing goes to the words inside it. */
+  function focusEnd(el) {
+    el.focus();
+    try { var r = document.createRange(); r.selectNodeContents(el); r.collapse(false); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); } catch (e) {}
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || e.target.closest('[data-k]')) return;
+    var host = e.target.closest('.site .btn, .site .in, .site .pill, .site .chip, .site .check');
+    var el = host && host.querySelector('[data-k]');
+    if (el) focusEnd(el);
+  });
+
+  /* "Today:" with a Put back button, under a line while it is being changed. */
+  var was = document.createElement('div');
+  was.className = 'was'; was.hidden = true;
+  was.innerHTML = '<span class="was-l">Today:</span><span class="was-t"></span><button type="button" class="was-b">Put back</button>';
+  document.body.appendChild(was);
+  var cur = null, hideT = 0;
+  function showWas(el) {
+    if (!el || document.activeElement !== el) return;
+    var k = el.getAttribute('data-k');
+    if (!el.classList.contains('chg')) { was.hidden = true; return; }
+    was.querySelector('.was-t').textContent = ' ' + (TODAY[k] || '(nothing)');
+    was.hidden = false;
+    var r = el.getBoundingClientRect(), vw = document.documentElement.clientWidth;
+    var left = Math.max(8, Math.min(r.left, vw - was.offsetWidth - 8));
+    was.style.left = (left + window.pageXOffset) + 'px';
+    was.style.top = (r.bottom + window.pageYOffset + 6) + 'px';
+  }
+  document.addEventListener('focusin', function (e) {
+    var el = e.target.closest && e.target.closest('.site [data-k]');
+    clearTimeout(hideT);
+    if (el) { cur = el; showWas(el); } else { was.hidden = true; cur = null; }
+  });
+  document.addEventListener('focusout', function (e) {
+    if (e.target.closest && e.target.closest('.site [data-k]')) hideT = setTimeout(function () { was.hidden = true; cur = null; }, 400);
+  });
+  was.addEventListener('mousedown', function (e) { e.preventDefault(); });
+  was.querySelector('.was-b').addEventListener('click', function () {
+    if (!cur) return;
+    cur.textContent = TODAY[cur.getAttribute('data-k')];
+    edited(cur); was.hidden = true;
+  });
+  window.addEventListener('resize', function () { if (!was.hidden && cur) showWas(cur); });
+
+  /* The general notes at the end. */
+  function grow(t) { t.style.height = ''; if (t.value && t.offsetWidth) t.style.height = Math.max(t.offsetHeight, t.scrollHeight + 2) + 'px'; }
+  $$('textarea[data-g]').forEach(function (t) {
+    var k = 'g:' + t.getAttribute('data-g');
+    t.value = typeof store[k] === 'string' ? store[k] : '';
+    t.classList.toggle('has', !!t.value.trim());
+    t.addEventListener('input', function () {
+      if (t.value.trim()) store[k] = t.value; else delete store[k];
+      t.classList.toggle('has', !!t.value.trim());
+      save(); grow(t);
+    });
+  });
+
+  Object.keys(BY).forEach(mark);
+  SECS.forEach(function (s) { secState(s.id); });
+  window.addEventListener('load', function () { $$('.nb textarea, textarea[data-g]').forEach(grow); });
+
+  /* The readable copy for the Sheet (review.js puts the reviewer's name on the first line). */
+  function lines(s, pad) { return norm(s).replace(/\n+/g, '\n' + pad); }
+  window.compose = function () {
+    var L = ['Registration pages from (name not given)'], n = 0;
+    var all = norm(store['g:all']), other = norm(store['g:other']);
+    if (all || other) {
+      L.push(''); L.push('GENERAL NOTES');
+      if (all) { L.push('About the registration pages:'); L.push('  ' + lines(all, '  ')); n++; }
+      if (other) { L.push('Anything else:'); L.push('  ' + lines(other, '  ')); n++; }
+    }
+    SECS.forEach(function (s) {
+      var note = norm(store['n:' + s.id]), words = s.eds.filter(changed);
+      if (!note && !words.length) return;
+      L.push(''); L.push('== ' + s.title + ' ==');
+      if (note) { L.push('Note: ' + lines(note, '  ')); n++; }
+      words.forEach(function (k) {
+        var t = norm(store['w:' + k]);
+        L.push(LABEL[k] + ':');
+        L.push('  Today: ' + TODAY[k].replace(/\n+/g, ' / '));
+        L.push('  Change to: ' + (t ? t.replace(/\n+/g, ' / ') : '(leave it out)'));
+        n++;
+      });
+    });
+    if (!n) { L.push(''); L.push('No changes or notes yet.'); }
+    return { text: L.join('\n'), n: n };
+  };
+})();
+</script>
+</body>
+</html>

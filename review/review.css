@@ -8,15 +8,19 @@
 .rv-tabs a[aria-current="page"] { background:#f7f2e7; color:#173d2a; }
 .rv-status { margin-left:auto; font-size:13.5px; color:#cfe0d3; }
 .rv-status.bad { color:#ffd9c2; font-weight:bold; }
+.rv-short { display:none; }
 .rv-cover { position:fixed; inset:0; z-index:60; background:rgba(243,238,227,.94); display:flex; align-items:center; justify-content:center; padding:24px; font:18px/1.45 Georgia, serif; color:#211a13; text-align:center; }
 .rv-cover[hidden] { display:none; }
 .rv-cover div { max-width:30em; }
 @media (max-width:640px) {
   .rv-in { padding:6px 10px; gap:4px 8px; }
   .rv-brand { display:none; }
-  .rv-tabs { flex-wrap:nowrap; }
-  .rv-tabs a { padding:4px 8px; font-size:14px; }
+  /* Five tabs fit a 360 px phone; on a smaller one the row scrolls sideways by itself, never the page. */
+  .rv-tabs { flex-wrap:nowrap; gap:2px; max-width:100%; overflow-x:auto; scrollbar-width:none; }
+  .rv-tabs::-webkit-scrollbar { display:none; }
+  .rv-tabs a { flex:none; padding:4px 6px; font-size:14px; }
   .rv-long { display:none; }
+  .rv-short { display:inline; }
   .rv-status { margin-left:0; width:100%; font-size:12.5px; }
 }
 /* No sending in a review: the page saves by itself. */
