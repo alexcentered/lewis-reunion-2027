@@ -136,6 +136,24 @@
   .pv cite { display:block; margin-top:14px; font-size:13px; color:var(--faint); font-style:normal; }
   .pv .split { display:grid; gap:28px; grid-template-columns:1.1fr .9fr; }
   .pv .split p { font-size:16px; color:var(--muted); margin:0 0 1em; }
+  .pv .split p.callout { padding:14px 18px 15px; border:1px solid rgba(23,61,42,.28); border-left:4px solid var(--accent); border-radius:4px 12px 12px 4px; background:rgba(23,61,42,.06); font:italic 600 22px/1.36 'Playfair Display', Georgia, serif; color:var(--text); }
+  .pv .reel { position:relative; display:flex; gap:16px; overflow:hidden; margin:32px -40px 24px; padding:26px 8px; background:#0e0d0c; }
+  .pv .reel::before, .pv .reel::after { content:""; position:absolute; left:0; right:0; height:24px; background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><rect x='21' y='29' width='58' height='42' rx='15' ry='19' fill='%23efe8d9'/></svg>") left top / 30px 24px repeat-x; }
+  .pv .reel::before { top:0; }
+  .pv .reel::after { bottom:0; }
+  .pv .reel img { flex:none; display:block; width:224px; height:224px; border-radius:3px; }
+  .pv .reel img.logo { object-fit:contain; padding:13px; box-sizing:border-box; background:#080808; }
+  .pv .album { margin:36px -40px 0; padding:30px 40px 24px; background:#f1e7d0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+  .pv .album .reel { margin:20px -40px 0; }
+  .pv .album-title { font:600 34px/1.1 'Playfair Display', Georgia, serif; margin:0; }
+  .pv .eras { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:28px; }
+  .pv .era { padding:24px; border:1px solid var(--line); border-top:3px solid var(--accent-2); border-radius:16px; background:var(--surface); }
+  .pv .era-ahead { border-top-color:var(--accent); }
+  .pv .era h3 { font:600 28px/1.12 'Playfair Display', Georgia, serif; margin:0 0 10px; }
+  .pv .era p { font-size:16px; color:var(--muted); margin:0; }
+  .fields .lbl { display:block; font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--brown); margin-bottom:3px; }
+  .fields label.opt { display:flex; gap:8px; align-items:center; margin:6px 0 0; font-size:15px; letter-spacing:0; text-transform:none; color:var(--ink); cursor:pointer; }
+  .fields label.opt input { accent-color:var(--green); width:18px; height:18px; margin:0; }
   .pv .card .d { font:500 12px 'Geist Mono', Menlo, monospace; letter-spacing:.1em; text-transform:uppercase; color:var(--accent-2); margin-bottom:8px; }
   .pv .card h3 { font:600 25px/1.1 'Playfair Display', Georgia, serif; }
   .pv .card p { color:var(--muted); font-size:14.5px; margin:8px 0 0; }
@@ -188,7 +206,7 @@
       <li class="item" data-id="why"><span class="grip" aria-hidden="true">⋮⋮</span><svg class="sketch" viewBox="0 0 64 44" aria-hidden="true"><rect x="6" y="9" width="20" height="4" rx="2" fill="#173d2a"/><rect x="6" y="16" width="18" height="4" rx="2" fill="#173d2a"/><rect x="32" y="9" width="26" height="3" rx="1.5" fill="#cdc4b2"/><rect x="32" y="15" width="24" height="3" rx="1.5" fill="#cdc4b2"/><rect x="32" y="21" width="26" height="3" rx="1.5" fill="#cdc4b2"/><rect x="32" y="27" width="20" height="3" rx="1.5" fill="#cdc4b2"/><rect x="32" y="33" width="25" height="3" rx="1.5" fill="#cdc4b2"/></svg><div><h3>Why we're doing this</h3><p>"Family can be ten buildings away": the cousins who worked ten buildings apart, the cousin brought home safely, and the family directory we keep after July.</p></div><div class="ctrls"></div><div class="note"><textarea placeholder="Your note about this section (optional)"></textarea></div></li>
       <li class="item" data-id="hero"><span class="grip" aria-hidden="true">⋮⋮</span><svg class="sketch" viewBox="0 0 64 44" aria-hidden="true"><rect x="0" y="0" width="64" height="44" fill="#173d2a"/><rect x="8" y="9" width="10" height="12" rx="2" fill="#c9a24a"/><rect x="22" y="10" width="32" height="5" rx="2" fill="#f7f2e7"/><rect x="22" y="18" width="24" height="3" rx="1.5" fill="#9fbba9"/><rect x="8" y="28" width="12" height="5" rx="1" fill="#e6dcc8"/><rect x="23" y="28" width="12" height="5" rx="1" fill="#e6dcc8"/><rect x="38" y="28" width="12" height="5" rx="1" fill="#e6dcc8"/><rect x="8" y="36" width="20" height="5" rx="2.5" fill="#f7f2e7"/></svg><div><h3>Welcome banner</h3><p>The crest and title, dates, a short welcome, the countdown (days to go, households, branches), and the Register and Schedule buttons.</p></div><div class="ctrls"></div><div class="note"><textarea placeholder="Your note about this section (optional)"></textarea></div></li>
       <li class="item" data-id="welcome"><span class="grip" aria-hidden="true">⋮⋮</span><svg class="sketch" viewBox="0 0 64 44" aria-hidden="true"><rect x="6" y="9" width="20" height="4" rx="2" fill="#173d2a"/><rect x="6" y="16" width="16" height="4" rx="2" fill="#173d2a"/><rect x="32" y="9" width="26" height="3" rx="1.5" fill="#cdc4b2"/><rect x="32" y="15" width="24" height="3" rx="1.5" fill="#cdc4b2"/><rect x="32" y="21" width="26" height="3" rx="1.5" fill="#cdc4b2"/><rect x="32" y="27" width="22" height="3" rx="1.5" fill="#cdc4b2"/><rect x="32" y="33" width="25" height="3" rx="1.5" fill="#cdc4b2"/></svg><div><h3>Welcome</h3><p>"Welcome to the Lewis Family Roots Website.": why the site is here, where the family began, and what the site will grow into.</p></div><div class="ctrls"></div><div class="note"><textarea placeholder="Your note about this section (optional)"></textarea></div></li>
-      <li class="item" data-id="reunion"><span class="grip" aria-hidden="true">⋮⋮</span><svg class="sketch" viewBox="0 0 64 44" aria-hidden="true"><rect x="6" y="9" width="20" height="4" rx="2" fill="#173d2a"/><rect x="6" y="16" width="16" height="4" rx="2" fill="#173d2a"/><rect x="32" y="9" width="26" height="3" rx="1.5" fill="#cdc4b2"/><rect x="32" y="15" width="24" height="3" rx="1.5" fill="#cdc4b2"/><rect x="32" y="21" width="26" height="3" rx="1.5" fill="#cdc4b2"/><rect x="32" y="27" width="22" height="3" rx="1.5" fill="#cdc4b2"/><rect x="32" y="33" width="25" height="3" rx="1.5" fill="#cdc4b2"/></svg><div><h3>The 2027 Family Reunion</h3><p>"Our first order of business.": what the reunion is for, and where and when it is.</p></div><div class="ctrls"></div><div class="note"><textarea placeholder="Your note about this section (optional)"></textarea></div></li>
+      <li class="item" data-id="reunion"><span class="grip" aria-hidden="true">⋮⋮</span><svg class="sketch" viewBox="0 0 64 44" aria-hidden="true"><rect x="6" y="9" width="20" height="4" rx="2" fill="#173d2a"/><rect x="6" y="16" width="16" height="4" rx="2" fill="#173d2a"/><rect x="32" y="9" width="26" height="3" rx="1.5" fill="#cdc4b2"/><rect x="32" y="15" width="24" height="3" rx="1.5" fill="#cdc4b2"/><rect x="32" y="21" width="26" height="3" rx="1.5" fill="#cdc4b2"/><rect x="32" y="27" width="22" height="3" rx="1.5" fill="#cdc4b2"/><rect x="32" y="33" width="25" height="3" rx="1.5" fill="#cdc4b2"/></svg><div><h3>The 2027 Family Reunion</h3><p>"Our first order of business.": what the reunion is for, the reunions before it with the 1985 and 2008 pictures, and where and when it is. Two layouts to choose from under Edit words.</p></div><div class="ctrls"></div><div class="note"><textarea placeholder="Your note about this section (optional)"></textarea></div></li>
       <li class="item" data-id="roll"><span class="grip" aria-hidden="true">⋮⋮</span><svg class="sketch" viewBox="0 0 64 44" aria-hidden="true"><rect x="6" y="7" width="26" height="4" rx="2" fill="#5b4433"/><rect x="6" y="15" width="24" height="6" rx="3" fill="#fff" stroke="#cdc4b2"/><rect x="33" y="15" width="24" height="6" rx="3" fill="#fff" stroke="#cdc4b2"/><rect x="6" y="24" width="24" height="6" rx="3" fill="#fff" stroke="#cdc4b2"/><rect x="33" y="24" width="24" height="6" rx="3" fill="#fff" stroke="#cdc4b2"/><rect x="6" y="33" width="24" height="6" rx="3" fill="#fff" stroke="#cdc4b2"/></svg><div><h3>Households on the list</h3><p>"Who's coming": the families who registered and chose to show their name. Family members only.</p></div><div class="ctrls"></div><div class="note"><textarea placeholder="Your note about this section (optional)"></textarea></div></li>
       <li class="item" data-id="cta"><span class="grip" aria-hidden="true">⋮⋮</span><svg class="sketch" viewBox="0 0 64 44" aria-hidden="true"><rect x="6" y="12" width="34" height="5" rx="2.5" fill="#173d2a"/><rect x="6" y="25" width="22" height="7" rx="3.5" fill="#173d2a"/></svg><div><h3>Let's get you registered</h3><p>A short heading and a Register button at the end of the page.</p></div><div class="ctrls"></div><div class="note"><textarea placeholder="Your note about this section (optional)"></textarea></div></li>
     </ul>
@@ -263,11 +281,21 @@ var COPY = {
   welcome: [['kicker', 'Small heading', 'Welcome'], ['heading', 'Heading', 'Welcome to the Lewis Family Roots Website.'],
     ['p1', 'First paragraph', 'A website rooted in our family legacy and its generational strengths… If you are here, it\'s because you belong. If you are here, it is because you matter, and your presence is a testament to the branch of the Lewis Family roots you are part of and have contributed to.'],
     ['p2', 'Second paragraph', 'A place that is rooted in “The Bottom” of Mobile, Alabama, that has spanned the globe. A place with humble beginnings, born of John and Anna Mary Lewis and the 13 children they brought into this world. This place is designed to be generational in nature, with a torch passing to maintain our legacy through the generations of aunts, uncles, and the vast number of cousins, 1st, 2nd, 3rd, removed, and beyond. We are the Lewis family.'],
+    ['callout', 'Callout box (a line from the second paragraph; empty it to leave the box out)', 'A place with humble beginnings, born of John and Anna Mary Lewis and the 13 children they brought into this world.'],
     ['p3', 'Third paragraph', 'Please continue to come back, as this website will evolve to include your pictures, your stories, an interactive family tree, and a marketplace. Its design is to grow through the years with videos, testimonials, and memorials of our past loved ones. Its design is intentional because you matter!'],
     ['p4', 'Fourth paragraph', 'Thank you for stopping by.']],
   reunion: [['kicker', 'Small heading', 'The 2027 Family Reunion'], ['heading', 'Heading', 'Our first order of business.'],
+    ['layout', 'Layout', 'B', [['A', 'A: one column, the film between the paragraphs'], ['B', 'B: the film in an album band, then two cards']]],
     ['p1', 'First paragraph', 'Our first order of business for this site is to intentionally plan a get-together, but not just any get-together, a Reunion. A reunion that is internal in its purpose. It\'s true, we as a family have gotten together for a funeral and made some memories there, but those get-togethers we respectfully designed to send our loved ones off to heaven, where we know a Lewis party is continually being held. But this reunion is to reach the family members on all coasts, and all countries, with the one purpose of gathering, sharing our stories, meeting the old and new generations of our families, to learn from each other, to share the successes and failures, to plant seeds for our legacy, and to purposefully unite our family to make us strong. It\'s true that pictures are an amazing way to see the triumphs of our family, but nothing, and I say nothing, takes away the physical presence of seeing your family member, being able to hug them, cry with them, and love them, and that’s the purpose of the 2027 Family Reunion.'],
-    ['p2', 'Second paragraph', 'It is planned in Fresno, California, where our oldest living Lewis resides. It will span 4 days, from Friday, 2 July 2027 through Monday, 5 July 2027, and will offer plenty of opportunities to connect, share, laugh, and pay homage to the roots of the 13 generations of families who have contributed to the hundreds of branches that make up the Lewis Family.']],
+    ['callout', 'Callout box (a line from the first paragraph; empty it to leave the box out)', 'Nothing, and I say nothing, takes away the physical presence of seeing your family member, being able to hug them, cry with them, and love them.'],
+    ['albumKicker', 'Layout B: small heading over the pictures', 'From the family album'],
+    ['albumHeading', 'Layout B: heading over the pictures', 'Reunions through the years'],
+    ['backKicker', 'Layout B: first card label', 'Looking back'],
+    ['backHeading', 'Layout B: first card heading', 'We’ve gathered before.'],
+    ['past', 'Second paragraph (new): past reunions', 'We\'ve had reunions in the past: the 1985 Reunion (pictured) and the 2008 Reunion (pictured), as well as several smaller reunions on each coast by smaller groups of family members. This one is attempting to reach all of us, everywhere we are, to intentionally get together in one place in 2027.'],
+    ['aheadKicker', 'Layout B: second card label', 'Looking ahead'],
+    ['aheadHeading', 'Layout B: second card heading', 'See you in Fresno.'],
+    ['p2', 'Third paragraph', 'It is planned in Fresno, California, where our oldest living Lewis resides. It will span 4 days, from Friday, 2 July 2027 through Monday, 5 July 2027, and will offer plenty of opportunities to connect, share, laugh, and pay homage to the roots of the 13 generations of families who have contributed to the hundreds of branches that make up the Lewis Family.']],
   cta: [['heading', 'Heading', 'Let\'s get you registered.'], ['btn', 'Button', 'Register your household']],
   hero: [['when', 'Date line', 'July 2 – 5, 2027 · Fresno, California'], ['title', 'Title', 'Lewis Family Reunion 2027'],
     ['lead', 'Welcome text', 'Come to Fresno, California, to celebrate your connection to family. Spend four days to connect, reconnect to the roots that make our family. Meet the cousins you haven’t met yet, and update your branch on the family tree.'],
@@ -312,6 +340,9 @@ function buildFields() {
     var box = document.createElement('div');
     box.className = 'fields';
     box.innerHTML = COPY[id].map(function (f) {
+      // A field with a list of options (the reunion layout) is a choice, not words to type.
+      if (f[3]) return '<div class="f" role="radiogroup" aria-labelledby="w-' + id + '-' + f[0] + '"><span class="lbl" id="w-' + id + '-' + f[0] + '">' + esc(f[1]) + '</span>' +
+        f[3].map(function (o) { return '<label class="opt"><input type="radio" name="w-' + id + '-' + f[0] + '" value="' + esc(o[0]) + '" data-w="' + id + '" data-k="' + f[0] + '"> ' + esc(o[1]) + '</label>'; }).join('') + '</div>';
       return '<div class="f"><label for="w-' + id + '-' + f[0] + '">' + esc(f[1]) + '</label><textarea id="w-' + id + '-' + f[0] + '" data-w="' + id + '" data-k="' + f[0] + '" rows="' + (f[2].length > 90 || /\n/.test(f[2]) ? 3 : 1) + '"></textarea></div>';
     }).join('') + '<button type="button" class="undo" data-act="undo">Put back today’s words</button>';
     li.appendChild(box);
@@ -322,6 +353,7 @@ function fillFields() {
     t.value = v(t.dataset.w, t.dataset.k);
     t.classList.toggle('changed', changedFields(t.dataset.w).some(function (f) { return f[0] === t.dataset.k; }));
   });
+  Array.prototype.forEach.call(document.querySelectorAll('.fields input[type=radio]'), function (r) { r.checked = v(r.dataset.w, r.dataset.k).trim().toUpperCase() === r.value; });
   Object.keys(COPY).forEach(function (id) { if (ITEMS[id]) ITEMS[id].classList.toggle('worded', changedFields(id).length > 0); });
 }
 function ids(list) { return Array.prototype.map.call(list.querySelectorAll(':scope > .item'), function (li) { return li.dataset.id; }); }
@@ -412,13 +444,34 @@ var LANDMARK = "<svg class=\"landmark\" preserveAspectRatio=\"xMaxYMax meet\" vi
 function daysToGo() { var d = Math.ceil((new Date('2027-07-02T12:00:00') - new Date()) / 864e5); return d > 0 ? d : 0; }
 function head(id) { return '<div class="kicker">' + ev(id, 'kicker') + '</div><h2>' + ev(id, 'heading') + '</h2>' + (v(id, 'text') && id !== 'hotel' ? '<p class="sub">' + ev(id, 'text') + '</p>' : '<div style="height:24px"></div>'); }
 function titleHtml(t) { var h = esc(t); return /\s\d{4}$/.test(t) ? h.replace(/(\d{4})$/, '<i>$1</i>') : h; }
-function splitSec(id, ps) {
+/* One paragraph of a section, or its callout box; nothing when its words were emptied. */
+function para(id, k) { return v(id, k).trim() ? '<p' + (k === 'callout' ? ' class="callout"' : '') + '>' + ev(id, k) + '</p>' : ''; }
+function splitSec(id, ps, more) {
   return '<div class="section" data-sec="' + id + '"><div class="split"><div><div class="kicker">' + ev(id, 'kicker') + '</div><h2>' + ev(id, 'heading') + '</h2></div><div>' +
-    ps.filter(function (k) { return v(id, k).trim(); }).map(function (k) { return '<p>' + ev(id, k) + '</p>'; }).join('') + '</div></div></div>';
+    ps.map(function (k) { return para(id, k); }).join('') + '</div></div>' + (more || '') + '</div>';
+}
+/* The film strip: 1985, 2008 (front and back) and the 2027 logo. It stands still here; on 1. Sample it runs across the screen. */
+var REEL = ['reunion-1985-hat.webp?v=20261127', 'reunion-2008-shirt-front.webp?v=20261127', 'reunion-2008-shirt-back.webp?v=20261127', 'reunion-logo.png?v=20261125a'];
+function reel() {
+  return '<div class="reel">' + REEL.concat(REEL).map(function (n) { return '<img src="../assets/' + n + '" alt=""' + (/logo/.test(n) ? ' class="logo"' : '') + '>'; }).join('') + '</div>';
+}
+/* Layout B: one of the two cards under the album, looking back (the past reunions) or looking ahead (Fresno). */
+function era(n, cls, kicker, heading, body) {
+  return '<div class="era era-' + cls + '"><div class="kicker">' + n + (v('reunion', kicker).trim() ? ' · ' + ev('reunion', kicker) : '') + '</div>' +
+    (v('reunion', heading).trim() ? '<h3>' + ev('reunion', heading) + '</h3>' : '') + para('reunion', body) + '</div>';
+}
+function reunionB() {
+  var head = (v('reunion', 'albumKicker').trim() ? '<div class="kicker">' + ev('reunion', 'albumKicker') + '</div>' : '') +
+    (v('reunion', 'albumHeading').trim() ? '<h3 class="album-title">' + ev('reunion', 'albumHeading') + '</h3>' : '');
+  return splitSec('reunion', ['p1', 'callout'], '<div class="album">' + head + reel() + '</div>' +
+    '<div class="eras">' + era('01', 'back', 'backKicker', 'backHeading', 'past') + era('02', 'ahead', 'aheadKicker', 'aheadHeading', 'p2') + '</div>');
 }
 var SECTIONS = {
-  welcome: function () { return splitSec('welcome', ['p1', 'p2', 'p3', 'p4']); },
-  reunion: function () { return splitSec('reunion', ['p1', 'p2']); },
+  welcome: function () { return splitSec('welcome', ['p1', 'p2', 'callout', 'p3', 'p4']); },
+  reunion: function () {
+    if (v('reunion', 'layout').trim().toUpperCase() !== 'A') return reunionB();
+    return splitSec('reunion', ['p1', 'callout', 'past'], reel() + '<div class="split"><div></div><div>' + para('reunion', 'p2') + '</div></div>');
+  },
   cta: function () { return '<div class="section" data-sec="cta"><h2>' + ev('cta', 'heading') + '</h2><div style="margin-top:14px"><span class="btn">' + ev('cta', 'btn') + '</span></div></div>'; },
   hero: function () {
     return '<div class="hero" data-sec="hero"><img class="seal" src="../assets/reunion-logo.png?v=20261125a" alt="">' +
@@ -580,8 +633,18 @@ document.getElementById('reset').addEventListener('click', function () {
   refresh(); statusEl.textContent = 'Back to the sample’s order.';
 });
 ['who', 'other'].forEach(function (id) { document.getElementById(id).addEventListener('input', function () { save(); update(); }); });
+/* A choice (the reunion layout) is kept with the words, so it saves, reaches the sample and shows under WORDING CHANGES. */
+function choose(r) {
+  WORDS[r.dataset.w] = WORDS[r.dataset.w] || {};
+  WORDS[r.dataset.w][r.dataset.k] = r.value;
+  ITEMS[r.dataset.w].classList.toggle('worded', changedFields(r.dataset.w).length > 0);
+  selected = r.dataset.w;
+  save(); update(); renderPreview();
+}
+document.addEventListener('change', function (e) { var r = e.target.closest && e.target.closest('.fields input[type=radio]'); if (r && r.checked) choose(r); });
 document.addEventListener('input', function (e) {
   if (!e.target.closest) return;
+  if (e.target.closest('.fields input[type=radio]')) return;   // handled on change
   if (e.target.closest('.note')) { save(); update(); return; }
   var t = e.target.closest('.fields textarea');
   if (t) {

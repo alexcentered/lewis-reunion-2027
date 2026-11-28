@@ -474,6 +474,50 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 .sample-fee{font:600 2rem/1.1 var(--display);color:var(--text)}
 .sample-faq div{padding:14px 0;border-bottom:1px solid var(--line)}
 .sample-empty{color:var(--muted)}
+/* Callout boxes: a line lifted from the paragraph above, set large, so the long read has places to rest. */
+.callout{margin:22px 0;padding:16px 20px 17px;border:1px solid color-mix(in oklab,var(--accent-text) 30%,transparent);border-left:4px solid var(--accent-text);border-radius:4px 12px 12px 4px;background:color-mix(in oklab,var(--accent-text) 7%,transparent);font:italic 600 clamp(1.22rem,2.4vw,1.42rem)/1.36 var(--display);color:var(--text);text-wrap:pretty}
+/* The film strip: the 1985 and 2008 pictures run across the screen like film through a projector. Each frame draws its own
+   eight sprocket holes, top and bottom, so the holes travel with the pictures. A frame (picture + gap) is a multiple of 8 px wide. */
+.reel{--s:152px;--gap:16px;--edge:24px;--film:#0e0d0c;--perf:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><rect x='21' y='29' width='58' height='42' rx='15' ry='19' fill='%23efe8d9'/></svg>");margin:34px 0 0}
+@media(min-width:600px){.reel{--s:184px}}
+@media(min-width:1000px){.reel{--s:224px}}
+.reel-film{overflow:hidden;background:var(--film);box-shadow:0 14px 30px -20px rgba(0,0,0,.7)}
+.reel-track{display:flex;width:max-content;margin:0;padding:0;list-style:none}
+.reel-frame{flex:none;width:calc(var(--s) + var(--gap));padding:var(--edge) calc(var(--gap) / 2);background:var(--perf) left top / 12.5% var(--edge) repeat-x,var(--perf) left bottom / 12.5% var(--edge) repeat-x,var(--film)}
+.reel-frame img{display:block;width:var(--s);height:var(--s);object-fit:cover;border-radius:3px;box-shadow:0 0 0 1px rgba(239,232,217,.14)}
+.reel-mark{display:block;margin-top:7px;font:500 .66rem/14px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(239,232,217,.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reel.run .reel-track{animation:reel-roll 54s linear infinite;will-change:transform}
+.reel.run .reel-film:hover .reel-track,.reel.paused .reel-track,.reel.off .reel-track{animation-play-state:paused}
+@keyframes reel-roll{to{transform:translateX(-50%)}}
+.reel:not(.run) .reel-film{overflow-x:auto}
+.reel:not(.run) .reel-track{margin:0 auto}
+.reel:not(.run) .reel-btn{display:none}
+.reel-bar{display:flex;justify-content:space-between;align-items:center;gap:8px 12px;flex-wrap:wrap;min-height:48px;padding-top:12px}
+.reel-cap{flex:1 1 12em;min-width:0;font:500 .74rem/1.5 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent-2)}
+.reel-btn{flex:none}
+.story-more{margin-top:22px}
+@media(max-width:860px){.story-more>:first-child{display:none}}
+@media(prefers-reduced-motion:reduce){.reel.run .reel-track{animation:none}}
+.reel-frame img.reel-logo{object-fit:contain;padding:6%;background:#080808}
+/* Two layouts for The 2027 Family Reunion, to compare. A: one column, the film between the paragraphs. B: the film in an
+   album band with its own heading, then two cards, looking back and looking ahead. The switch at the top of the section
+   flips them on this screen only; the choice the committee sees is saved under Edit words on 2. Homepage order. */
+[data-layout="A"] .only-b,[data-layout="B"] .only-a{display:none}
+.rv-layout{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:0 0 26px;padding:10px 12px;border:1px dashed var(--accent-2);border-radius:10px;background:var(--surface);font-size:.88rem;color:var(--muted)}
+.rv-layout b{color:var(--text);font-weight:600}
+.rv-layout button{font:inherit;font-size:.85rem;min-height:36px;padding:0 14px;border-radius:99px;border:1px solid var(--line-2);background:transparent;color:var(--muted);cursor:pointer}
+.rv-layout button[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.rv-layout small{flex-basis:100%;font-size:.8rem;color:var(--faint)}
+[data-layout="B"] .album{margin-top:40px;padding:34px 0 22px;background:var(--paper);border-block:1px solid var(--line)}
+[data-layout="B"] .album .reel{margin-top:22px}
+.album-title{font:600 clamp(1.6rem,3.4vw,2.3rem)/1.1 var(--display);letter-spacing:-.01em;margin:0}
+.eras{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:30px}
+@media(max-width:860px){.eras{grid-template-columns:1fr}}
+.era{padding:24px 24px 20px;border:1px solid var(--line);border-top:3px solid var(--accent-2);border-radius:var(--r);background:var(--surface)}
+[data-mode="light"] .era{box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.era-ahead{border-top-color:var(--accent-text)}
+.era .kicker{margin-bottom:10px}
+.era h3{font:600 clamp(1.5rem,2.8vw,1.95rem)/1.12 var(--display);letter-spacing:-.01em;margin:0 0 12px}
 </style>
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="review.css">
@@ -501,7 +545,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
     </div>
   </div>
 </header>
-<div class="sample-note"><div class="wrap" id="sampleNote"><b>Sample only.</b> This is the homepage in the order you saved on the review page, with the Lewis crest centered above the Welcome section and the new reunion logo in place of the water tower drawing. Nothing on the live website has changed. The buttons open the live site. To change anything, go to <b>2. Homepage order</b>.</div></div>
+<div class="sample-note"><div class="wrap" id="sampleNote"><b>Sample only.</b> This is the homepage in the order you saved on the review page, with the Lewis crest centered above the Welcome section and the new reunion logo in place of the water tower drawing. <b>New:</b> the paragraph on past reunions, the 1985, 2008 and 2027 pictures running across the screen like film, callout boxes to break up the long read, and two layouts for The 2027 Family Reunion to compare. Nothing on the live website has changed. The buttons open the live site. To change anything, go to <b>2. Homepage order</b>.</div></div>
 <main>
 <section data-view="home" class="on">
   <div class="wrap" data-sec="welcome">
@@ -515,6 +559,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
         <div>
           <p class="lead" data-w="welcome.p1" style="font-size:1rem">A website rooted in our family legacy and its generational strengths… If you are here, it's because you belong. If you are here, it is because you matter, and your presence is a testament to the branch of the Lewis Family roots you are part of and have contributed to.</p>
           <p class="lead" data-w="welcome.p2" style="font-size:1rem">A place that is rooted in “The Bottom” of Mobile, Alabama, that has spanned the globe. A place with humble beginnings, born of John and Anna Mary Lewis and the 13 children they brought into this world. This place is designed to be generational in nature, with a torch passing to maintain our legacy through the generations of aunts, uncles, and the vast number of cousins, 1st, 2nd, 3rd, removed, and beyond. We are the Lewis family.</p>
+          <p class="callout" data-w="welcome.callout">A place with humble beginnings, born of John and Anna Mary Lewis and the 13 children they brought into this world.</p>
           <p class="lead" data-w="welcome.p3" style="font-size:1rem">Please continue to come back, as this website will evolve to include your pictures, your stories, an interactive family tree, and a marketplace. Its design is to grow through the years with videos, testimonials, and memorials of our past loved ones. Its design is intentional because you matter!</p>
           <p class="lead" data-w="welcome.p4" style="font-size:1rem">Thank you for stopping by.</p>
         </div>
@@ -527,15 +572,64 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
       <cite data-w="quote.cite">California cousins, Texas cousins, Mobile cousins, East Coast cousins: one family.</cite>
     </div>
   </div>
-  <div class="wrap" data-sec="reunion">
-    <div class="section">
-      <div class="split">
-        <div>
-          <div class="kicker" data-w="reunion.kicker">The 2027 Family Reunion</div>
-          <h2 data-w="reunion.heading">Our first order of business.</h2>
+  <div data-sec="reunion" data-layout="B">
+    <div class="wrap">
+      <div class="section">
+        <div class="rv-layout" role="group" aria-label="Layout for The 2027 Family Reunion">
+          <b>Two layouts to compare:</b>
+          <button type="button" data-pick="A" aria-pressed="false">A: one column</button>
+          <button type="button" data-pick="B" aria-pressed="true">B: album and two cards</button>
+          <small>This switch changes this screen only. To choose one, use Edit words on 2. Homepage order.</small>
         </div>
+        <div class="split">
+          <div>
+            <div class="kicker" data-w="reunion.kicker">The 2027 Family Reunion</div>
+            <h2 data-w="reunion.heading">Our first order of business.</h2>
+          </div>
+          <div>
+            <p class="lead" data-w="reunion.p1" style="font-size:1rem">Our first order of business for this site is to intentionally plan a get-together, but not just any get-together, a Reunion. A reunion that is internal in its purpose. It's true, we as a family have gotten together for a funeral and made some memories there, but those get-togethers we respectfully designed to send our loved ones off to heaven, where we know a Lewis party is continually being held. But this reunion is to reach the family members on all coasts, and all countries, with the one purpose of gathering, sharing our stories, meeting the old and new generations of our families, to learn from each other, to share the successes and failures, to plant seeds for our legacy, and to purposefully unite our family to make us strong. It's true that pictures are an amazing way to see the triumphs of our family, but nothing, and I say nothing, takes away the physical presence of seeing your family member, being able to hug them, cry with them, and love them, and that’s the purpose of the 2027 Family Reunion.</p>
+            <p class="callout" data-w="reunion.callout">Nothing, and I say nothing, takes away the physical presence of seeing your family member, being able to hug them, cry with them, and love them.</p>
+            <p class="lead only-a" data-w="reunion.past" style="font-size:1rem">We've had reunions in the past: the 1985 Reunion (pictured) and the 2008 Reunion (pictured), as well as several smaller reunions on each coast by smaller groups of family members. This one is attempting to reach all of us, everywhere we are, to intentionally get together in one place in 2027.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="album">
+      <div class="wrap album-head only-b">
+        <div class="kicker" data-w="reunion.albumKicker">From the family album</div>
+        <h3 class="album-title" data-w="reunion.albumHeading">Reunions through the years</h3>
+      </div>
+      <!-- The film strip runs the full width of the screen. The script at the end of the page adds the copies that keep it full. -->
+      <figure class="reel" aria-labelledby="reelCap">
+        <div class="reel-film">
+          <ul class="reel-track">
+            <li class="reel-frame"><picture><source srcset="../assets/reunion-1985-hat.webp?v=20261127" type="image/webp"><img src="../assets/reunion-1985-hat.jpg?v=20261127" width="640" height="640" alt="The 1985 reunion hat: a red and cream cap that reads Lewis Reunion 85." loading="lazy" decoding="async"></picture><span class="reel-mark" aria-hidden="true">1985 · Reunion hat</span></li>
+            <li class="reel-frame"><picture><source srcset="../assets/reunion-2008-shirt-front.webp?v=20261127" type="image/webp"><img src="../assets/reunion-2008-shirt-front.jpg?v=20261127" width="640" height="640" alt="The 2008 reunion T-shirt, front: maroon, with Lewis Family Reunion 2008, Remember, Renew, Celebrate in small gold letters on the chest." loading="lazy" decoding="async"></picture><span class="reel-mark" aria-hidden="true">2008 · Shirt, front</span></li>
+            <li class="reel-frame"><picture><source srcset="../assets/reunion-2008-shirt-back.webp?v=20261127" type="image/webp"><img src="../assets/reunion-2008-shirt-back.jpg?v=20261127" width="640" height="640" alt="The 2008 reunion T-shirt, back: Lewis Family Reunion 2008, Remember, Renew, Celebrate in large gold letters." loading="lazy" decoding="async"></picture><span class="reel-mark" aria-hidden="true">2008 · Shirt, back</span></li>
+            <li class="reel-frame"><img class="reel-logo" src="../assets/reunion-logo.png?v=20261125a" width="640" height="640" alt="The 2027 reunion logo: a great tree over deep roots around the Lewis crest, with From Their Roots, We Rise and Lewis Family Reunion 2027." loading="lazy" decoding="async"><span class="reel-mark" aria-hidden="true">2027 · Fresno</span></li>
+          </ul>
+        </div>
+        <div class="wrap reel-bar"><span class="reel-cap" id="reelCap">Pictured: the 1985 and 2008 reunions, and the 2027 logo</span><button type="button" class="btn quiet sm reel-btn">Pause</button></div>
+      </figure>
+    </div>
+    <div class="wrap only-a">
+      <div class="split story-more">
+        <div></div>
         <div>
-          <p class="lead" data-w="reunion.p1" style="font-size:1rem">Our first order of business for this site is to intentionally plan a get-together, but not just any get-together, a Reunion. A reunion that is internal in its purpose. It's true, we as a family have gotten together for a funeral and made some memories there, but those get-togethers we respectfully designed to send our loved ones off to heaven, where we know a Lewis party is continually being held. But this reunion is to reach the family members on all coasts, and all countries, with the one purpose of gathering, sharing our stories, meeting the old and new generations of our families, to learn from each other, to share the successes and failures, to plant seeds for our legacy, and to purposefully unite our family to make us strong. It's true that pictures are an amazing way to see the triumphs of our family, but nothing, and I say nothing, takes away the physical presence of seeing your family member, being able to hug them, cry with them, and love them, and that’s the purpose of the 2027 Family Reunion.</p>
+          <p class="lead" data-w="reunion.p2" style="font-size:1rem">It is planned in Fresno, California, where our oldest living Lewis resides. It will span 4 days, from Friday, 2 July 2027 through Monday, 5 July 2027, and will offer plenty of opportunities to connect, share, laugh, and pay homage to the roots of the 13 generations of families who have contributed to the hundreds of branches that make up the Lewis Family.</p>
+        </div>
+      </div>
+    </div>
+    <div class="wrap only-b">
+      <div class="eras">
+        <div class="era era-back">
+          <div class="kicker"><span class="num">01</span> · <span data-w="reunion.backKicker">Looking back</span></div>
+          <h3 data-w="reunion.backHeading">We’ve gathered before.</h3>
+          <p class="lead" data-w="reunion.past" style="font-size:1rem">We've had reunions in the past: the 1985 Reunion (pictured) and the 2008 Reunion (pictured), as well as several smaller reunions on each coast by smaller groups of family members. This one is attempting to reach all of us, everywhere we are, to intentionally get together in one place in 2027.</p>
+        </div>
+        <div class="era era-ahead">
+          <div class="kicker"><span class="num">02</span> · <span data-w="reunion.aheadKicker">Looking ahead</span></div>
+          <h3 data-w="reunion.aheadHeading">See you in Fresno.</h3>
           <p class="lead" data-w="reunion.p2" style="font-size:1rem">It is planned in Fresno, California, where our oldest living Lewis resides. It will span 4 days, from Friday, 2 July 2027 through Monday, 5 July 2027, and will offer plenty of opportunities to connect, share, laugh, and pay homage to the roots of the 13 generations of families who have contributed to the hundreds of branches that make up the Lewis Family.</p>
         </div>
       </div>
@@ -662,7 +756,8 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 (function(){
   var d = document.getElementById('cdDays'); if (d) d.textContent = Math.max(0, Math.ceil((new Date('2027-07-02T12:00:00-07:00') - new Date()) / 864e5));
   var root = document.documentElement;
-  [].forEach.call(document.querySelectorAll('.modes button'), function(b){ b.addEventListener('click', function(){ root.setAttribute('data-mode', b.getAttribute('data-m')); [].forEach.call(document.querySelectorAll('.modes button'), function(x){ x.setAttribute('aria-pressed', String(x === b)); }); }); });
+  // Light, Forest and Espresso, set as the live site sets them (setMode in app.js): a dark ground is data-mode="dark" plus data-ground.
+  [].forEach.call(document.querySelectorAll('.modes button'), function(b){ b.addEventListener('click', function(){ var m = b.getAttribute('data-m'); root.setAttribute('data-mode', m === 'light' ? 'light' : 'dark'); root.setAttribute('data-ground', m === 'espresso' ? 'espresso' : 'forest'); [].forEach.call(document.querySelectorAll('.modes button'), function(x){ x.setAttribute('aria-pressed', String(x === b)); }); }); });
   [].forEach.call(document.querySelectorAll('.looks button'), function(b){ b.addEventListener('click', function(){ root.setAttribute('data-look', b.getAttribute('data-l')); [].forEach.call(document.querySelectorAll('.looks button'), function(x){ x.setAttribute('aria-pressed', String(x === b)); }); }); });
   var lc = document.querySelector('.lc'); if (!lc) return;
   var slides = lc.querySelectorAll('.lc-slide'), dots = lc.querySelectorAll('.lc-dot'), label = lc.querySelector('.lc-label'), at = 0;
@@ -685,7 +780,11 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 /* The live sample. review.js reads the reviewer's saved review when this page opens, again every 20 seconds while it is on
    screen and whenever the reviewer comes back to it, and tells this page with an lr-review-data event. This draws it:
    the homepage order, sections taken off, the tile order, any words typed under Edit words, and the notes. Until a review
-   arrives the page shows the order it was built with. The Lewis crest stays centered above Welcome (Vincent's note, Nov 23). */
+   arrives the page shows the order it was built with. The Lewis crest stays centered above Welcome (Vincent's note, Nov 23).
+   The paragraph on past reunions (reunion.past), the film strip and the callout boxes (welcome.callout, reunion.callout) are
+   from Vincent's email of Nov 27; a callout typed empty on 2. Homepage order is left out, like any other words. Layout B of
+   that section (the album band and the two cards, after a mock-up Alex liked) has its own words: reunion.albumKicker,
+   albumHeading, backKicker, backHeading, aheadKicker, aheadHeading. */
 (function(){
   var STORE = 'lewis-homepage-order-v1';
   var home = document.querySelector('section[data-view="home"]'); if (!home) return;
@@ -752,17 +851,37 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
     var when = '';
     if (saved) { var d = new Date(saved); if (!isNaN(d)) when = ', last saved ' + d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' at ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
     var h = '<b>Sample only.</b> This is the homepage as ' + (name ? esc(name) + '’s review' : 'the review') + ' has it on <b>2. Homepage order</b>' + esc(when) +
-      '. It updates by itself within about 20 seconds of each change. The Lewis crest is centered above the Welcome section. Nothing on the live website has changed, and the buttons open the live site.';
+      '. It updates by itself within about 20 seconds of each change. The Lewis crest is centered above the Welcome section. <b>New:</b> the paragraph on past reunions, the 1985, 2008 and 2027 pictures running across the screen like film, callout boxes to break up the long read, and two layouts for The 2027 Family Reunion: the switch at the top of that section compares them. To choose one, change the words, or empty a callout box to leave it out, use <b>Edit words</b> on 2. Homepage order. Nothing on the live website has changed, and the buttons open the live site.';
     off.forEach(function(t){ h += '<span class="rv-off"><b>Note on a section that is off the homepage:</b> ' + esc(t) + '</span>'; });
     if (st.other && String(st.other).trim()) h += '<span class="rv-off"><b>Anything else:</b> ' + esc(String(st.other).trim()) + '</span>';
     bar.innerHTML = h;
   }
 
+  /* The 2027 Family Reunion has two layouts to compare (see the CSS). The saved choice is words.reunion.layout, set under
+     Edit words on 2. Homepage order, and B when nothing is saved (keep LAYOUT_DEFAULT, data-layout in the markup and the
+     layout default in order.html's COPY the same). The switch at the top of the section shows the other one on this
+     screen only, until the saved choice changes. */
+  var reunion = BLOCKS.reunion, LAYOUT_DEFAULT = 'B', savedLayout = null, peek = null;
+  var picks = reunion ? reunion.querySelectorAll('[data-pick]') : [];
+  function showLayout(){
+    if (!reunion) return;
+    var L = peek || savedLayout || LAYOUT_DEFAULT;
+    reunion.setAttribute('data-layout', L);
+    [].forEach.call(picks, function(b){ b.setAttribute('aria-pressed', String(b.getAttribute('data-pick') === L)); });
+  }
+  function layout(st){
+    var w = st && st.words && st.words.reunion, t = String((w && w.layout) || '').trim().charAt(0).toUpperCase();
+    var L = t === 'A' || t === 'B' ? t : LAYOUT_DEFAULT;
+    if (L !== savedLayout) { savedLayout = L; peek = null; }
+    showLayout();
+  }
+  [].forEach.call(picks, function(b){ b.addEventListener('click', function(){ peek = b.getAttribute('data-pick'); showLayout(); }); });
+
   function draw(raw, name, saved){
     var st = parse(raw), key = JSON.stringify([raw, name, saved]);
     if (key === drawn) return;
     drawn = key;
-    order(st); words(st); note(st, name, saved, notes(st, name));
+    order(st); words(st); layout(st); note(st, name, saved, notes(st, name));
   }
 
   var stored = null; try { stored = localStorage.getItem(STORE); } catch (e) {}
@@ -771,6 +890,45 @@ footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
     var d = (e && e.detail) || {};
     draw(d.data && d.data.order, d.name || '', d.saved);
   });
+})();
+</script>
+<script>
+/* The film strip. The page holds each picture once (for screen readers, and for a phone without scripts). This adds copies
+   until one run of pictures is wider than the strip, doubles that run, and slides the strip left by exactly one run, over and
+   over, so it never shows a gap or a jump. Each picture takes six seconds to move its own width. A device set to reduce
+   motion gets the strip standing still, to scroll by hand. Pause stops it, and so do a mouse resting on it and the strip
+   being off screen. It rebuilds when the strip changes width, and when the reviewer's order shows or hides the section. */
+(function(){
+  var reel = document.querySelector('.reel'); if (!reel) return;
+  var film = reel.querySelector('.reel-film'), track = reel.querySelector('.reel-track'), btn = reel.querySelector('.reel-btn');
+  var pics = [].slice.call(track.children), runs = 0, SECONDS_PER_PICTURE = 6;
+  var calm = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  function copy(li){
+    var c = li.cloneNode(true);
+    c.setAttribute('aria-hidden', 'true');
+    [].forEach.call(c.querySelectorAll('img'), function(i){ i.alt = ''; i.removeAttribute('loading'); });
+    return c;
+  }
+  function build(){
+    var run = pics[0].offsetWidth * pics.length;
+    var need = calm && calm.matches ? 0 : (run ? Math.ceil(film.clientWidth / run) : 0);
+    if (need === runs) return;
+    runs = need;
+    while (track.children.length > pics.length) track.removeChild(track.lastChild);
+    for (var n = 1; n < need * 2; n++) pics.forEach(function(li){ track.appendChild(copy(li)); });
+    track.style.animationDuration = need ? (need * pics.length * SECONDS_PER_PICTURE) + 's' : '';
+    reel.classList.toggle('run', need > 0);
+  }
+  btn.addEventListener('click', function(){
+    var stop = !reel.classList.contains('paused');
+    reel.classList.toggle('paused', stop);
+    btn.textContent = stop ? 'Play' : 'Pause';
+  });
+  if (window.IntersectionObserver) new IntersectionObserver(function(es){ reel.classList.toggle('off', !es[0].isIntersecting); }).observe(reel);
+  if (calm) { if (calm.addEventListener) calm.addEventListener('change', build); else if (calm.addListener) calm.addListener(build); }
+  if (window.ResizeObserver) new ResizeObserver(build).observe(film); else window.addEventListener('resize', build);
+  document.addEventListener('lr-review-data', function(){ setTimeout(build, 0); });
+  build();
 })();
 </script>
 </body>
