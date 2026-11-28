@@ -137,12 +137,12 @@
   .pv .split { display:grid; gap:28px; grid-template-columns:1.1fr .9fr; }
   .pv .split p { font-size:16px; color:var(--muted); margin:0 0 1em; }
   .pv .split p.callout { padding:14px 18px 15px; border:1px solid rgba(23,61,42,.28); border-left:4px solid var(--accent); border-radius:4px 12px 12px 4px; background:rgba(23,61,42,.06); font:italic 600 22px/1.36 'Playfair Display', Georgia, serif; color:var(--text); }
-  .pv .reel { position:relative; display:flex; gap:16px; overflow:hidden; margin:20px 0 0; padding:26px 8px; background:linear-gradient(180deg,#22170f,#31241a 22%,#382a1d 50%,#31241a 78%,#22170f); }
+  .pv .reel { position:relative; display:flex; gap:16px; overflow:hidden; margin:20px 0 0; padding:26px 8px; background:linear-gradient(180deg,#4f3a28,#644a35 22%,#6e533b 50%,#644a35 78%,#4f3a28); }
   .pv .reel::before, .pv .reel::after { content:""; position:absolute; left:0; right:0; height:24px; background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><rect x='21' y='29' width='58' height='42' rx='15' ry='19' fill='%23efe8d9'/></svg>") left top / 30px 24px repeat-x; }
   .pv .reel::before { top:0; }
   .pv .reel::after { bottom:0; }
-  .pv .reel img { flex:none; display:block; width:224px; height:224px; border-radius:3px; background:#0b0806; }
-  .pv .reel img.tall { width:164px; object-fit:contain; }
+  .pv .reel img { flex:none; display:block; width:224px; height:224px; object-fit:cover; filter:drop-shadow(0 3px 4px rgba(28,16,8,.3)); }
+  .pv .reel img.tall { width:149px; border-radius:2px; }
   .pv .album { margin-top:36px; }
   .pv .album-title { font:600 34px/1.1 'Playfair Display', Georgia, serif; margin:0; }
   .pv .eras { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:28px; }
@@ -442,7 +442,7 @@ function splitSec(id, ps, more) {
     ps.map(function (k) { return para(id, k); }).join('') + '</div></div>' + (more || '') + '</div>';
 }
 /* The film strip: 1985, 2008 (front and back) and the 2027 flyer. It stands still here; on 1. Sample it runs across the screen. */
-var REEL = ['reunion-1985-hat.webp?v=20261127', 'reunion-2008-shirt-front.webp?v=20261128', 'reunion-2008-shirt-back.webp?v=20261128', 'reunion-2027-flyer.webp?v=20261128'];
+var REEL = ['reunion-1985-hat.webp?v=20261128b', 'reunion-2008-shirt-front.webp?v=20261128b', 'reunion-2008-shirt-back.webp?v=20261128b', 'reunion-2027-flyer.webp?v=20261128'];
 function reel() {
   return '<div class="reel">' + REEL.concat(REEL).map(function (n) { return '<img src="../assets/' + n + '" alt=""' + (/flyer/.test(n) ? ' class="tall"' : '') + '>'; }).join('') + '</div>';
 }
